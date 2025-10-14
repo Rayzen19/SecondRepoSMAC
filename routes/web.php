@@ -197,6 +197,15 @@ Route::group(['prefix' => 'teacher'], function () {
         Route::get('/dashboard', fn() => view('teacher.dashboard'))->name('teacher.dashboard');
         Route::get('/subjects', [App\Http\Controllers\Teacher\SubjectController::class, 'index'])->name('teacher.subjects.index');
     Route::get('/class-records', [App\Http\Controllers\Teacher\ClassRecordController::class, 'index'])->name('teacher.class-records.index');
+        
+        // Profile routes
+        Route::get('/profile', [App\Http\Controllers\Teacher\ProfileController::class, 'show'])->name('teacher.profile.show');
+        Route::get('/profile/edit', [App\Http\Controllers\Teacher\ProfileController::class, 'edit'])->name('teacher.profile.edit');
+        Route::put('/profile', [App\Http\Controllers\Teacher\ProfileController::class, 'update'])->name('teacher.profile.update');
+        Route::post('/profile/picture', [App\Http\Controllers\Teacher\ProfileController::class, 'updateProfilePicture'])->name('teacher.profile.picture.update');
+        Route::delete('/profile/picture', [App\Http\Controllers\Teacher\ProfileController::class, 'deleteProfilePicture'])->name('teacher.profile.picture.delete');
+        Route::get('/profile/password/edit', [App\Http\Controllers\Teacher\ProfileController::class, 'editPassword'])->name('teacher.profile.password.edit');
+        Route::put('/profile/password', [App\Http\Controllers\Teacher\ProfileController::class, 'updatePassword'])->name('teacher.profile.password.update');
     Route::get('/class-records/{assignment}', [App\Http\Controllers\Teacher\ClassRecordController::class, 'show'])->name('teacher.class-records.show');
     Route::get('/class-records/{assignment}/students/{student}', [App\Http\Controllers\Teacher\ClassRecordController::class, 'studentShow'])->name('teacher.class-records.students.show');
     Route::get('/class-records/{assignment}/view/{term}', [App\Http\Controllers\Teacher\ClassRecordController::class, 'termShow'])->name('teacher.class-records.term.show');

@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Mail\TeacherWelcome;
 use App\Models\AcademicYear;
 use App\Models\AcademicYearStrandSection;
 use App\Models\AcademicYearStrandSubject;
@@ -10,6 +11,7 @@ use App\Models\StudentEnrollment;
 use App\Models\Teacher;
 use App\Models\User;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Str;
 use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\StreamedResponse;
@@ -61,8 +63,16 @@ class TeacherController extends Controller
             ]
         );
 
+        // Send welcome email to teacher with login credentials
+        try {
+            Mail::to($teacher->email)->send(new TeacherWelcome($teacher->name, $teacher->email, $initialPassword));
+            $emailStatus = 'Welcome email sent successfully to ' . $teacher->email;
+        } catch (\Exception $e) {
+            $emailStatus = 'Teacher created but email failed to send: ' . $e->getMessage();
+        }
+
         return redirect()->route('admin.teachers.show', $teacher)
-            ->with('success', 'Teacher created successfully.')
+            ->with('success', 'Teacher created successfully. ' . $emailStatus)
             ->with('initial_password', $initialPassword);
     }
 

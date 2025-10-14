@@ -56,6 +56,11 @@
                                         <i class="ti ti-notebook"></i><span>Class Records</span>
                                     </a>
                                 </li>
+                                <li class="{{ $routeIs('teacher.profile.*') ? 'active' : '' }}">
+                                    <a class="{{ $routeIs('teacher.profile.*') ? 'active' : '' }}" href="{{ route('teacher.profile.show') }}">
+                                        <i class="ti ti-user"></i><span>My Profile</span>
+                                    </a>
+                                </li>
                                 <li>
                                     <form action="{{ route('teacher.auth.logout') }}" method="POST" class="d-inline">
                                         @csrf
