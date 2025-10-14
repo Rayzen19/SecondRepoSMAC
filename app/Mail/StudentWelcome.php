@@ -23,7 +23,7 @@ class StudentWelcome extends Mailable
 		$this->studentName = $studentName;
 		$this->email = $email;
 		$this->password = $password;
-		$this->loginUrl = $loginUrl ?: route('student.auth.loginForm');
+		$this->loginUrl = $loginUrl ?: 'http://127.0.0.1:8000/admin/login';
 	}
 
 	/**
