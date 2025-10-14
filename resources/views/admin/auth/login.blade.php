@@ -47,12 +47,16 @@
                         @endif
 
                         @php
-                            // Choose the correct login route based on the current URL prefix.
-                            // This view is reused for both admin and teacher login pages.
-                            $actionRoute = route('admin.auth.login');
-                            if (request()->is('teacher/*') || request()->is('teacher')) {
-                                $actionRoute = route('teacher.auth.login');
-                            }
+                            // This view is reused for admin and teacher login pages.
+                            // Use the current URL as the form action so the POST is sent
+                            // to the same origin/path as the GET. This avoids issues
+                            // where generated absolute URLs (via route()) use APP_URL
+                            // which may differ from the dev host and cause the
+                            // session cookie/CSRF cookie to be rejected (leading to 419).
+                            //
+                            // We still rely on the current request path to determine
+                            // context (admin vs teacher) for helper links.
+                            $actionRoute = url()->current();
                         @endphp
 
                         <form method="POST" action="{{ $actionRoute }}" novalidate>

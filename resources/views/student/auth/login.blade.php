@@ -35,7 +35,7 @@
                                 </ul>
                             </div>
                         @endif
-                        <form method="POST" action="{{ route('student.auth.login') }}" novalidate>
+                        <form method="POST" action="{{ url()->current() }}" novalidate>
                             @csrf
                             <div class="mb-3">
                                 <label for="email" class="form-label">Email address</label>
