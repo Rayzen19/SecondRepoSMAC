@@ -41,6 +41,11 @@
                         <li class="menu-title"><span>Teacher</span></li>
                         <li>
                             <ul>
+                                <li class="{{ $routeIs('teacher.profile.*') ? 'active' : '' }}">
+                                    <a class="{{ $routeIs('teacher.profile.*') ? 'active' : '' }}" href="{{ route('teacher.profile.show') }}">
+                                        <i class="ti ti-user"></i><span>My Profile</span>
+                                    </a>
+                                </li>
                                 <li class="{{ $routeIs('teacher.dashboard') ? 'active' : '' }}">
                                     <a class="{{ $routeIs('teacher.dashboard') ? 'active' : '' }}" href="{{ route('teacher.dashboard') }}">
                                         <i class="ti ti-layout-navbar"></i><span>Dashboard</span>
@@ -56,11 +61,7 @@
                                         <i class="ti ti-notebook"></i><span>Class Records</span>
                                     </a>
                                 </li>
-                                <li class="{{ $routeIs('teacher.profile.*') ? 'active' : '' }}">
-                                    <a class="{{ $routeIs('teacher.profile.*') ? 'active' : '' }}" href="{{ route('teacher.profile.show') }}">
-                                        <i class="ti ti-user"></i><span>My Profile</span>
-                                    </a>
-                                </li>
+
                                 <li>
                                     <form action="{{ route('teacher.auth.logout') }}" method="POST" class="d-inline">
                                         @csrf

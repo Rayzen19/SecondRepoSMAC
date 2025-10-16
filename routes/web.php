@@ -153,6 +153,16 @@ Route::group(['prefix' => 'admin'], function () {
         Route::put('/subject-record-results/{subjectRecordResult}', [App\Http\Controllers\Admin\SubjectRecordResultController::class, 'update'])->name('admin.subject-record-results.update');
         Route::delete('/subject-record-results/{subjectRecordResult}', [App\Http\Controllers\Admin\SubjectRecordResultController::class, 'destroy'])->name('admin.subject-record-results.destroy');
 
+        // Attendance Logs
+        Route::get('/attendance', [App\Http\Controllers\Admin\AttendanceLogController::class, 'index'])->name('admin.attendance.index');
+        Route::get('/attendance/create', [App\Http\Controllers\Admin\AttendanceLogController::class, 'create'])->name('admin.attendance.create');
+        Route::post('/attendance', [App\Http\Controllers\Admin\AttendanceLogController::class, 'store'])->name('admin.attendance.store');
+        Route::get('/attendance/{log}', [App\Http\Controllers\Admin\AttendanceLogController::class, 'show'])->name('admin.attendance.show');
+        Route::get('/attendance/{log}/edit', [App\Http\Controllers\Admin\AttendanceLogController::class, 'edit'])->name('admin.attendance.edit');
+        Route::put('/attendance/{log}', [App\Http\Controllers\Admin\AttendanceLogController::class, 'update'])->name('admin.attendance.update');
+        Route::delete('/attendance/{log}', [App\Http\Controllers\Admin\AttendanceLogController::class, 'destroy'])->name('admin.attendance.destroy');
+        Route::get('/attendance-export', [App\Http\Controllers\Admin\AttendanceLogController::class, 'export'])->name('admin.attendance.export');
+
         // Student Enrollments
         Route::get('/student-enrollments', [App\Http\Controllers\Admin\StudentEnrollmentController::class, 'index'])->name('admin.student-enrollments.index');
         Route::get('/student-enrollments/create', [App\Http\Controllers\Admin\StudentEnrollmentController::class, 'create'])->name('admin.student-enrollments.create');
@@ -233,6 +243,9 @@ Route::group(['prefix' => 'student'], function () {
         Route::get('/dashboard', fn() => view('student.dashboard'))->name('student.dashboard');
     Route::get('/academic-years', [App\Http\Controllers\Student\AcademicYearController::class, 'index'])->name('student.academic-years.index');
     Route::get('/subjects', [App\Http\Controllers\Student\SubjectController::class, 'index'])->name('student.subjects.index');
+        
+        // Grades (includes Decision Support System)
+        Route::get('/grades', [App\Http\Controllers\Student\GradeController::class, 'index'])->name('student.grades.index');
         
         // Profile routes
         Route::get('/profile', [App\Http\Controllers\Student\ProfileController::class, 'show'])->name('student.profile.show');

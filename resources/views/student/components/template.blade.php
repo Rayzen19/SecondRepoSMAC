@@ -52,6 +52,11 @@
                                         <i class="ti ti-books"></i><span>Subjects</span>
                                     </a>
                                 </li>
+                                <li class="{{ $routeIs('student.grades.index') ? 'active' : '' }}">
+                                    <a class="{{ $routeIs('student.grades.index') ? 'active' : '' }}" href="{{ route('student.grades.index') }}">
+                                        <i class="ti ti-report-analytics"></i><span>Grades & DSS</span>
+                                    </a>
+                                </li>
                                 <li class="{{ $routeIs('student.profile.*') ? 'active' : '' }}">
                                     <a class="{{ $routeIs('student.profile.*') ? 'active' : '' }}" href="{{ route('student.profile.show') }}">
                                         <i class="ti ti-user"></i><span>My Profile</span>

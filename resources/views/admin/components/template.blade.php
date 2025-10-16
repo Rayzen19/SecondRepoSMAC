@@ -177,6 +177,12 @@
                                     </a>
                                 </li>
 
+                                <li class="{{ request()->routeIs('admin.attendance.*') ? 'active' : '' }}">
+                                    <a class="{{ request()->routeIs('admin.attendance.*') ? 'active' : '' }}" href="{{ route('admin.attendance.index') }}">
+                                        <i class="ti ti-calendar-check"></i><span>Attendance</span>
+                                    </a>
+                                </li>
+
                                         @auth('admin')
                                         <!-- <li class="{{ request()->routeIs('admin.messages.*') ? 'active' : '' }}">
                                             <a class="{{ request()->routeIs('admin.messages.*') ? 'active' : '' }}" href="{{ route('admin.messages.messenger') }}">
