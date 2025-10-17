@@ -65,7 +65,14 @@
                             <td>
                                 <div class="action-icon d-inline-flex">
                                     <a href="{{ route('admin.subjects.show', $subject) }}" class="me-2"><i class="ti ti-eye"></i></a>
-                                    <a href="{{ route('admin.subjects.edit', $subject) }}"><i class="ti 	ti-edit"></i></a>
+                                    <a href="{{ route('admin.subjects.edit', $subject) }}" class="me-2"><i class="ti ti-edit"></i></a>
+                                    <form action="{{ route('admin.subjects.destroy', $subject) }}" method="POST" class="d-inline" onsubmit="return confirm('Are you sure you want to delete this subject?');">
+                                        @csrf
+                                        @method('DELETE')
+                                        <button type="submit" class="btn btn-sm btn-link text-danger p-0" style="vertical-align: baseline;">
+                                            <i class="ti ti-trash"></i>
+                                        </button>
+                                    </form>
                                 </div>
                             </td>
                         </tr>

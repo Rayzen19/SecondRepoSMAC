@@ -62,6 +62,45 @@
                                     </a>
                                 </li>
 
+                                <li class="submenu {{ $routeIs('teacher.students.*') ? 'active subdrop' : '' }}">
+                                    <a href="javascript:void(0);" class="{{ $routeIs('teacher.students.*') ? 'active subdrop' : '' }}">
+                                        <i class="ti ti-users"></i><span>Student Lists</span><span class="menu-arrow"></span>
+                                    </a>
+                                    <ul style="{{ $routeIs('teacher.students.*') ? 'display: block;' : 'display: none;' }}">
+                                        <li>
+                                            <a href="{{ route('teacher.students.all-sections') }}" class="{{ $routeIs('teacher.students.all-sections') ? 'active' : '' }}">
+                                                <i class="ti ti-building"></i><span>All Sections</span>
+                                            </a>
+                                        </li>
+                                        <li class="menu-title" style="margin-top: 10px; padding-left: 15px; font-size: 11px; color: #999;">
+                                            <span>Quick Access</span>
+                                        </li>
+                                        @php
+                                            $teacher = auth('teacher')->user();
+                                            $currentAcademicYear = \App\Models\AcademicYear::where('is_active', true)->first();
+                                            $mySections = collect();
+                                            if ($teacher && $currentAcademicYear) {
+                                                $mySections = \App\Models\AcademicYearStrandSection::with(['section', 'strand'])
+                                                    ->where('adviser_teacher_id', $teacher->id)
+                                                    ->where('academic_year_id', $currentAcademicYear->id)
+                                                    ->get()
+                                                    ->sortBy('section.name');
+                                            }
+                                        @endphp
+                                        @forelse($mySections as $mySection)
+                                            <li>
+                                                <a href="{{ route('teacher.students.section', $mySection->id) }}" class="{{ request()->route('sectionAssignment') == $mySection->id ? 'active' : '' }}">
+                                                    <i class="ti ti-point"></i><span>Section {{ $mySection->section->name ?? 'N/A' }}</span>
+                                                </a>
+                                            </li>
+                                        @empty
+                                            <li style="padding-left: 30px;">
+                                                <small class="text-muted">No sections assigned</small>
+                                            </li>
+                                        @endforelse
+                                    </ul>
+                                </li>
+
                                 <li>
                                     <form action="{{ route('teacher.auth.logout') }}" method="POST" class="d-inline">
                                         @csrf

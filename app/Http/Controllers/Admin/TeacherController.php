@@ -10,6 +10,9 @@ use App\Models\AcademicYearStrandSubject;
 use App\Models\StudentEnrollment;
 use App\Models\Teacher;
 use App\Models\User;
+use App\Models\Strand;
+use App\Models\Section;
+use App\Models\Subject;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Str;
@@ -22,6 +25,72 @@ class TeacherController extends Controller
     {
         $teachers = Teacher::orderBy('last_name')->paginate(15);
         return view('admin.teachers.index', compact('teachers'));
+    }
+
+    public function assignments(Teacher $teacher)
+    {
+        $academicYears = AcademicYear::orderByDesc('is_active')->orderByDesc('name')->get();
+        $strands = Strand::where('is_active', true)->orderBy('name')->get();
+        $sections = Section::orderBy('name')->get();
+        $subjects = Subject::orderBy('name')->get();
+        
+        // Get existing assignments for this teacher
+        $existingAssignments = AcademicYearStrandSubject::with(['academicYear', 'strand', 'subject'])
+            ->where('teacher_id', $teacher->id)
+            ->orderByDesc('created_at')
+            ->get();
+
+        return view('admin.teachers.assignments', compact('teacher', 'academicYears', 'strands', 'sections', 'subjects', 'existingAssignments'));
+    }
+
+    public function storeAssignment(Request $request, Teacher $teacher)
+    {
+        $data = $request->validate([
+            'academic_year_id' => 'required|exists:academic_years,id',
+            'strand_id' => 'required|exists:strands,id',
+            'subject_id' => 'required|exists:subjects,id',
+            'written_works_percentage' => 'nullable|numeric|min:0|max:100',
+            'performance_tasks_percentage' => 'nullable|numeric|min:0|max:100',
+            'quarterly_assessment_percentage' => 'nullable|numeric|min:0|max:100',
+        ]);
+
+        // Check if assignment already exists
+        $exists = AcademicYearStrandSubject::where('teacher_id', $teacher->id)
+            ->where('academic_year_id', $data['academic_year_id'])
+            ->where('strand_id', $data['strand_id'])
+            ->where('subject_id', $data['subject_id'])
+            ->exists();
+
+        if ($exists) {
+            return redirect()->back()->with('error', 'This assignment already exists for this teacher.');
+        }
+
+        // Create the assignment
+        AcademicYearStrandSubject::create([
+            'teacher_id' => $teacher->id,
+            'academic_year_id' => $data['academic_year_id'],
+            'strand_id' => $data['strand_id'],
+            'subject_id' => $data['subject_id'],
+            'written_works_percentage' => $data['written_works_percentage'] ?? 30,
+            'performance_tasks_percentage' => $data['performance_tasks_percentage'] ?? 50,
+            'quarterly_assessment_percentage' => $data['quarterly_assessment_percentage'] ?? 20,
+        ]);
+
+        return redirect()->route('admin.teachers.assignments', $teacher)
+            ->with('success', 'Assignment created successfully.');
+    }
+
+    public function deleteAssignment(Teacher $teacher, AcademicYearStrandSubject $assignment)
+    {
+        // Verify the assignment belongs to this teacher
+        if ($assignment->teacher_id !== $teacher->id) {
+            abort(403, 'Unauthorized action.');
+        }
+
+        $assignment->delete();
+
+        return redirect()->route('admin.teachers.assignments', $teacher)
+            ->with('success', 'Assignment deleted successfully.');
     }
 
     public function create()

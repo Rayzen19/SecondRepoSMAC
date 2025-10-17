@@ -50,8 +50,9 @@
                             <td><span class="badge bg-{{ $teacher->status === 'active' ? 'success' : 'secondary' }}">{{ ucfirst($teacher->status) }}</span></td>
                             <td>
                                 <div class="action-icon d-inline-flex align-items-center">
-                                    <a href="{{ route('admin.teachers.show', $teacher) }}" class="me-2"><i class="ti ti-eye"></i></a>
-                                    <a href="{{ route('admin.teachers.edit', $teacher) }}" class="me-2"><i class="ti ti-edit"></i></a>
+                                    <a href="{{ route('admin.teachers.show', $teacher) }}" class="me-2" title="View"><i class="ti ti-eye"></i></a>
+                                    <a href="{{ route('admin.teachers.edit', $teacher) }}" class="me-2" title="Edit"><i class="ti ti-edit"></i></a>
+                                    <a href="{{ route('admin.teachers.assignments', $teacher) }}" class="me-2" title="Assignment"><i class="ti ti-clipboard-text"></i></a>
 
                                     <form method="POST" action="{{ route('admin.teachers.destroy', $teacher) }}" onsubmit="return confirm('Are you sure you want to delete this teacher? This will also remove their login account.');">
                                         @csrf

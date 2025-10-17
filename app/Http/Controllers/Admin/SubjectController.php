@@ -97,4 +97,18 @@ class SubjectController extends Controller
     {
         return view('admin.subjects.show', compact('subject'));
     }
+
+    public function destroy(Subject $subject)
+    {
+        try {
+            $subject->delete();
+            return redirect()
+                ->route('admin.subjects.index')
+                ->with('success', 'Subject deleted successfully.');
+        } catch (\Exception $e) {
+            return redirect()
+                ->route('admin.subjects.index')
+                ->with('error', 'Unable to delete subject. It may be linked to other records.');
+        }
+    }
 }

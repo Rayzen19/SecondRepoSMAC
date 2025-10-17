@@ -53,6 +53,7 @@ Route::group(['prefix' => 'admin'], function () {
         Route::get('/subjects/{subject}', [App\Http\Controllers\Admin\SubjectController::class, 'show'])->name('admin.subjects.show');
         Route::get('/subjects/{subject}/edit', [App\Http\Controllers\Admin\SubjectController::class, 'edit'])->name('admin.subjects.edit');
         Route::put('/subjects/{subject}', [App\Http\Controllers\Admin\SubjectController::class, 'update'])->name('admin.subjects.update');
+        Route::delete('/subjects/{subject}', [App\Http\Controllers\Admin\SubjectController::class, 'destroy'])->name('admin.subjects.destroy');
 
         // Strand-Subject linking
         Route::get('/strand-subjects/create', [App\Http\Controllers\Admin\StrandSubjectController::class, 'create'])->name('admin.strand-subjects.create');
@@ -105,6 +106,9 @@ Route::group(['prefix' => 'admin'], function () {
         Route::get('/teachers/{teacher}/edit', [App\Http\Controllers\Admin\TeacherController::class, 'edit'])->name('admin.teachers.edit');
         Route::put('/teachers/{teacher}', [App\Http\Controllers\Admin\TeacherController::class, 'update'])->name('admin.teachers.update');
     Route::delete('/teachers/{teacher}', [App\Http\Controllers\Admin\TeacherController::class, 'destroy'])->name('admin.teachers.destroy');
+        Route::get('/teachers/{teacher}/assignments', [App\Http\Controllers\Admin\TeacherController::class, 'assignments'])->name('admin.teachers.assignments');
+        Route::post('/teachers/{teacher}/assignments', [App\Http\Controllers\Admin\TeacherController::class, 'storeAssignment'])->name('admin.teachers.assignments.store');
+        Route::delete('/teachers/{teacher}/assignments/{assignment}', [App\Http\Controllers\Admin\TeacherController::class, 'deleteAssignment'])->name('admin.teachers.assignments.delete');
         Route::get('/teachers/{teacher}/years/{academicYear}/assignments/{assignment}/students', [App\Http\Controllers\Admin\TeacherController::class, 'subjectStudents'])->name('admin.teachers.subject-students');
         Route::get('/teachers/{teacher}/years/{academicYear}/assignments/{assignment}/students/export', [App\Http\Controllers\Admin\TeacherController::class, 'exportSubjectStudents'])->name('admin.teachers.subject-students.export');
         Route::get('/teachers/{teacher}/years/{academicYear}/sections/{sectionAssignment}/students', [App\Http\Controllers\Admin\TeacherController::class, 'sectionStudents'])->name('admin.teachers.section-students');
@@ -222,6 +226,10 @@ Route::group(['prefix' => 'teacher'], function () {
     Route::post('/class-records/{assignment}/assessments', [App\Http\Controllers\Teacher\ClassRecordController::class, 'storeAssessment'])->name('teacher.class-records.assessments.store');
     Route::post('/class-records/{assignment}/scores', [App\Http\Controllers\Teacher\ClassRecordController::class, 'storeScores'])->name('teacher.class-records.scores.store');
     Route::post('/class-records/{assignment}/final-grades/submit', [App\Http\Controllers\Teacher\ClassRecordController::class, 'submitFinalGrades'])->name('teacher.class-records.final-grades.submit');
+        
+        // Students routes
+        Route::get('/students/sections/all', [App\Http\Controllers\Teacher\StudentController::class, 'allSections'])->name('teacher.students.all-sections');
+        Route::get('/students/sections/{sectionAssignment}', [App\Http\Controllers\Teacher\StudentController::class, 'section'])->name('teacher.students.section');
     });
 });
 
