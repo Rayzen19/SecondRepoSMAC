@@ -32,19 +32,7 @@ class SubjectController extends Controller
             'type' => 'required|in:core,applied,specialized',
             'semester' => 'required|in:1st,2nd',
             'strand_id' => 'required|exists:strands,id',
-            'written_works_percentage' => 'required|numeric|min:0|max:100',
-            'performance_tasks_percentage' => 'required|numeric|min:0|max:100',
-            'quarterly_assessment_percentage' => 'required|numeric|min:0|max:100',
         ]);
-
-        // Validate that percentages sum to 100
-        $percentageSum = $data['written_works_percentage'] + 
-                        $data['performance_tasks_percentage'] + 
-                        $data['quarterly_assessment_percentage'];
-        
-        if (abs($percentageSum - 100) > 0.01) {
-            return back()->withErrors(['written_works_percentage' => 'The three percentages must total 100%.'])->withInput();
-        }
 
         // Create the subject
         $subject = Subject::create([
@@ -56,14 +44,14 @@ class SubjectController extends Controller
             'semester' => $data['semester'],
         ]);
 
-        // Automatically link to the selected strand
+        // Automatically link to the selected strand with default percentages
         StrandSubject::create([
             'strand_id' => $data['strand_id'],
             'subject_id' => $subject->id,
             'semestral_period' => $data['semester'],
-            'written_works_percentage' => $data['written_works_percentage'],
-            'performance_tasks_percentage' => $data['performance_tasks_percentage'],
-            'quarterly_assessment_percentage' => $data['quarterly_assessment_percentage'],
+            'written_works_percentage' => 20,
+            'performance_tasks_percentage' => 60,
+            'quarterly_assessment_percentage' => 20,
             'is_active' => true,
         ]);
 
