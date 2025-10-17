@@ -16,6 +16,7 @@ class Subject extends Model
         'code',
         'name',
         'description',
+        'hours',
         'units',
         'type',
         'semester',

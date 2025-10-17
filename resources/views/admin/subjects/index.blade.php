@@ -34,14 +34,34 @@
                         <tr>
                             <th>Code</th>
                             <th>Name</th>
+                            <th>Strand(s)</th>
+                            <th>Type</th>
                             <th></th>
                         </tr>
                     </thead>
                     <tbody>
                         @foreach($subjects as $subject)
                         <tr>
-                            <td class="font-monospace">{{ $subject->code }}</td>
+                            <td class="font-monospace"><strong>{{ $subject->code }}</strong></td>
                             <td>{{ $subject->name }}</td>
+                            <td>
+                                @if($subject->strandSubjects && $subject->strandSubjects->count() > 0)
+                                    @foreach($subject->strandSubjects as $ss)
+                                        <span class="badge bg-primary me-1">{{ $ss->strand->code ?? 'N/A' }}</span>
+                                    @endforeach
+                                @else
+                                    <span class="text-muted">Not linked</span>
+                                @endif
+                            </td>
+                            <td>
+                                <span class="badge 
+                                    @if($subject->type === 'core') bg-success
+                                    @elseif($subject->type === 'applied') bg-info
+                                    @else bg-warning
+                                    @endif">
+                                    {{ ucfirst($subject->type) }}
+                                </span>
+                            </td>
                             <td>
                                 <div class="action-icon d-inline-flex">
                                     <a href="{{ route('admin.subjects.show', $subject) }}" class="me-2"><i class="ti ti-eye"></i></a>

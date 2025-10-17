@@ -8,6 +8,7 @@ use App\Models\Teacher;
 use App\Models\Section;
 use App\Models\Strand;
 use App\Models\SubjectRecordResult;
+use Illuminate\Support\Facades\DB;
 // use App\Models\Event; // Uncomment if Event model exists
 // use App\Models\Announcement; // Uncomment if Announcement model exists
 
@@ -22,12 +23,12 @@ class DashboardController extends Controller
         // $eventsCount = Event::count(); // Uncomment if Event model exists
         $eventsCount = 12; // Placeholder
 
-        // Recent Announcements (replace with Announcement::latest()->take(3)->get() if model exists)
-        $announcements = [
-            'Math Olympiad Winners Announced',
-            'New Library Opening Next Week',
-            'Community Outreach Program',
-        ];
+        // Recent Announcements (placeholder - replace with real model when available)
+        $recentMessages = collect([
+            (object)['title' => 'Math Olympiad Winners Announced', 'content' => 'Congratulations to our students who excelled in the regional competition.', 'created_at' => now()->subDays(1)],
+            (object)['title' => 'New Library Opening Next Week', 'content' => 'Our expanded library will be open to all students starting Monday.', 'created_at' => now()->subDays(3)],
+            (object)['title' => 'Community Outreach Program', 'content' => 'Join us for our annual community service event this Saturday.', 'created_at' => now()->subWeek()],
+        ]);
 
         // Student Performance Analytics (average grades by strand)
         $strands = Strand::all();
@@ -38,6 +39,37 @@ class DashboardController extends Controller
             })->avg('final_score'); // Use correct score column
             $performance[$strand->name] = round($avg ?? 0, 1);
         }
+
+        // Top Performing Students (Top 5 by average final score)
+        $topStudents = SubjectRecordResult::select(
+            'student_id',
+            DB::raw('AVG(final_score) as average_score')
+        )
+        ->with('student:id,student_number,first_name,last_name')
+        ->groupBy('student_id')
+        ->orderByDesc('average_score')
+        ->limit(5)
+        ->get()
+        ->map(function($result) {
+            return [
+                'student_number' => $result->student->student_number ?? 'N/A',
+                'name' => $result->student ? $result->student->first_name . ' ' . $result->student->last_name : 'N/A',
+                'average' => round($result->average_score, 2)
+            ];
+        });
+
+        // Pass/Fail Statistics (passing grade = 75)
+        $totalResults = SubjectRecordResult::count();
+        $passedCount = SubjectRecordResult::where('final_score', '>=', 75)->count();
+        $failedCount = $totalResults - $passedCount;
+        
+        $passFailStats = [
+            'total' => $totalResults,
+            'passed' => $passedCount,
+            'failed' => $failedCount,
+            'pass_rate' => $totalResults > 0 ? round(($passedCount / $totalResults) * 100, 1) : 0,
+            'fail_rate' => $totalResults > 0 ? round(($failedCount / $totalResults) * 100, 1) : 0,
+        ];
 
         // Attendance Overview (placeholder logic)
         $attendance = [
@@ -66,8 +98,10 @@ class DashboardController extends Controller
             'teachersCount',
             'sectionsCount',
             'eventsCount',
-            'announcements',
+            'recentMessages',
             'performance',
+            'topStudents',
+            'passFailStats',
             'attendance',
             'calendar'
         ));
