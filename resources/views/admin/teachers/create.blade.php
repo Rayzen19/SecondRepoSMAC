@@ -129,6 +129,21 @@
                             @error('status')<div class="text-danger small">{{ $message }}</div>@enderror
                         </div>
                     </div>
+                    <div class="col-md-12">
+                        <div class="mb-3">
+                            <label class="form-label">Subjects to Teach</label>
+                            <select name="subjects[]" class="form-select" multiple size="8">
+                                @foreach($subjects as $subject)
+                                    <option value="{{ $subject->id }}" 
+                                        @selected(in_array($subject->id, old('subjects', [])))>
+                                        {{ $subject->name }} @if($subject->code)({{ $subject->code }})@endif
+                                    </option>
+                                @endforeach
+                            </select>
+                            <small class="form-text text-muted">Hold Ctrl (Windows) or Command (Mac) to select multiple subjects</small>
+                            @error('subjects')<div class="text-danger small">{{ $message }}</div>@enderror
+                        </div>
+                    </div>
                 </div>
                 <a href="{{ url()->previous() }}" class="btn btn-outline-light border me-2">Cancel</a>
                 <button type="submit" class="btn btn-primary">Save</button>

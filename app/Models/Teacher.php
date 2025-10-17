@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 
 class Teacher extends Model
 {
@@ -36,5 +37,14 @@ class Teacher extends Model
     {
         $title = $this->gender === 'female' ? "Ma'am" : "Sir";
         return $title . ' ' . $this->last_name . ', ' . $this->first_name;
+    }
+
+    /**
+     * The subjects that the teacher can teach.
+     */
+    public function subjects(): BelongsToMany
+    {
+        return $this->belongsToMany(Subject::class, 'teacher_subject')
+            ->withTimestamps();
     }
 }

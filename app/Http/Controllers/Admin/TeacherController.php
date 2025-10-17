@@ -23,7 +23,7 @@ class TeacherController extends Controller
 {
     public function index()
     {
-        $teachers = Teacher::orderBy('last_name')->paginate(15);
+        $teachers = Teacher::with('subjects')->orderBy('last_name')->paginate(15);
         return view('admin.teachers.index', compact('teachers'));
     }
 
@@ -95,7 +95,8 @@ class TeacherController extends Controller
 
     public function create()
     {
-        return view('admin.teachers.create');
+        $subjects = Subject::orderBy('name')->get();
+        return view('admin.teachers.create', compact('subjects'));
     }
 
     public function store(Request $request)
@@ -115,9 +116,16 @@ class TeacherController extends Controller
             'term' => 'required|string|max:255',
             'status' => 'required|in:active,inactive,retired,resigned',
             'profile_picture' => 'nullable|string|max:255',
+            'subjects' => 'nullable|array',
+            'subjects.*' => 'exists:subjects,id',
         ]);
 
         $teacher = Teacher::create($data);
+
+        // Attach subjects the teacher can teach
+        if (isset($data['subjects'])) {
+            $teacher->subjects()->attach($data['subjects']);
+        }
 
         // Create corresponding auth user so the teacher can log in
         $initialPassword = Str::random(12);
@@ -210,7 +218,8 @@ class TeacherController extends Controller
 
     public function edit(Teacher $teacher)
     {
-        return view('admin.teachers.edit', compact('teacher'));
+        $subjects = Subject::orderBy('name')->get();
+        return view('admin.teachers.edit', compact('teacher', 'subjects'));
     }
 
     public function update(Request $request, Teacher $teacher)
@@ -230,9 +239,18 @@ class TeacherController extends Controller
             'term' => 'required|string|max:255',
             'status' => 'required|in:active,inactive,retired,resigned',
             'profile_picture' => 'nullable|string|max:255',
+            'subjects' => 'nullable|array',
+            'subjects.*' => 'exists:subjects,id',
         ]);
 
         $teacher->update($data);
+
+        // Sync the subjects the teacher can teach
+        if (isset($data['subjects'])) {
+            $teacher->subjects()->sync($data['subjects']);
+        } else {
+            $teacher->subjects()->sync([]);
+        }
 
         // Keep auth user in sync if present
         $user = User::where('type', 'teacher')->where('user_pk_id', $teacher->id)->first();

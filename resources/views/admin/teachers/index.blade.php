@@ -35,7 +35,7 @@
                             <th>Emp #</th>
                             <th>Name</th>
                             <th>Email</th>
-                            <th>Department</th>
+                            <th>Subjects Handled</th>
                             <th>Status</th>
                             <th></th>
                         </tr>
@@ -46,7 +46,18 @@
                             <td class="font-monospace">{{ $teacher->employee_number }}</td>
                             <td>{{ $teacher->last_name }}, {{ $teacher->first_name }} {{ $teacher->middle_name }}</td>
                             <td>{{ $teacher->email }}</td>
-                            <td>{{ $teacher->department }}</td>
+                            <td>
+                                @if($teacher->subjects->isNotEmpty())
+                                    @foreach($teacher->subjects->take(3) as $subject)
+                                        <span class="badge bg-info text-dark me-1">{{ $subject->name }}</span>
+                                    @endforeach
+                                    @if($teacher->subjects->count() > 3)
+                                        <span class="badge bg-secondary">+{{ $teacher->subjects->count() - 3 }} more</span>
+                                    @endif
+                                @else
+                                    <span class="text-muted small">No subjects</span>
+                                @endif
+                            </td>
                             <td><span class="badge bg-{{ $teacher->status === 'active' ? 'success' : 'secondary' }}">{{ ucfirst($teacher->status) }}</span></td>
                             <td>
                                 <div class="action-icon d-inline-flex align-items-center">

@@ -51,6 +51,7 @@ Route::group(['prefix' => 'admin'], function () {
         Route::get('/subjects/create', [App\Http\Controllers\Admin\SubjectController::class, 'create'])->name('admin.subjects.create');
         Route::post('/subjects', [App\Http\Controllers\Admin\SubjectController::class, 'store'])->name('admin.subjects.store');
         Route::get('/subjects/{subject}', [App\Http\Controllers\Admin\SubjectController::class, 'show'])->name('admin.subjects.show');
+        Route::get('/subjects/{subject}/teachers', [App\Http\Controllers\Admin\SubjectController::class, 'teachers'])->name('admin.subjects.teachers');
         Route::get('/subjects/{subject}/edit', [App\Http\Controllers\Admin\SubjectController::class, 'edit'])->name('admin.subjects.edit');
         Route::put('/subjects/{subject}', [App\Http\Controllers\Admin\SubjectController::class, 'update'])->name('admin.subjects.update');
         Route::delete('/subjects/{subject}', [App\Http\Controllers\Admin\SubjectController::class, 'destroy'])->name('admin.subjects.destroy');
@@ -168,6 +169,16 @@ Route::group(['prefix' => 'admin'], function () {
         Route::put('/attendance/{log}', [App\Http\Controllers\Admin\AttendanceLogController::class, 'update'])->name('admin.attendance.update');
         Route::delete('/attendance/{log}', [App\Http\Controllers\Admin\AttendanceLogController::class, 'destroy'])->name('admin.attendance.destroy');
         Route::get('/attendance-export', [App\Http\Controllers\Admin\AttendanceLogController::class, 'export'])->name('admin.attendance.export');
+
+        // Assigning List
+        Route::get('/assigning-list', [App\Http\Controllers\Admin\AssigningListController::class, 'index'])->name('admin.assigning-list.index');
+        Route::post('/assigning-list/save-assignments', [App\Http\Controllers\Admin\AssigningListController::class, 'saveAssignments'])->name('admin.assigning-list.save-assignments');
+
+        // Section & Advisers Management (separate page)
+        Route::get('/section-advisers', [App\Http\Controllers\Admin\SectionAdviserController::class, 'index'])->name('admin.section-advisers.index');
+        Route::post('/section-advisers/save-advisers', [App\Http\Controllers\Admin\SectionAdviserController::class, 'saveAdvisers'])->name('admin.section-advisers.save-advisers');
+        Route::post('/section-advisers/get-students', [App\Http\Controllers\Admin\SectionAdviserController::class, 'getStudents'])->name('admin.section-advisers.get-students');
+    Route::post('/section-advisers/remove-student', [App\Http\Controllers\Admin\SectionAdviserController::class, 'removeStudent'])->name('admin.section-advisers.remove-student');
 
         // Student Enrollments
         Route::get('/student-enrollments', [App\Http\Controllers\Admin\StudentEnrollmentController::class, 'index'])->name('admin.student-enrollments.index');

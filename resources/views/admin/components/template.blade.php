@@ -183,6 +183,18 @@
                                     </a>
                                 </li>
 
+                                <li class="{{ request()->routeIs('admin.section-advisers.*') ? 'active' : '' }}">
+                                    <a class="{{ request()->routeIs('admin.section-advisers.*') ? 'active' : '' }}" href="{{ route('admin.section-advisers.index') }}">
+                                        <i class="ti ti-users-group"></i><span>Section & Advisers</span>
+                                    </a>
+                                </li>
+
+                                <li class="{{ request()->routeIs('admin.assigning-list.*') ? 'active' : '' }}">
+                                    <a class="{{ request()->routeIs('admin.assigning-list.*') ? 'active' : '' }}" href="{{ route('admin.assigning-list.index') }}">
+                                        <i class="ti ti-list-check"></i><span>Assigning List</span>
+                                    </a>
+                                </li>
+
                                         @auth('admin')
                                         <!-- <li class="{{ request()->routeIs('admin.messages.*') ? 'active' : '' }}">
                                             <a class="{{ request()->routeIs('admin.messages.*') ? 'active' : '' }}" href="{{ route('admin.messages.messenger') }}">

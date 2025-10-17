@@ -67,6 +67,7 @@
                             <th>Code</th>
                             <th>Name</th>
                             <th>Strand(s)</th>
+                            <th>Grade Level</th>
                             <th>Semester</th>
                             <th></th>
                         </tr>
@@ -85,9 +86,26 @@
                                     <span class="text-muted">Not linked</span>
                                 @endif
                             </td>
+                            <td>
+                                @if($subject->strandSubjects && $subject->strandSubjects->count() > 0)
+                                    @php
+                                        $gradeLevels = $subject->strandSubjects->pluck('grade_level')->filter()->unique()->sort()->values();
+                                    @endphp
+                                    @if($gradeLevels->count() > 0)
+                                        @foreach($gradeLevels as $level)
+                                            <span class="badge bg-success me-1">Grade {{ $level }}</span>
+                                        @endforeach
+                                    @else
+                                        <span class="text-muted">N/A</span>
+                                    @endif
+                                @else
+                                    <span class="text-muted">N/A</span>
+                                @endif
+                            </td>
                             <td><span class="badge bg-secondary">{{ $subject->semester }}</span></td>
                             <td>
                                 <div class="action-icon d-inline-flex">
+                                    <a href="{{ route('admin.subjects.teachers', $subject) }}" class="me-2" title="View Teachers"><i class="ti ti-users"></i></a>
                                     <a href="{{ route('admin.subjects.show', $subject) }}" class="me-2"><i class="ti ti-eye"></i></a>
                                     <a href="{{ route('admin.subjects.edit', $subject) }}" class="me-2"><i class="ti ti-edit"></i></a>
                                     <form action="{{ route('admin.subjects.destroy', $subject) }}" method="POST" class="d-inline" onsubmit="return confirm('Are you sure you want to delete this subject?');">
@@ -119,6 +137,7 @@
                             <th>Code</th>
                             <th>Name</th>
                             <th>Strand(s)</th>
+                            <th>Grade Level</th>
                             <th>Semester</th>
                             <th></th>
                         </tr>
@@ -137,9 +156,26 @@
                                     <span class="text-muted">Not linked</span>
                                 @endif
                             </td>
+                            <td>
+                                @if($subject->strandSubjects && $subject->strandSubjects->count() > 0)
+                                    @php
+                                        $gradeLevels = $subject->strandSubjects->pluck('grade_level')->filter()->unique()->sort()->values();
+                                    @endphp
+                                    @if($gradeLevels->count() > 0)
+                                        @foreach($gradeLevels as $level)
+                                            <span class="badge bg-success me-1">Grade {{ $level }}</span>
+                                        @endforeach
+                                    @else
+                                        <span class="text-muted">N/A</span>
+                                    @endif
+                                @else
+                                    <span class="text-muted">N/A</span>
+                                @endif
+                            </td>
                             <td><span class="badge bg-secondary">{{ $subject->semester }}</span></td>
                             <td>
                                 <div class="action-icon d-inline-flex">
+                                    <a href="{{ route('admin.subjects.teachers', $subject) }}" class="me-2" title="View Teachers"><i class="ti ti-users"></i></a>
                                     <a href="{{ route('admin.subjects.show', $subject) }}" class="me-2"><i class="ti ti-eye"></i></a>
                                     <a href="{{ route('admin.subjects.edit', $subject) }}" class="me-2"><i class="ti ti-edit"></i></a>
                                     <form action="{{ route('admin.subjects.destroy', $subject) }}" method="POST" class="d-inline" onsubmit="return confirm('Are you sure you want to delete this subject?');">
@@ -171,6 +207,7 @@
                             <th>Code</th>
                             <th>Name</th>
                             <th>Strand(s)</th>
+                            <th>Grade Level</th>
                             <th>Semester</th>
                             <th></th>
                         </tr>
@@ -189,9 +226,26 @@
                                     <span class="text-muted">Not linked</span>
                                 @endif
                             </td>
+                            <td>
+                                @if($subject->strandSubjects && $subject->strandSubjects->count() > 0)
+                                    @php
+                                        $gradeLevels = $subject->strandSubjects->pluck('grade_level')->filter()->unique()->sort()->values();
+                                    @endphp
+                                    @if($gradeLevels->count() > 0)
+                                        @foreach($gradeLevels as $level)
+                                            <span class="badge bg-success me-1">Grade {{ $level }}</span>
+                                        @endforeach
+                                    @else
+                                        <span class="text-muted">N/A</span>
+                                    @endif
+                                @else
+                                    <span class="text-muted">N/A</span>
+                                @endif
+                            </td>
                             <td><span class="badge bg-secondary">{{ $subject->semester }}</span></td>
                             <td>
                                 <div class="action-icon d-inline-flex">
+                                    <a href="{{ route('admin.subjects.teachers', $subject) }}" class="me-2" title="View Teachers"><i class="ti ti-users"></i></a>
                                     <a href="{{ route('admin.subjects.show', $subject) }}" class="me-2"><i class="ti ti-eye"></i></a>
                                     <a href="{{ route('admin.subjects.edit', $subject) }}" class="me-2"><i class="ti ti-edit"></i></a>
                                     <form action="{{ route('admin.subjects.destroy', $subject) }}" method="POST" class="d-inline" onsubmit="return confirm('Are you sure you want to delete this subject?');">

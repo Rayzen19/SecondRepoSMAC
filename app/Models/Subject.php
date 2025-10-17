@@ -48,4 +48,13 @@ class Subject extends Model
             ])
             ->withTimestamps();
     }
+
+    /**
+     * The teachers qualified to teach this subject.
+     */
+    public function teachers(): BelongsToMany
+    {
+        return $this->belongsToMany(Teacher::class, 'teacher_subject')
+            ->withTimestamps();
+    }
 }

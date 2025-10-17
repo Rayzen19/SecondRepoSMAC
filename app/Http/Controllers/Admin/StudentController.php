@@ -344,9 +344,13 @@ class StudentController extends Controller
             'guardian_contact' => 'required|string|unique:students,guardian_contact,' . $student->id,
             'guardian_email' => 'required|email|unique:students,guardian_email,' . $student->id,
             'program' => 'required|string|max:255',
+            'grade_level' => 'required|string|in:Grade 11,Grade 12',
             'status' => 'required|in:active,graduated,dropped',
         ]);
 
+        // Update the academic_year field with the selected grade_level
+        $validated['academic_year'] = $validated['grade_level'];
+        unset($validated['grade_level']);
 
         $student->update($validated);
         return redirect()->route('admin.students.index')->with('success', 'Student updated successfully.');

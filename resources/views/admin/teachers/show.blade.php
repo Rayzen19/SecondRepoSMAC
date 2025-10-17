@@ -98,6 +98,22 @@
                     </div>
                 </div>
             </div>
+            @if($teacher->subjects->isNotEmpty())
+            <div class="row mt-4">
+                <div class="col-12">
+                    <div class="border rounded-3 p-3">
+                        <div class="text-muted small mb-2">Qualified Subjects to Teach</div>
+                        <div class="d-flex flex-wrap gap-2">
+                            @foreach($teacher->subjects as $subject)
+                                <span class="badge bg-info text-dark">
+                                    {{ $subject->name }}@if($subject->code) ({{ $subject->code }})@endif
+                                </span>
+                            @endforeach
+                        </div>
+                    </div>
+                </div>
+            </div>
+            @endif
             <div class="small text-muted mt-3">Last Updated: {{ $teacher->updated_at }}</div>
         </div>
     </div>

@@ -139,10 +139,22 @@
                         </div>
                         <div class="col-md-6">
                             <div class="mb-3">
+                                <label class="form-label">Grade Level <span class="text-danger">*</span></label>
+                                <select name="grade_level" class="form-select" required>
+                                    <option value="" disabled {{ old('grade_level', $student->academic_year) ? '' : 'selected' }}>Select grade level</option>
+                                    <option value="Grade 11" {{ old('grade_level', $student->academic_year) == 'Grade 11' ? 'selected' : '' }}>Grade 11</option>
+                                    <option value="Grade 12" {{ old('grade_level', $student->academic_year) == 'Grade 12' ? 'selected' : '' }}>Grade 12</option>
+                                </select>
+                                @error('grade_level')<div class="text-danger small">{{ $message }}</div>@enderror
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
                                 <label class="form-label">Academic Year <span class="text-danger">*</span></label>
                                 <input type="text" name="academic_year_id" class="form-control" style="display: none;" value="{{ old('academic_year_id', $student->academic_year_id) }}" disabled="true" required>
                                 <input type="text" name="academic_year" class="form-control" value="{{ old('academic_year', $student->academic_year) }}" disabled="true">
                                 @error('academic_year')<div class="text-danger small">{{ $message }}</div>@enderror
+                                <small class="text-muted">This is the enrolled academic year period, not the grade level</small>
                             </div>
                         </div>
                         <div class="col-md-6">
