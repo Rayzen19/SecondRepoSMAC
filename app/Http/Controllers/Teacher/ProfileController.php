@@ -24,11 +24,7 @@ class ProfileController extends Controller
                     ->with(['academicYear', 'strand', 'section']);
             },
             'teachingAssignments' => function ($query) {
-                // Only include teaching assignments for the active academic year
-                $query->whereHas('academicYear', function ($q) {
-                        $q->where('is_active', true);
-                    })
-                    ->with([
+                $query->with([
                     'academicYear',
                     'strand',
                     'subject',
