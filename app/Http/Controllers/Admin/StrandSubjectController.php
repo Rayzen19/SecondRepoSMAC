@@ -25,6 +25,7 @@ class StrandSubjectController extends Controller
     public function update(Request $request, StrandSubject $strandSubject)
     {
         $data = $request->validate([
+            'grade_level' => ['nullable', 'in:11,12'],
             'semestral_period' => ['nullable', 'string', 'max:100'],
             'written_works_percentage' => ['required', 'numeric', 'min:0', 'max:100'],
             'performance_tasks_percentage' => ['required', 'numeric', 'min:0', 'max:100'],
@@ -81,6 +82,7 @@ class StrandSubjectController extends Controller
                     return $q->where('subject_id', $request->input('subject_id'));
                 }),
             ],
+            'grade_level' => ['nullable', 'in:11,12'],
             'semestral_period' => ['nullable', 'string', 'max:100'],
             'written_works_percentage' => ['required', 'numeric', 'min:0', 'max:100'],
             'performance_tasks_percentage' => ['required', 'numeric', 'min:0', 'max:100'],
@@ -112,5 +114,21 @@ class StrandSubjectController extends Controller
 
         return redirect()->route('admin.subjects.show', $data['subject_id'])
             ->with('success', 'Subject linked to strand successfully.');
+    }
+
+    public function destroy(StrandSubject $strandSubject)
+    {
+        $strandId = $strandSubject->strand_id;
+        
+        try {
+            $strandSubject->delete();
+            return redirect()
+                ->route('admin.strands.show', $strandId)
+                ->with('success', 'Subject removed from strand successfully.');
+        } catch (\Exception $e) {
+            return redirect()
+                ->route('admin.strands.show', $strandId)
+                ->with('error', 'Unable to remove subject from strand.');
+        }
     }
 }

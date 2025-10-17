@@ -57,4 +57,18 @@ class StrandController extends Controller
 
         return redirect()->route('admin.strands.show', $strand)->with('success', 'Strand updated successfully.');
     }
+
+    public function destroy(Strand $strand)
+    {
+        try {
+            $strand->delete();
+            return redirect()
+                ->route('admin.strands.index')
+                ->with('success', 'Strand deleted successfully.');
+        } catch (\Exception $e) {
+            return redirect()
+                ->route('admin.strands.index')
+                ->with('error', 'Unable to delete strand. It may be linked to other records.');
+        }
+    }
 }

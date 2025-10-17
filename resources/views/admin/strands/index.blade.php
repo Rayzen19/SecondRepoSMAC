@@ -40,16 +40,23 @@
                     </thead>
                     <tbody>
                         @foreach($strands as $strand)
-                        <tr>
+                        <tr class="clickable-row" data-href="{{ route('admin.strands.show', $strand) }}" style="cursor: pointer;">
                             <td class="font-monospace">{{ $strand->code }}</td>
                             <td>{{ $strand->name }}</td>
                             <td>
                                 <span class="badge bg-{{ $strand->is_active ? 'success' : 'secondary' }}">{{ $strand->is_active ? 'Active' : 'Inactive' }}</span>
                             </td>
                             <td>
-                                <div class="action-icon d-inline-flex">
+                                <div class="action-icon d-inline-flex" onclick="event.stopPropagation();">
                                     <a href="{{ route('admin.strands.show', $strand) }}" class="me-2"><i class="ti ti-eye"></i></a>
-                                    <a href="{{ route('admin.strands.edit', $strand) }}"><i class="ti ti-edit"></i></a>
+                                    <a href="{{ route('admin.strands.edit', $strand) }}" class="me-2"><i class="ti ti-edit"></i></a>
+                                    <form action="{{ route('admin.strands.destroy', $strand) }}" method="POST" class="d-inline" onsubmit="return confirm('Are you sure you want to delete this strand?');">
+                                        @csrf
+                                        @method('DELETE')
+                                        <button type="submit" class="btn btn-link p-0 text-danger" title="Delete">
+                                            <i class="ti ti-trash"></i>
+                                        </button>
+                                    </form>
                                 </div>
                             </td>
                         </tr>
@@ -60,4 +67,26 @@
         </div>
     </div>
 </div>
+
+<style>
+    .clickable-row:hover {
+        background-color: #f8f9fa;
+        transition: background-color 0.2s ease;
+    }
+    
+    .clickable-row:active {
+        background-color: #e9ecef;
+    }
+</style>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const rows = document.querySelectorAll('.clickable-row');
+        rows.forEach(row => {
+            row.addEventListener('click', function() {
+                window.location.href = this.dataset.href;
+            });
+        });
+    });
+</script>
 @endsection

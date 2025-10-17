@@ -32,6 +32,7 @@ class SubjectController extends Controller
             'type' => 'required|in:core,applied,specialized',
             'semester' => 'required|in:1st,2nd',
             'strand_id' => 'required|exists:strands,id',
+            'grade_level' => 'nullable|in:11,12',
             'written_works_percentage' => 'required|numeric|min:0|max:100',
             'performance_tasks_percentage' => 'required|numeric|min:0|max:100',
             'quarterly_assessment_percentage' => 'required|numeric|min:0|max:100',
@@ -60,6 +61,7 @@ class SubjectController extends Controller
         StrandSubject::create([
             'strand_id' => $data['strand_id'],
             'subject_id' => $subject->id,
+            'grade_level' => $data['grade_level'] ?? null,
             'semestral_period' => $data['semester'],
             'written_works_percentage' => $data['written_works_percentage'],
             'performance_tasks_percentage' => $data['performance_tasks_percentage'],

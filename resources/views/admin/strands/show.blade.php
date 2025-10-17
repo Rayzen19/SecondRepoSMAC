@@ -60,6 +60,13 @@
                         </button>
                     </li>
                     <li class="nav-item ms-2" role="presentation">
+                        <button class="nav-link px-4 rounded-pill d-flex align-items-center" id="subjects-tab" data-bs-toggle="tab" data-bs-target="#subjects" type="button" role="tab" aria-controls="subjects" aria-selected="false">
+                            <i class="ti ti-book me-2"></i>
+                            Subjects
+                            <span class="badge bg-white text-muted ms-2">{{ ($strand->strandSubjects?->count()) ?? 0 }}</span>
+                        </button>
+                    </li>
+                    <li class="nav-item ms-2" role="presentation">
                         <button class="nav-link px-4 rounded-pill d-flex align-items-center" id="first-tab" data-bs-toggle="tab" data-bs-target="#first" type="button" role="tab" aria-controls="first" aria-selected="false">
                             <i class="ti ti-book me-2"></i>
                             1st Semester
@@ -101,9 +108,80 @@
                     </div>
 
                     @php
-                        $firstSem = ($strand->strandSubjects ?? collect())->where('semestral_period', '1st');
-                        $secondSem = ($strand->strandSubjects ?? collect())->where('semestral_period', '2nd');
+                        $allSubjects = $strand->strandSubjects ?? collect();
+                        $firstSem = $allSubjects->where('semestral_period', '1st');
+                        $secondSem = $allSubjects->where('semestral_period', '2nd');
                     @endphp
+
+                    <!-- New Subjects Tab with Grade Filter -->
+                    <div class="tab-pane fade" id="subjects" role="tabpanel" aria-labelledby="subjects-tab">
+                        <div class="mb-3">
+                            <label for="gradeFilter" class="form-label">Filter by Grade Level:</label>
+                            <select id="gradeFilter" class="form-select" style="max-width: 200px;">
+                                <option value="all">All Grades</option>
+                                <option value="11">Grade 11</option>
+                                <option value="12">Grade 12</option>
+                            </select>
+                        </div>
+                        
+                        @if($allSubjects->isNotEmpty())
+                            <div class="table-responsive mt-3">
+                                <table class="table table-striped table-bordered" id="allSubjectsTable">
+                                    <thead>
+                                    <tr>
+                                        <th>Subject Code</th>
+                                        <th>Subject Name</th>
+                                        <th>Grade Level</th>
+                                        <th>Semester</th>
+                                        <th>Written %</th>
+                                        <th>Performance %</th>
+                                        <th>Quarterly %</th>
+                                        <th>Status</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                    </thead>
+                                    <tbody>
+                                    @foreach($allSubjects as $pivot)
+                                        <tr data-grade="{{ $pivot->grade_level ?? 'unknown' }}">
+                                            <td class="font-monospace">{{ $pivot->subject?->code }}</td>
+                                            <td>{{ $pivot->subject?->name }}</td>
+                                            <td>
+                                                <span class="badge bg-info">Grade {{ $pivot->grade_level ?? 'N/A' }}</span>
+                                            </td>
+                                            <td>
+                                                <span class="badge bg-{{ $pivot->semestral_period == '1st' ? 'primary' : 'success' }}">
+                                                    {{ $pivot->semestral_period }} Semester
+                                                </span>
+                                            </td>
+                                            <td>{{ rtrim(rtrim(number_format($pivot->written_works_percentage, 2), '0'), '.') }}%</td>
+                                            <td>{{ rtrim(rtrim(number_format($pivot->performance_tasks_percentage, 2), '0'), '.') }}%</td>
+                                            <td>{{ rtrim(rtrim(number_format($pivot->quarterly_assessment_percentage, 2), '0'), '.') }}%</td>
+                                            <td>
+                                                <span class="badge bg-{{ $pivot->is_active ? 'success' : 'secondary' }}">{{ $pivot->is_active ? 'Active' : 'Inactive' }}</span>
+                                            </td>
+                                            <td>
+                                                <div class="d-flex gap-1">
+                                                    <a href="{{ route('admin.strand-subjects.edit', ['strandSubject' => $pivot->id, 'return_to' => 'strand']) }}" class="btn btn-sm btn-outline-primary" title="Edit">
+                                                        <i class="ti ti-edit"></i>
+                                                    </a>
+                                                    <form action="{{ route('admin.strand-subjects.destroy', $pivot->id) }}" method="POST" class="d-inline" onsubmit="return confirm('Are you sure you want to remove this subject from the strand?');">
+                                                        @csrf
+                                                        @method('DELETE')
+                                                        <button type="submit" class="btn btn-sm btn-outline-danger" title="Delete">
+                                                            <i class="ti ti-trash"></i>
+                                                        </button>
+                                                    </form>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    @endforeach
+                                    </tbody>
+                                </table>
+                            </div>
+                        @else
+                            <p class="mt-3 mb-0">No subjects linked to this strand yet.</p>
+                        @endif
+                    </div>
 
                     <div class="tab-pane fade" id="first" role="tabpanel" aria-labelledby="first-tab">
                         @if($firstSem->isNotEmpty())
@@ -116,6 +194,7 @@
                                         <th>Performance %</th>
                                         <th>Quarterly %</th>
                                         <th>Status</th>
+                                        <th>Actions</th>
                                     </tr>
                                     </thead>
                                     <tbody>
@@ -129,7 +208,20 @@
                                             <td>{{ rtrim(rtrim(number_format($pivot->quarterly_assessment_percentage, 2), '0'), '.') }}%</td>
                                             <td>
                                                 <span class="badge bg-{{ $pivot->is_active ? 'success' : 'secondary' }}">{{ $pivot->is_active ? 'Active' : 'Inactive' }}</span>
-                                                <a href="{{ route('admin.strand-subjects.edit', ['strandSubject' => $pivot->id, 'return_to' => 'strand']) }}" class="btn btn-sm btn-outline-primary ms-2">Edit</a>
+                                            </td>
+                                            <td>
+                                                <div class="d-flex gap-1">
+                                                    <a href="{{ route('admin.strand-subjects.edit', ['strandSubject' => $pivot->id, 'return_to' => 'strand']) }}" class="btn btn-sm btn-outline-primary" title="Edit">
+                                                        <i class="ti ti-edit"></i>
+                                                    </a>
+                                                    <form action="{{ route('admin.strand-subjects.destroy', $pivot->id) }}" method="POST" class="d-inline" onsubmit="return confirm('Are you sure you want to remove this subject from the strand?');">
+                                                        @csrf
+                                                        @method('DELETE')
+                                                        <button type="submit" class="btn btn-sm btn-outline-danger" title="Delete">
+                                                            <i class="ti ti-trash"></i>
+                                                        </button>
+                                                    </form>
+                                                </div>
                                             </td>
                                         </tr>
                                     @endforeach
@@ -152,6 +244,7 @@
                                         <th>Performance %</th>
                                         <th>Quarterly %</th>
                                         <th>Status</th>
+                                        <th>Actions</th>
                                     </tr>
                                     </thead>
                                     <tbody>
@@ -165,7 +258,20 @@
                                             <td>{{ rtrim(rtrim(number_format($pivot->quarterly_assessment_percentage, 2), '0'), '.') }}%</td>
                                             <td>
                                                 <span class="badge bg-{{ $pivot->is_active ? 'success' : 'secondary' }}">{{ $pivot->is_active ? 'Active' : 'Inactive' }}</span>
-                                                <a href="{{ route('admin.strand-subjects.edit', ['strandSubject' => $pivot->id, 'return_to' => 'strand']) }}" class="btn btn-sm btn-outline-primary ms-2">Edit</a>
+                                            </td>
+                                            <td>
+                                                <div class="d-flex gap-1">
+                                                    <a href="{{ route('admin.strand-subjects.edit', ['strandSubject' => $pivot->id, 'return_to' => 'strand']) }}" class="btn btn-sm btn-outline-primary" title="Edit">
+                                                        <i class="ti ti-edit"></i>
+                                                    </a>
+                                                    <form action="{{ route('admin.strand-subjects.destroy', $pivot->id) }}" method="POST" class="d-inline" onsubmit="return confirm('Are you sure you want to remove this subject from the strand?');">
+                                                        @csrf
+                                                        @method('DELETE')
+                                                        <button type="submit" class="btn btn-sm btn-outline-danger" title="Delete">
+                                                            <i class="ti ti-trash"></i>
+                                                        </button>
+                                                    </form>
+                                                </div>
                                             </td>
                                         </tr>
                                     @endforeach
@@ -181,4 +287,29 @@
         </div>
     </div>
 </div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const gradeFilter = document.getElementById('gradeFilter');
+        const tableRows = document.querySelectorAll('#allSubjectsTable tbody tr');
+        
+        if (gradeFilter && tableRows.length > 0) {
+            gradeFilter.addEventListener('change', function() {
+                const selectedGrade = this.value;
+                
+                tableRows.forEach(row => {
+                    const rowGrade = row.getAttribute('data-grade');
+                    
+                    if (selectedGrade === 'all') {
+                        row.style.display = '';
+                    } else if (rowGrade === selectedGrade) {
+                        row.style.display = '';
+                    } else {
+                        row.style.display = 'none';
+                    }
+                });
+            });
+        }
+    });
+</script>
 @endsection

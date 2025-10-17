@@ -136,6 +136,17 @@
                     @endif
                     <div class="col-md-6">
                         <div class="mb-3">
+                            <label class="form-label">Grade Level</label>
+                            <select name="grade_level" class="form-select">
+                                <option value="">Select Grade Level</option>
+                                <option value="11" @selected(old('grade_level') == '11')>Grade 11</option>
+                                <option value="12" @selected(old('grade_level') == '12')>Grade 12</option>
+                            </select>
+                            @error('grade_level')<div class="text-danger small">{{ $message }}</div>@enderror
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="mb-3">
                             <label class="form-label">Semestral Period</label>
                             <select name="semestral_period" class="form-select">
                                 <option value="">Select Semestral Period</option>

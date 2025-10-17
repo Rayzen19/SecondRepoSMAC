@@ -60,6 +60,7 @@ Route::group(['prefix' => 'admin'], function () {
         Route::post('/strand-subjects', [App\Http\Controllers\Admin\StrandSubjectController::class, 'store'])->name('admin.strand-subjects.store');
         Route::get('/strand-subjects/{strandSubject}/edit', [App\Http\Controllers\Admin\StrandSubjectController::class, 'edit'])->name('admin.strand-subjects.edit');
         Route::put('/strand-subjects/{strandSubject}', [App\Http\Controllers\Admin\StrandSubjectController::class, 'update'])->name('admin.strand-subjects.update');
+        Route::delete('/strand-subjects/{strandSubject}', [App\Http\Controllers\Admin\StrandSubjectController::class, 'destroy'])->name('admin.strand-subjects.destroy');
 
         // Strands
         Route::get('/strands', [App\Http\Controllers\Admin\StrandController::class, 'index'])->name('admin.strands.index');
@@ -68,6 +69,7 @@ Route::group(['prefix' => 'admin'], function () {
         Route::get('/strands/{strand}', [App\Http\Controllers\Admin\StrandController::class, 'show'])->name('admin.strands.show');
         Route::get('/strands/{strand}/edit', [App\Http\Controllers\Admin\StrandController::class, 'edit'])->name('admin.strands.edit');
         Route::put('/strands/{strand}', [App\Http\Controllers\Admin\StrandController::class, 'update'])->name('admin.strands.update');
+        Route::delete('/strands/{strand}', [App\Http\Controllers\Admin\StrandController::class, 'destroy'])->name('admin.strands.destroy');
 
         // Academic Years
         Route::get('/academic-years', [App\Http\Controllers\Admin\AcademicYearController::class, 'index'])->name('admin.academic-years.index');

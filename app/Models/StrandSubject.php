@@ -16,6 +16,7 @@ class StrandSubject extends Model
     protected $fillable = [
         'strand_id',
         'subject_id',
+        'grade_level',
         'semestral_period',
         'written_works_percentage',
         'performance_tasks_percentage',
