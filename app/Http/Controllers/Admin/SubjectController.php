@@ -10,10 +10,27 @@ use Illuminate\Http\Request;
 
 class SubjectController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
-        $subjects = Subject::with(['strandSubjects.strand'])->orderBy('code')->paginate(15);
-        return view('admin.subjects.index', compact('subjects'));
+        $query = Subject::with(['strandSubjects.strand'])->orderBy('code');
+        
+        // Filter by strand if specified
+        if ($request->filled('strand_id')) {
+            $query->whereHas('strandSubjects', function($q) use ($request) {
+                $q->where('strand_id', $request->strand_id);
+            });
+        }
+        
+        $allSubjects = $query->get();
+        
+        // Group subjects by type
+        $coreSubjects = $allSubjects->where('type', 'core');
+        $appliedSubjects = $allSubjects->where('type', 'applied');
+        $specializedSubjects = $allSubjects->where('type', 'specialized');
+        
+        $strands = Strand::where('is_active', true)->orderBy('code')->get();
+        
+        return view('admin.subjects.index', compact('coreSubjects', 'appliedSubjects', 'specializedSubjects', 'strands'));
     }
 
     public function create()

@@ -28,10 +28,11 @@ class DatabaseSeeder extends Seeder
 
         // Seed core reference data first
         $this->call([
-            SubjectsTableSeeder::class,
             AcademicYearsTableSeeder::class,
             SectionsTableSeeder::class,
             StrandsTableSeeder::class,
+            SubjectsTableSeeder::class,
+            AllShsSubjectsSeeder::class, // All SHS subjects for all strands (replaces individual seeders)
             TeachersTableSeeder::class,
             GuardiansTableSeeder::class,
             StudentsTableSeeder::class,
