@@ -16,6 +16,7 @@ class AcademicYearStrandSubject extends Model
         'strand_id',
         'subject_id',
         'teacher_id',
+        'academic_year_strand_section_id',
         'written_works_percentage',
         'performance_tasks_percentage',
         'quarterly_assessment_percentage',
@@ -54,5 +55,10 @@ class AcademicYearStrandSubject extends Model
     public function adviser(): BelongsTo
     {
         return $this->belongsTo(AcademicYearStrandAdviser::class, 'academic_year_strand_adviser_id');
+    }
+
+    public function sectionAssignment(): BelongsTo
+    {
+        return $this->belongsTo(AcademicYearStrandSection::class, 'academic_year_strand_section_id');
     }
 }

@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Teacher;
 use App\Http\Controllers\Controller;
 use App\Models\AcademicYear;
 use App\Models\AcademicYearStrandSection;
+use App\Models\AcademicYearStrandSubject;
 use App\Models\Section;
 use App\Models\StudentEnrollment;
 use Illuminate\Http\Request;
@@ -15,13 +16,28 @@ class StudentController extends Controller
     {
         $user = auth('teacher')->user();
         $teacherId = $user->user_pk_id;
-        
-        // Get the section assignment
+
+        // Get the section assignment (don't filter by adviser here)
         $sectionAssignment = AcademicYearStrandSection::with(['section', 'strand', 'academicYear'])
             ->where('id', $sectionAssignmentId)
-            ->where('adviser_teacher_id', $teacherId)
             ->firstOrFail();
-        
+
+        // Authorization: allow if adviser OR if teacher has a subject assignment in this AY+Strand
+        $isAdviser = (int)($sectionAssignment->adviser_teacher_id ?? 0) === (int)$teacherId;
+
+        $teachesThisSection = AcademicYearStrandSubject::where('teacher_id', $teacherId)
+            ->where('academic_year_id', $sectionAssignment->academic_year_id)
+            ->where('strand_id', $sectionAssignment->strand_id)
+            ->where(function ($q) use ($sectionAssignment) {
+                $q->whereNull('academic_year_strand_section_id')
+                  ->orWhere('academic_year_strand_section_id', $sectionAssignment->id);
+            })
+            ->exists();
+
+        if (!$isAdviser && !$teachesThisSection) {
+            abort(403, 'You are not authorized to view this section.');
+        }
+
         // Get all students enrolled in this section
         $students = StudentEnrollment::with(['student'])
             ->where('academic_year_strand_section_id', $sectionAssignment->id)

@@ -356,7 +356,8 @@ class SectionAdviserController extends Controller
     {
         $validated = $request->validate([
             'strand_code' => 'required|string',
-            'grade_level' => 'required|in:11,12'
+            'grade_level' => 'required|in:11,12',
+            'section_id' => 'nullable|exists:sections,id',
         ]);
 
         $strand = Strand::where('code', $validated['strand_code'])->first();
@@ -365,6 +366,15 @@ class SectionAdviserController extends Controller
         }
 
         $activeYear = \App\Models\AcademicYear::where('is_active', true)->first();
+        // Resolve AYS section if provided
+        $aysSectionId = null;
+        if (!empty($validated['section_id']) && $activeYear) {
+            $aysSection = \App\Models\AcademicYearStrandSection::where('academic_year_id', $activeYear->id)
+                ->where('strand_id', $strand->id)
+                ->where('section_id', $validated['section_id'])
+                ->first();
+            $aysSectionId = $aysSection?->id;
+        }
 
         // Join StrandSubject with Subject and filter by strand and grade_level if present
         $strandSubjects = StrandSubject::with('subject', 'strand')
@@ -376,14 +386,19 @@ class SectionAdviserController extends Controller
             ->get();
 
         // Map to a simple structure with assigned teacher
-        $subjects = $strandSubjects->map(function ($ss) use ($activeYear, $strand) {
+        $subjects = $strandSubjects->map(function ($ss) use ($activeYear, $strand, $aysSectionId) {
             $assigned = null;
             if ($activeYear) {
-                $assignment = \App\Models\AcademicYearStrandSubject::where('academic_year_id', $activeYear->id)
+                $query = \App\Models\AcademicYearStrandSubject::where('academic_year_id', $activeYear->id)
                     ->where('strand_id', $strand->id)
                     ->where('subject_id', $ss->subject->id)
-                    ->with('teacher')
-                    ->first();
+                    ->with('teacher');
+                if (!is_null($aysSectionId)) {
+                    $query->where('academic_year_strand_section_id', $aysSectionId);
+                } else {
+                    $query->whereNull('academic_year_strand_section_id');
+                }
+                $assignment = $query->first();
                 if ($assignment && $assignment->teacher) {
                     $assigned = [
                         'id' => $assignment->teacher->id,
@@ -457,6 +472,7 @@ class SectionAdviserController extends Controller
             'grade_level' => 'required|in:11,12',
             'subject_id' => 'required|exists:subjects,id',
             'teacher_id' => 'nullable|exists:teachers,id',
+            'section_id' => 'nullable|exists:sections,id',
         ]);
 
         Log::info('Validated data', $validated);
@@ -510,13 +526,28 @@ class SectionAdviserController extends Controller
 
         Log::info('Found adviser', ['adviser_id' => $adviser->id]);
 
+        // Resolve optional section assignment for this subject-teacher mapping
+        $aysSectionId = null;
+        if (!empty($validated['section_id'])) {
+            $aysSection = \App\Models\AcademicYearStrandSection::where('academic_year_id', $activeYear->id)
+                ->where('strand_id', $strand->id)
+                ->where('section_id', $validated['section_id'])
+                ->first();
+            $aysSectionId = $aysSection?->id;
+        }
+
         // Clear or assign
         if (empty($validated['teacher_id'])) {
-            \App\Models\AcademicYearStrandSubject::where('academic_year_id', $activeYear->id)
+            $deleteQuery = \App\Models\AcademicYearStrandSubject::where('academic_year_id', $activeYear->id)
                 ->where('strand_id', $strand->id)
-                ->where('subject_id', $validated['subject_id'])
-                ->delete();
-            Log::info('Assignment cleared');
+                ->where('subject_id', $validated['subject_id']);
+            if (!is_null($aysSectionId)) {
+                $deleteQuery->where('academic_year_strand_section_id', $aysSectionId);
+            } else {
+                $deleteQuery->whereNull('academic_year_strand_section_id');
+            }
+            $deleted = $deleteQuery->delete();
+            Log::info('Assignment cleared', ['deleted' => $deleted, 'ays_section_id' => $aysSectionId]);
             return response()->json(['success' => true, 'message' => 'Assignment cleared.']);
         }
 
@@ -525,6 +556,7 @@ class SectionAdviserController extends Controller
                 'academic_year_id' => $activeYear->id,
                 'strand_id' => $strand->id,
                 'subject_id' => $validated['subject_id'],
+                'academic_year_strand_section_id' => $aysSectionId,
             ],
             [
                 'academic_year_strand_adviser_id' => $adviser->id,

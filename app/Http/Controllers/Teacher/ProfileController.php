@@ -28,6 +28,9 @@ class ProfileController extends Controller
                     'academicYear',
                     'strand',
                     'subject',
+                    'sectionAssignment.section',
+                    'sectionAssignment.academicYear',
+                    'sectionAssignment.strand',
                     'subjectEnrollments.studentEnrollment.academicYearStrandSection.section'
                 ]);
             }

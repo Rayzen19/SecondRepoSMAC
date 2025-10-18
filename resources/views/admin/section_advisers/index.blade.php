@@ -1085,7 +1085,7 @@
             const response = await fetch(routes.getSubjects, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': '{{ csrf_token() }}' },
-                body: JSON.stringify({ strand_code: strandCode, grade_level: gradeLevel })
+                body: JSON.stringify({ strand_code: strandCode, grade_level: gradeLevel, section_id: sectionId })
             });
             
             const data = await response.json();
@@ -1173,13 +1173,13 @@
                                 <option value="">Loading teachers...</option>
                             </select>
                             <button class="btn btn-sm btn-primary shadow-sm px-3" id="${rowId}-btn" 
-                                    onclick="saveSubjectTeacher('${rowId}', '${strandCode}', '${gradeLevel}', ${subj.id})"
+                                    onclick="saveSubjectTeacher('${rowId}', '${strandCode}', '${gradeLevel}', ${sectionId}, ${subj.id})"
                                     style="white-space: nowrap; min-width: 85px; font-weight: 500;">
                                 <i class="ti ti-device-floppy me-1"></i>Save
                             </button>
                             ${isAssigned ? `
                                 <button class="btn btn-sm btn-danger shadow-sm px-3" id="${rowId}-del-btn" 
-                                        onclick="deleteSubjectTeacher('${rowId}', '${strandCode}', '${gradeLevel}', ${subj.id})"
+                                        onclick="deleteSubjectTeacher('${rowId}', '${strandCode}', '${gradeLevel}', ${sectionId}, ${subj.id})"
                                         style="white-space: nowrap; font-weight: 500;"
                                         title="Remove assigned teacher">
                                     <i class="ti ti-trash"></i>
@@ -1283,7 +1283,7 @@
     }
 
     // Save subject-teacher assignment
-    async function saveSubjectTeacher(rowId, strandCode, gradeLevel, subjectId) {
+    async function saveSubjectTeacher(rowId, strandCode, gradeLevel, sectionId, subjectId) {
         console.log('=== Save Subject Teacher ===');
         console.log('Row ID:', rowId);
         console.log('Strand:', strandCode);
@@ -1329,6 +1329,7 @@
             const payload = {
                 strand_code: strandCode,
                 grade_level: gradeLevel,
+                section_id: sectionId,
                 subject_id: subjectId,
                 teacher_id: teacherId
             };
@@ -1409,7 +1410,7 @@
                     newDeleteBtn.title = 'Remove assigned teacher';
                     newDeleteBtn.innerHTML = '<i class="ti ti-trash"></i>';
                     newDeleteBtn.onclick = function() {
-                        deleteSubjectTeacher(rowId, strandCode, gradeLevel, subjectId);
+                        deleteSubjectTeacher(rowId, strandCode, gradeLevel, sectionId, subjectId);
                     };
                     btnContainer.appendChild(newDeleteBtn);
                 }
@@ -1521,7 +1522,7 @@
     }
     
     // Delete/Clear subject-teacher assignment
-    async function deleteSubjectTeacher(rowId, strandCode, gradeLevel, subjectId) {
+    async function deleteSubjectTeacher(rowId, strandCode, gradeLevel, sectionId, subjectId) {
         if (!confirm('Are you sure you want to remove the assigned teacher from this subject?')) {
             return;
         }
@@ -1556,6 +1557,7 @@
             const payload = {
                 strand_code: strandCode,
                 grade_level: gradeLevel,
+                section_id: sectionId,
                 subject_id: subjectId,
                 teacher_id: ''  // Send empty string to clear the assignment
             };
