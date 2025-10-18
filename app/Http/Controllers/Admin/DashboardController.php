@@ -8,9 +8,8 @@ use App\Models\Teacher;
 use App\Models\Section;
 use App\Models\Strand;
 use App\Models\SubjectRecordResult;
+use App\Models\Announcement;
 use Illuminate\Support\Facades\DB;
-// use App\Models\Event; // Uncomment if Event model exists
-// use App\Models\Announcement; // Uncomment if Announcement model exists
 
 class DashboardController extends Controller
 {
@@ -20,15 +19,24 @@ class DashboardController extends Controller
         $studentsCount = Student::count();
         $teachersCount = Teacher::count();
         $sectionsCount = Section::count();
-        // $eventsCount = Event::count(); // Uncomment if Event model exists
+        $announcementsCount = Announcement::count();
         $eventsCount = 12; // Placeholder
 
-        // Recent Announcements (placeholder - replace with real model when available)
-        $recentMessages = collect([
-            (object)['title' => 'Math Olympiad Winners Announced', 'content' => 'Congratulations to our students who excelled in the regional competition.', 'created_at' => now()->subDays(1)],
-            (object)['title' => 'New Library Opening Next Week', 'content' => 'Our expanded library will be open to all students starting Monday.', 'created_at' => now()->subDays(3)],
-            (object)['title' => 'Community Outreach Program', 'content' => 'Join us for our annual community service event this Saturday.', 'created_at' => now()->subWeek()],
-        ]);
+        // Announcement Statistics
+        $announcementStats = [
+            'total' => Announcement::count(),
+            'active' => Announcement::where('is_active', true)->count(),
+            'scheduled' => Announcement::where('is_active', true)
+                ->where('published_at', '>', now())
+                ->count(),
+            'expired' => Announcement::where('expires_at', '<', now())->count(),
+        ];
+
+        // Recent Announcements (real data from database)
+        $recentMessages = Announcement::with('creator')
+            ->latest()
+            ->take(5)
+            ->get();
 
         // Student Performance Analytics (average grades by strand)
         $strands = Strand::all();
@@ -97,7 +105,9 @@ class DashboardController extends Controller
             'studentsCount',
             'teachersCount',
             'sectionsCount',
+            'announcementsCount',
             'eventsCount',
+            'announcementStats',
             'recentMessages',
             'performance',
             'topStudents',

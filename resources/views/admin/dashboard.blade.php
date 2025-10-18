@@ -54,17 +54,17 @@
 						   </div>
 				   </div>
 				   </div>
-				   <!-- Events -->
+				   <!-- Announcements -->
 				   <div class="col-lg-3 col-md-6 d-flex">
 					   <div class="card flex-fill">
 						   <div class="card-body d-flex align-items-center justify-content-between">
 							   <div class="d-flex align-items-center overflow-hidden">
 								   <div>
-									   <span class="avatar avatar-lg bg-info rounded-circle"><i class="ti ti-calendar-event"></i></span>
+									   <span class="avatar avatar-lg bg-info rounded-circle"><i class="ti ti-speakerphone"></i></span>
 								   </div>
 								   <div class="ms-2 overflow-hidden">
-									   <p class="fs-12 fw-medium mb-1 text-truncate">Events</p>
-									<h4 class="mb-0" style="color:#313131">{{ $eventsCount }}</h4>
+									   <p class="fs-12 fw-medium mb-1 text-truncate">Announcements</p>
+									<h4 class="mb-0" style="color:#313131">{{ $announcementsCount }}</h4>
 								   </div>
 							   </div>
 						   </div>
@@ -275,10 +275,18 @@
 
 			<!-- Recent Announcements -->
 			<div class="card shadow-sm rounded-4 mb-4">
-				<div class="card-header bg-opacity-10 rounded-top-4">
+				<div class="card-header bg-opacity-10 rounded-top-4 d-flex justify-content-between align-items-center">
 					<h5 class="mb-0 fw-bold" style="color:#313131">
 						<i class="ti ti-speakerphone me-2" style="color:#10b981"></i>Recent Announcements
 					</h5>
+					<div class="d-flex gap-2">
+						<a href="{{ route('admin.announcements.create') }}" class="btn btn-sm btn-primary">
+							<i class="ti ti-plus me-1"></i>New
+						</a>
+						<a href="{{ route('admin.announcements.index') }}" class="btn btn-sm btn-outline-primary">
+							<i class="ti ti-eye me-1"></i>Manage
+						</a>
+					</div>
 				</div>
 				<div class="card-body">
 					@if($recentMessages->count() > 0)
@@ -286,19 +294,53 @@
 							@foreach($recentMessages as $message)
 								<div class="list-group-item mb-2 rounded-3 border-0 bg-opacity-10" style="background-color:#e5e7eb">
 									<div class="d-flex justify-content-between align-items-start">
-										<div>
-											<h6 class="mb-1 fw-bold">{{ Str::limit($message->title, 40) }}</h6>
+										<div class="flex-grow-1">
+											<div class="d-flex align-items-center gap-2 mb-1">
+												<h6 class="mb-0 fw-bold">{{ Str::limit($message->title, 40) }}</h6>
+												@if($message->is_active)
+													@if($message->isExpired())
+														<span class="badge bg-secondary">Expired</span>
+													@elseif($message->isPublished())
+														<span class="badge bg-success">Active</span>
+													@else
+														<span class="badge bg-warning">Scheduled</span>
+													@endif
+												@else
+													<span class="badge bg-danger">Inactive</span>
+												@endif
+											</div>
 											<p class="mb-1 text-muted small">{{ Str::limit($message->content, 60) }}</p>
 											<small class="text-muted">
 												<i class="ti ti-clock me-1"></i>{{ $message->created_at->diffForHumans() }}
+												@if($message->creator)
+													<span class="ms-2">
+														<i class="ti ti-user me-1"></i>{{ $message->creator->name }}
+													</span>
+												@endif
 											</small>
+										</div>
+										<div class="ms-2">
+											<a href="{{ route('admin.announcements.edit', $message) }}" class="btn btn-sm btn-outline-primary">
+												<i class="ti ti-edit"></i>
+											</a>
 										</div>
 									</div>
 								</div>
 							@endforeach
 						</div>
+						<div class="text-center mt-3">
+							<a href="{{ route('admin.announcements.index') }}" class="btn btn-sm btn-outline-secondary">
+								<i class="ti ti-list me-1"></i>View All {{ $announcementStats['total'] }} Announcements
+							</a>
+						</div>
 					@else
-						<p class="text-muted text-center mb-0">No announcements yet.</p>
+						<div class="text-center py-4">
+							<i class="ti ti-speakerphone text-muted" style="font-size: 3rem;"></i>
+							<p class="text-muted mb-2">No announcements yet.</p>
+							<a href="{{ route('admin.announcements.create') }}" class="btn btn-sm btn-primary">
+								<i class="ti ti-plus me-1"></i>Create First Announcement
+							</a>
+						</div>
 					@endif
 				</div>
 			</div>

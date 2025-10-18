@@ -2,9 +2,11 @@
 
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Admin\AuthController;
+use App\Models\Announcement;
 
 Route::get('/', function () {
-    return view('welcome');
+    $announcements = Announcement::active()->latest()->take(3)->get();
+    return view('welcome', compact('announcements'));
 });
 
 // Provide a generic 'login' route name used by the framework's guest redirect
@@ -169,6 +171,15 @@ Route::group(['prefix' => 'admin'], function () {
         Route::put('/attendance/{log}', [App\Http\Controllers\Admin\AttendanceLogController::class, 'update'])->name('admin.attendance.update');
         Route::delete('/attendance/{log}', [App\Http\Controllers\Admin\AttendanceLogController::class, 'destroy'])->name('admin.attendance.destroy');
         Route::get('/attendance-export', [App\Http\Controllers\Admin\AttendanceLogController::class, 'export'])->name('admin.attendance.export');
+
+        // Announcements
+        Route::get('/announcements', [App\Http\Controllers\Admin\AnnouncementController::class, 'index'])->name('admin.announcements.index');
+        Route::get('/announcements/create', [App\Http\Controllers\Admin\AnnouncementController::class, 'create'])->name('admin.announcements.create');
+        Route::post('/announcements', [App\Http\Controllers\Admin\AnnouncementController::class, 'store'])->name('admin.announcements.store');
+        Route::get('/announcements/{announcement}', [App\Http\Controllers\Admin\AnnouncementController::class, 'show'])->name('admin.announcements.show');
+        Route::get('/announcements/{announcement}/edit', [App\Http\Controllers\Admin\AnnouncementController::class, 'edit'])->name('admin.announcements.edit');
+        Route::put('/announcements/{announcement}', [App\Http\Controllers\Admin\AnnouncementController::class, 'update'])->name('admin.announcements.update');
+        Route::delete('/announcements/{announcement}', [App\Http\Controllers\Admin\AnnouncementController::class, 'destroy'])->name('admin.announcements.destroy');
 
         // Assigning List
         Route::get('/assigning-list', [App\Http\Controllers\Admin\AssigningListController::class, 'index'])->name('admin.assigning-list.index');

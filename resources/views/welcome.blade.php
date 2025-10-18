@@ -176,41 +176,40 @@
         <div class="container">
             <div class="row mb-4">
                 <div class="col-12 text-center">
-                    <h3 class="fw-semibold mb-2 text-black">Announcement</h3>
+                    <h3 class="fw-semibold mb-2 text-black">Announcements</h3>
                     <p class="text-muted">Stay up to date with the latest happenings and achievements at St. Matthew Academy of Cavite.</p>
                 </div>
             </div>
             <div class="row g-4">
+                @forelse($announcements as $announcement)
                 <div class="col-md-4">
                     <div class="card border-info shadow-sm rounded-4 h-100">
-                        <img src="https://images.unsplash.com/photo-1503676382389-4809596d5290?auto=format&fit=crop&w=400&q=80" class="card-img-top rounded-4" style="height:180px;object-fit:cover;" alt="News 1">
+                        @if($announcement->hasImage())
+                        <img src="{{ $announcement->image }}" class="card-img-top rounded-top-4" style="height:180px;object-fit:cover;" alt="{{ $announcement->title }}">
+                        @else
+                        <div class="card-img-top rounded-top-4 bg-info bg-opacity-10 d-flex align-items-center justify-content-center" style="height:180px;">
+                            <i class="ti ti-speakerphone text-info" style="font-size: 4rem;"></i>
+                        </div>
+                        @endif
                         <div class="card-body">
-                            <h5 class="card-title"style="color:#313131">Math Olympiad Champions</h5>
-                            <p class="card-text text-muted">Our students brought home the gold at the regional Math Olympiad. Congratulations to all participants!</p>
-                            <span class="badge bg-info bg-opacity-25 text-info">September 18, 2025</span>
+                            <h5 class="card-title" style="color:#313131">{{ $announcement->title }}</h5>
+                            <p class="card-text text-muted">{{ Str::limit($announcement->content, 120) }}</p>
+                            @if($announcement->published_at)
+                            <span class="badge bg-info bg-opacity-25 text-info">
+                                <i class="ti ti-calendar me-1"></i>{{ $announcement->published_at->format('F d, Y') }}
+                            </span>
+                            @endif
                         </div>
                     </div>
                 </div>
-                <div class="col-md-4">
-                    <div class="card border-info shadow-sm rounded-4 h-100">
-                        <img src="https://images.unsplash.com/photo-1519125323398-675f0ddb6308?auto=format&fit=crop&w=400&q=80" class="card-img-top rounded-4" style="height:180px;object-fit:cover;" alt="News 2">
-                        <div class="card-body">
-                            <h5 class="card-title" style="color:#313131">New Library Opens</h5>
-                            <p class="card-text text-muted">We are excited to announce the opening of our new library, featuring modern resources and study spaces.</p>
-                            <span class="badge bg-info bg-opacity-25 text-info">September 12, 2025</span>
-                        </div>
+                @empty
+                <div class="col-12">
+                    <div class="text-center py-5">
+                        <i class="ti ti-speakerphone text-muted" style="font-size: 4rem;"></i>
+                        <p class="text-muted mt-3">No announcements at this time. Check back soon!</p>
                     </div>
                 </div>
-                <div class="col-md-4">
-                    <div class="card border-info shadow-sm rounded-4 h-100">
-                        <img src="https://images.unsplash.com/photo-1517520287167-4bbf64a00d66?auto=format&fit=crop&w=400&q=80" class="card-img-top rounded-4" style="height:180px;object-fit:cover;" alt="News 3">
-                        <div class="card-body">
-                            <h5 class="card-title" style="color:#313131">Community Outreach</h5>
-                            <p class="card-text text-muted">Our students and staff joined hands for a successful community outreach program last weekend.</p>
-                            <span class="badge bg-info bg-opacity-25 text-info">September 5, 2025</span>
-                        </div>
-                    </div>
-                </div>
+                @endforelse
             </div>
         </div>
     </section>

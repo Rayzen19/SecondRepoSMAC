@@ -183,6 +183,12 @@
                                     </a>
                                 </li>
 
+                                <li class="{{ request()->routeIs('admin.announcements.*') ? 'active' : '' }}">
+                                    <a class="{{ request()->routeIs('admin.announcements.*') ? 'active' : '' }}" href="{{ route('admin.announcements.index') }}">
+                                        <i class="ti ti-speakerphone"></i><span>Announcements</span>
+                                    </a>
+                                </li>
+
                                 <li class="{{ request()->routeIs('admin.section-advisers.*') ? 'active' : '' }}">
                                     <a class="{{ request()->routeIs('admin.section-advisers.*') ? 'active' : '' }}" href="{{ route('admin.section-advisers.index') }}">
                                         <i class="ti ti-users-group"></i><span>Section & Advisers</span>
