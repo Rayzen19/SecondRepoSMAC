@@ -22,13 +22,13 @@
         <div class="sidebar" id="sidebar">
             <div class="sidebar-logo">
                 <a href="{{ route('guardian.dashboard') }}" class="logo logo-normal">
-                    <img src="{{ asset('assets/img/logo.svg') }}" alt=" Logo">
+                    <img src="{{ asset('assets/images/SMAClogo.png') }}" alt="SMAC Logo" style="max-height: 40px; width: auto;">
                 </a>
                 <a href="{{ route('guardian.dashboard') }}" class="logo-small">
-                    <img src="{{ asset('assets/img/logo-small.svg') }}" alt=" Logo">
+                    <img src="{{ asset('assets/images/SMAClogo.png') }}" alt="SMAC Logo" style="max-height: 35px; width: auto;">
                 </a>
                 <a href="{{ route('guardian.dashboard') }}" class="dark-logo">
-                    <img src="{{ asset('assets/img/logo-white.svg') }}" alt=" Logo">
+                    <img src="{{ asset('assets/images/SMAClogo.png') }}" alt="SMAC Logo" style="max-height: 40px; width: auto;">
                 </a>
             </div>
             <div class="sidebar-inner slimscroll">

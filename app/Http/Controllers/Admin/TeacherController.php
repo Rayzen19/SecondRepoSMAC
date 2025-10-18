@@ -96,13 +96,16 @@ class TeacherController extends Controller
     public function create()
     {
         $subjects = Subject::orderBy('name')->get();
-        return view('admin.teachers.create', compact('subjects'));
+        
+        // Generate next employee number
+        $employeeNumber = $this->generateEmployeeNumber();
+        
+        return view('admin.teachers.create', compact('subjects', 'employeeNumber'));
     }
 
     public function store(Request $request)
     {
         $data = $request->validate([
-            'employee_number' => 'required|string|max:50|unique:teachers,employee_number',
             'first_name' => 'required|string|max:255',
             'middle_name' => 'nullable|string|max:255',
             'last_name' => 'required|string|max:255',
@@ -119,6 +122,9 @@ class TeacherController extends Controller
             'subjects' => 'nullable|array',
             'subjects.*' => 'exists:subjects,id',
         ]);
+
+        // Auto-generate employee number
+        $data['employee_number'] = $this->generateEmployeeNumber();
 
         $teacher = Teacher::create($data);
 
@@ -225,7 +231,6 @@ class TeacherController extends Controller
     public function update(Request $request, Teacher $teacher)
     {
         $data = $request->validate([
-            'employee_number' => 'required|string|max:50|unique:teachers,employee_number,' . $teacher->id,
             'first_name' => 'required|string|max:255',
             'middle_name' => 'nullable|string|max:255',
             'last_name' => 'required|string|max:255',
@@ -438,4 +443,40 @@ class TeacherController extends Controller
 
         return new StreamedResponse($callback, 200, $headers);
     }
+
+    /**
+     * Generate unique employee number in format: SMAC-YYYY-XXXX
+     */
+    private function generateEmployeeNumber(): string
+    {
+        $year = date('Y');
+        $prefix = 'SMAC-' . $year . '-';
+        
+        // Get the last employee number for this year
+        $lastTeacher = Teacher::withTrashed()
+            ->where('employee_number', 'like', $prefix . '%')
+            ->orderBy('employee_number', 'desc')
+            ->first();
+        
+        if ($lastTeacher) {
+            // Extract the sequence number from the last employee number
+            $lastNumber = (int) substr($lastTeacher->employee_number, strlen($prefix));
+            $nextNumber = $lastNumber + 1;
+        } else {
+            // First employee for this year
+            $nextNumber = 1;
+        }
+        
+        // Format: SMAC-YYYY-XXXX (e.g., SMAC-2025-0001)
+        $employeeNumber = $prefix . str_pad($nextNumber, 4, '0', STR_PAD_LEFT);
+        
+        // Ensure uniqueness (safety check)
+        while (Teacher::withTrashed()->where('employee_number', $employeeNumber)->exists()) {
+            $nextNumber++;
+            $employeeNumber = $prefix . str_pad($nextNumber, 4, '0', STR_PAD_LEFT);
+        }
+        
+        return $employeeNumber;
+    }
 }
+

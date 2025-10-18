@@ -41,19 +41,35 @@ class StudentFactory extends Factory
             $student_number = $prefix . str_pad($seqCache[$year], 5, '0', STR_PAD_LEFT);
         }
 
+        $gender = $this->faker->randomElement(['male', 'female']);
+        $firstNames = [
+            'male' => ['Juan', 'Jose', 'Carlos', 'Miguel', 'Rafael', 'Antonio', 'Francisco', 'Pedro', 'Luis', 'Gabriel', 'Daniel', 'Samuel', 'Mateo', 'Lucas', 'Diego'],
+            'female' => ['Maria', 'Ana', 'Isabel', 'Sofia', 'Carmen', 'Rosa', 'Elena', 'Patricia', 'Angela', 'Teresa', 'Monica', 'Lucia', 'Andrea', 'Cristina', 'Julia']
+        ];
+        $lastNames = ['Santos', 'Reyes', 'Cruz', 'Bautista', 'Garcia', 'Mendoza', 'Torres', 'Lopez', 'Gonzales', 'Rodriguez', 'Perez', 'Ramos', 'Flores', 'Rivera', 'Del Rosario'];
+        $caviteAddresses = [
+            'Brgy. San Antonio, Dasmariñas, Cavite',
+            'Brgy. Paliparan, Dasmariñas, Cavite',
+            'Block 1 Lot 5, Villa Verde Subdivision, Dasmariñas, Cavite',
+            'Block 3 Lot 12, Greenwoods Executive Village, Dasmariñas, Cavite',
+            'Phase 2 Block 8 Lot 15, Cambridge Village, Dasmariñas, Cavite',
+            '123 Aguinaldo Highway, Dasmariñas, Cavite',
+            'Purok 3, Brgy. San Isidro, Dasmariñas, Cavite'
+        ];
+
         return [
             'student_number' => strtoupper($student_number),
-            'first_name' => $this->faker->firstName(),
-            'middle_name' => $this->faker->firstName(),
-            'last_name' => $this->faker->lastName(),
-            'suffix' => $this->faker->suffix(),
-            'gender' => $this->faker->randomElement(['male', 'female']),
+            'first_name' => $firstNames[$gender][array_rand($firstNames[$gender])],
+            'middle_name' => $firstNames[$gender][array_rand($firstNames[$gender])],
+            'last_name' => $lastNames[array_rand($lastNames)],
+            'suffix' => $this->faker->optional(0.1)->randomElement(['Jr.', 'Sr.', 'II', 'III']),
+            'gender' => $gender,
             'birthdate' => $this->faker->date(),
             'email' => $this->faker->unique()->safeEmail(),
-            'mobile_number' => $this->faker->unique()->e164PhoneNumber(),
-            'address' => $this->faker->address(),
-            'guardian_name' => $this->faker->name(),
-            'guardian_contact' => $this->faker->unique()->e164PhoneNumber(),
+            'mobile_number' => '09' . $this->faker->numerify('#########'),
+            'address' => $caviteAddresses[array_rand($caviteAddresses)],
+            'guardian_name' => $firstNames[array_rand(['male', 'female'])][0] . ' ' . $lastNames[array_rand($lastNames)],
+            'guardian_contact' => '09' . $this->faker->numerify('#########'),
             'guardian_email' => $this->faker->unique()->safeEmail(),
             'program' => $this->faker->randomElement(['BSCS', 'BSIT', 'BSEd']),
             'academic_year' => function () {

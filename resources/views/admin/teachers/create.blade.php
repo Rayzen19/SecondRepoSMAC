@@ -32,7 +32,8 @@
                     <div class="col-md-4">
                         <div class="mb-3">
                             <label class="form-label">Employee # <span class="text-danger">*</span></label>
-                            <input type="text" name="employee_number" class="form-control" value="{{ old('employee_number') }}" required>
+                            <input type="text" name="employee_number" class="form-control bg-light" value="{{ $employeeNumber }}" readonly>
+                            <small class="form-text text-muted">Auto-generated</small>
                             @error('employee_number')<div class="text-danger small">{{ $message }}</div>@enderror
                         </div>
                     </div>
