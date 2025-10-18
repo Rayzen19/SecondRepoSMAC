@@ -80,62 +80,152 @@
                             </div>
                         </div>
                         <div class="list-group list-group-flush">
-                            @for($i = 1; $i <= 4; $i++)
-                                <div class="list-group-item px-2 py-2 section-item" data-section="{{ $i }}">
-                                    <div class="d-flex justify-content-between align-items-center mb-2">
-                                        <div>
-                                            <span class="badge 
-                                                @if($i == 1) bg-success
-                                                @elseif($i == 2) bg-info
-                                                @elseif($i == 3) bg-warning
-                                                @else bg-danger
-                                                @endif">
-                                                Section {{ $i }}
-                                            </span>
-                                            <button type="button" 
-                                                    class="btn btn-sm btn-outline-primary ms-2" 
-                                                    onclick="viewSectionDetails('{{ $strand->code }}', {{ $i }})"
-                                                    title="View students">
-                                                <i class="ti ti-eye"></i>
-                                            </button>
-                                            <button type="button" 
-                                                    class="btn btn-sm btn-outline-success ms-1" 
-                                                    onclick="openSubjectTeacherAssignment('{{ $strand->code }}', {{ $i }})"
-                                                    title="Assign teachers to subjects">
-                                                <i class="ti ti-users"></i>
-                                            </button>
+                            @php
+                                $strandSections = $sections[$strand->code] ?? collect();
+                                $grade11Sections = $strandSections->filter(fn($s) => $s->grade === 'G-11');
+                                $grade12Sections = $strandSections->filter(fn($s) => $s->grade === 'G-12');
+                                $colors = ['success', 'info', 'warning', 'danger'];
+                            @endphp
+                            
+                            @if($grade11Sections->isNotEmpty() || $grade12Sections->isNotEmpty())
+                                <!-- Grade 11 Sections -->
+                                @if($grade11Sections->isNotEmpty())
+                                    <div class="list-group-item px-2 py-1 bg-light">
+                                        <small class="fw-bold text-primary">
+                                            <i class="ti ti-school me-1"></i>Grade 11 Sections
+                                        </small>
+                                    </div>
+                                    @foreach($grade11Sections as $index => $section)
+                                        @php
+                                            $color = $colors[$index % count($colors)];
+                                        @endphp
+                                        <div class="list-group-item px-2 py-2 section-item" data-section="{{ $section->id }}" data-grade="11">
+                                            <div class="d-flex justify-content-between align-items-center mb-2">
+                                                <div>
+                                                    <span class="badge bg-{{ $color }}">
+                                                        {{ $section->grade }} {{ $section->name }}
+                                                    </span>
+                                                    <button type="button" 
+                                                            class="btn btn-sm btn-outline-primary ms-2 view-section-btn" 
+                                                            data-strand="{{ $strand->code }}" 
+                                                            data-section="{{ $section->id }}"
+                                                            data-section-name="{{ $section->grade }} {{ $section->name }}"
+                                                            title="View students">
+                                                        <i class="ti ti-eye"></i>
+                                                    </button>
+                                                    <button type="button" 
+                                                            class="btn btn-sm btn-outline-success ms-1 assign-teacher-btn" 
+                                                            data-strand="{{ $strand->code }}" 
+                                                            data-section="{{ $section->id }}"
+                                                            data-section-name="{{ $section->grade }} {{ $section->name }}"
+                                                            data-grade="{{ str_replace('G-', '', $section->grade) }}"
+                                                            title="Assign teachers to subjects">
+                                                        <i class="ti ti-users"></i>
+                                                    </button>
+                                                </div>
+                                                <small class="text-muted student-count-{{ $strand->code }}-{{ $section->id }}">
+                                                    0 students
+                                                </small>
+                                            </div>
+                                            <!-- Adviser Selection -->
+                                            <div class="mt-2">
+                                                <label class="form-label small mb-1 text-muted">
+                                                    <i class="ti ti-user-check me-1"></i>Adviser:
+                                                </label>
+                                                <select class="form-select form-select-sm adviser-select" 
+                                                        data-strand="{{ $strand->code }}" 
+                                                        data-section="{{ $section->id }}">
+                                                    <option value="">-- Select Adviser --</option>
+                                                    @foreach($teachers as $teacher)
+                                                        <option value="{{ $teacher->id }}" 
+                                                                data-teacher-name="{{ $teacher->last_name }}, {{ $teacher->first_name }}">
+                                                            {{ $teacher->last_name }}, {{ $teacher->first_name }}
+                                                            @if($teacher->middle_name)
+                                                                {{ substr($teacher->middle_name, 0, 1) }}.
+                                                            @endif
+                                                        </option>
+                                                    @endforeach
+                                                </select>
+                                                <small class="text-muted adviser-display-{{ $strand->code }}-{{ $section->id }}" style="display: none;">
+                                                    <i class="ti ti-check text-success"></i>
+                                                    <span class="adviser-name"></span>
+                                                </small>
+                                            </div>
                                         </div>
-                                        <small class="text-muted student-count-{{ $strand->code }}-{{ $i }}">
-                                            0 students
+                                    @endforeach
+                                @endif
+                                
+                                <!-- Grade 12 Sections -->
+                                @if($grade12Sections->isNotEmpty())
+                                    <div class="list-group-item px-2 py-1 bg-light">
+                                        <small class="fw-bold text-success">
+                                            <i class="ti ti-school me-1"></i>Grade 12 Sections
                                         </small>
                                     </div>
-                                    <!-- Adviser Selection -->
-                                    <div class="mt-2">
-                                        <label class="form-label small mb-1 text-muted">
-                                            <i class="ti ti-user-check me-1"></i>Adviser:
-                                        </label>
-                                        <select class="form-select form-select-sm adviser-select" 
-                                                data-strand="{{ $strand->code }}" 
-                                                data-section="{{ $i }}"
-                                                onchange="assignAdviser('{{ $strand->code }}', {{ $i }}, this)">
-                                            <option value="">-- Select Adviser --</option>
-                                            @foreach($teachers as $teacher)
-                                                <option value="{{ $teacher->id }}" 
-                                                        data-teacher-name="{{ $teacher->last_name }}, {{ $teacher->first_name }}">
-                                                    {{ $teacher->last_name }}, {{ $teacher->first_name }}
-                                                    @if($teacher->middle_name)
-                                                        {{ substr($teacher->middle_name, 0, 1) }}.
-                                                    @endif
-                                                </option>
-                                            @endforeach
-                                        </select>
-                                        <small class="text-muted adviser-display-{{ $strand->code }}-{{ $i }}" style="display: none;">
-                                            <i class="ti ti-check text-success"></i>
-                                            <span class="adviser-name"></span>
-                                        </small>
-                                    </div>
+                                    @foreach($grade12Sections as $index => $section)
+                                        @php
+                                            $color = $colors[$index % count($colors)];
+                                        @endphp
+                                        <div class="list-group-item px-2 py-2 section-item" data-section="{{ $section->id }}" data-grade="12">
+                                            <div class="d-flex justify-content-between align-items-center mb-2">
+                                                <div>
+                                                    <span class="badge bg-{{ $color }}">
+                                                        {{ $section->grade }} {{ $section->name }}
+                                                    </span>
+                                                    <button type="button" 
+                                                            class="btn btn-sm btn-outline-primary ms-2 view-section-btn" 
+                                                            data-strand="{{ $strand->code }}" 
+                                                            data-section="{{ $section->id }}"
+                                                            data-section-name="{{ $section->grade }} {{ $section->name }}"
+                                                            title="View students">
+                                                        <i class="ti ti-eye"></i>
+                                                    </button>
+                                                    <button type="button" 
+                                                            class="btn btn-sm btn-outline-success ms-1 assign-teacher-btn" 
+                                                            data-strand="{{ $strand->code }}" 
+                                                            data-section="{{ $section->id }}"
+                                                            data-section-name="{{ $section->grade }} {{ $section->name }}"
+                                                            data-grade="{{ str_replace('G-', '', $section->grade) }}"
+                                                            title="Assign teachers to subjects">
+                                                        <i class="ti ti-users"></i>
+                                                    </button>
+                                                </div>
+                                                <small class="text-muted student-count-{{ $strand->code }}-{{ $section->id }}">
+                                                    0 students
+                                                </small>
+                                            </div>
+                                            <!-- Adviser Selection -->
+                                            <div class="mt-2">
+                                                <label class="form-label small mb-1 text-muted">
+                                                    <i class="ti ti-user-check me-1"></i>Adviser:
+                                                </label>
+                                                <select class="form-select form-select-sm adviser-select" 
+                                                        data-strand="{{ $strand->code }}" 
+                                                        data-section="{{ $section->id }}">
+                                                    <option value="">-- Select Adviser --</option>
+                                                    @foreach($teachers as $teacher)
+                                                        <option value="{{ $teacher->id }}" 
+                                                                data-teacher-name="{{ $teacher->last_name }}, {{ $teacher->first_name }}">
+                                                            {{ $teacher->last_name }}, {{ $teacher->first_name }}
+                                                            @if($teacher->middle_name)
+                                                                {{ substr($teacher->middle_name, 0, 1) }}.
+                                                            @endif
+                                                        </option>
+                                                    @endforeach
+                                                </select>
+                                                <small class="text-muted adviser-display-{{ $strand->code }}-{{ $section->id }}" style="display: none;">
+                                                    <i class="ti ti-check text-success"></i>
+                                                    <span class="adviser-name"></span>
+                                                </small>
+                                            </div>
+                                        </div>
+                                    @endforeach
+                                @endif
+                            @else
+                                <div class="list-group-item px-2 py-2 text-center text-muted">
+                                    <small>No sections available for this strand</small>
                                 </div>
-                            @endfor
+                            @endif
                         </div>
                     </div>
                 </div>
@@ -143,6 +233,10 @@
         @endforeach
     </div>
 </div>
+
+<!-- Hidden data containers for JavaScript -->
+<div id="studentAssignmentsData" style="display:none;">@json(session('student_assignments', []))</div>
+<div id="savedAdvisersData" style="display:none;">@json($savedAdvisers ?? [])</div>
 
 <!-- Modal for viewing section details -->
 <div class="modal fade" id="sectionDetailsModal" tabindex="-1" aria-labelledby="sectionDetailsModalLabel" aria-hidden="true">
@@ -333,6 +427,7 @@
     
     #assignmentStats .card-body h3 {
         animation: countUp 0.5s ease-out;
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     }
     
     /* Modal entrance animation */
@@ -367,14 +462,54 @@
     .alert {
         animation: slideInDown 0.3s ease-out;
     }
+    
+    /* Grade level header styling */
+    .list-group-item.bg-light {
+        background-color: #f8f9fa !important;
+        border-top: 2px solid #dee2e6;
+        border-bottom: 1px solid #dee2e6;
+        position: sticky;
+        top: 0;
+        z-index: 1;
+    }
+    
+    .list-group-item.bg-light:first-of-type {
+        border-top: none;
+    }
+    
+    .list-group-item.bg-light small {
+        font-size: 0.8rem;
+        letter-spacing: 0.5px;
+        text-transform: uppercase;
+    }
 </style>
 
 <script>
+    // Laravel Routes Configuration
+    const routes = {
+        getStudents: "{!! route('admin.section-advisers.get-students') !!}",
+        getSectionStudents: "{!! route('admin.section-advisers.get-section-students') !!}",
+        getSectionCounts: "{!! route('admin.section-advisers.get-section-counts') !!}",
+        removeStudent: "{!! route('admin.section-advisers.remove-student') !!}",
+        saveAdvisers: "{!! route('admin.section-advisers.save-advisers') !!}",
+        getSubjects: "{!! route('admin.section-advisers.get-subjects') !!}",
+        subjectTeachers: "{!! route('admin.section-advisers.subject-teachers') !!}",
+        saveSubjectTeacher: "{!! route('admin.section-advisers.save-subject-teacher') !!}"
+    };
+
     // Store adviser assignments
     let adviserAssignments = {};
     
     // Store student assignments from session
-    let studentAssignments = @json(session('student_assignments', []));
+    let studentAssignments = [];
+    try {
+        const dataEl = document.getElementById('studentAssignmentsData');
+        if (dataEl && dataEl.textContent) {
+            studentAssignments = JSON.parse(dataEl.textContent);
+        }
+    } catch(e) {
+        console.error('Error parsing student assignments:', e);
+    }
 
     // Filter sections by grade level
     function filterSections() {
@@ -385,21 +520,22 @@
             const strand = card.dataset.strand;
             
             if (gradeLevel === 'all') {
+                // Show all sections and headers
                 card.style.display = 'block';
+                card.querySelectorAll('.section-item, .list-group-item.bg-light').forEach(el => {
+                    el.style.display = 'block';
+                });
             } else {
-                // Show sections based on grade level logic
-                // Typically Grade 11 = Sections 1-2, Grade 12 = Sections 3-4
-                // But you can adjust this logic based on your needs
+                // Filter sections based on grade level
                 const sections = card.querySelectorAll('.section-item');
+                const grade11Header = card.querySelector('.list-group-item.bg-light small.text-primary')?.closest('.list-group-item');
+                const grade12Header = card.querySelector('.list-group-item.bg-light small.text-success')?.closest('.list-group-item');
                 let hasVisibleSections = false;
                 
-                sections.forEach((section, index) => {
-                    const sectionNum = parseInt(section.dataset.section);
+                sections.forEach(section => {
+                    const sectionGrade = section.dataset.grade;
                     
-                    if (gradeLevel === '11' && (sectionNum === 1 || sectionNum === 2)) {
-                        section.style.display = 'block';
-                        hasVisibleSections = true;
-                    } else if (gradeLevel === '12' && (sectionNum === 3 || sectionNum === 4)) {
+                    if (gradeLevel === sectionGrade) {
                         section.style.display = 'block';
                         hasVisibleSections = true;
                     } else {
@@ -407,125 +543,127 @@
                     }
                 });
                 
+                // Show/hide grade headers based on filter
+                if (grade11Header) {
+                    grade11Header.style.display = (gradeLevel === '11') ? 'block' : 'none';
+                }
+                if (grade12Header) {
+                    grade12Header.style.display = (gradeLevel === '12') ? 'block' : 'none';
+                }
+                
+                // Hide strand card if no sections match the filter
                 card.style.display = hasVisibleSections ? 'block' : 'none';
             }
         });
     }
 
     // View section details with students and adviser
-    function viewSectionDetails(strandCode, sectionNumber) {
+    async function viewSectionDetails(strandCode, sectionId, sectionName) {
         // Get adviser info
-        const adviserKey = `${strandCode}-${sectionNumber}`;
+        const adviserKey = `${strandCode}-${sectionId}`;
         const adviser = adviserAssignments[adviserKey];
         
         // Update modal title
-        document.getElementById('modalSectionTitle').textContent = 
-            `${strandCode} - Section ${sectionNumber}`;
+        document.getElementById('modalSectionTitle').textContent = sectionName;
         
         // Update adviser info
         const adviserInfo = document.getElementById('adviserInfo');
-        const adviserName = document.getElementById('adviserName');
+        const adviserNameEl = document.getElementById('adviserName');
         
         if (adviser && adviser.teacherName) {
             adviserInfo.style.display = 'block';
             adviserInfo.className = 'alert alert-success mb-3';
-            adviserName.textContent = adviser.teacherName;
+            adviserNameEl.textContent = adviser.teacherName;
         } else {
             adviserInfo.style.display = 'block';
             adviserInfo.className = 'alert alert-warning mb-3';
-            adviserName.textContent = 'No adviser assigned';
+            adviserNameEl.textContent = 'No adviser assigned';
         }
-        
-        // Get students for this section (coerce types to avoid strict mismatch)
-        const secNum = parseInt(sectionNumber, 10);
-        const students = (studentAssignments || []).filter(a => 
-            String(a.strand_code) === String(strandCode) && 
-            parseInt(a.section_number, 10) === secNum
-        );
         
         // Display students list
         const studentsList = document.getElementById('studentsList');
+        
+        // Show loading state
+        studentsList.innerHTML = `
+            <div class="text-center text-muted py-5">
+                <i class="ti ti-loader ti-spin mb-2" style="font-size: 3rem;"></i>
+                <p>Loading students from database...</p>
+            </div>
+        `;
+        
+        // Show modal immediately
+        const modal = new bootstrap.Modal(document.getElementById('sectionDetailsModal'));
+        modal.show();
 
-        if (students.length === 0) {
-            studentsList.innerHTML = `
-                <div class="text-center text-muted py-5">
-                    <i class="ti ti-users-off mb-2" style="font-size: 3rem;"></i>
-                    <p class="mb-0">No students assigned to this section yet</p>
-                    <small>Go to Assigning List to assign students</small>
-                </div>
-            `;
-        } else {
-            // Show loading state immediately
-            studentsList.innerHTML = `
-                <div class="text-center text-muted py-5">
-                    <i class="ti ti-loader ti-spin mb-2" style="font-size: 3rem;"></i>
-                    <p>Loading ${students.length} student(s)...</p>
-                </div>
-            `;
-
-            // Fetch student details via AJAX
-            const ids = students.map(s => s.student_id);
-            fetchStudentDetails(ids)
-                .then(studentDetails => {
-                    // Fallback if no details were returned
-                    if (!Array.isArray(studentDetails) || studentDetails.length === 0) {
-                        studentsList.innerHTML = `
-                            <div class="alert alert-warning">
-                                <i class="ti ti-alert-circle me-2"></i>
-                                No student records returned for IDs: <code>${ids.join(', ')}</code>.
-                                <br><small>Make sure assignments were saved and the IDs exist.</small>
-                            </div>
-                        `;
-                        return;
-                    }
-
-                    let html = '<div class="list-group">';
-                    students.forEach((assignment, index) => {
-                        // Normalize id comparison (string vs number)
-                        const student = studentDetails.find(s => String(s.id) === String(assignment.student_id));
-                        if (student) {
-                            html += `
-                                <div class="list-group-item">
-                                    <div class="d-flex justify-content-between align-items-center">
-                                        <div>
-                                            <div class="fw-semibold">${index + 1}. ${student.first_name} ${student.last_name}</div>
-                                            <small class="text-muted">
-                                                <span class="badge bg-secondary">${student.student_number}</span>
-                                                <span class="badge bg-primary-subtle text-primary ms-1">${student.program}</span>
-                                                <span class="badge bg-info-subtle text-info ms-1">${student.academic_year}</span>
-                                            </small>
-                                        </div>
-                                        <button type="button" class="btn btn-sm btn-outline-danger ms-3" title="Remove from section" onclick="removeStudentFromSection('${strandCode}', ${secNum}, ${student.id})">
-                                            <i class="ti ti-user-minus"></i>
-                                        </button>
-                                    </div>
-                                </div>
-                            `;
-                        }
-                    });
-                    html += '</div>';
-                    studentsList.innerHTML = html;
+        try {
+            // Fetch students enrolled in this section from database
+            const response = await fetch(routes.getSectionStudents, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': '{{ csrf_token() }}'
+                },
+                body: JSON.stringify({
+                    strand_code: strandCode,
+                    section_id: sectionId
                 })
-                .catch(error => {
-                    console.error('Error fetching student details:', error);
-                    studentsList.innerHTML = `
-                        <div class="alert alert-danger">
-                            <i class="ti ti-alert-circle me-2"></i>
-                            Error loading student details. Please try again.<br>
-                            <small>${error?.message || ''}</small>
+            });
+
+            if (!response.ok) {
+                throw new Error('Failed to fetch section students');
+            }
+
+            const data = await response.json();
+            const students = data.students || [];
+
+            if (students.length === 0) {
+                studentsList.innerHTML = `
+                    <div class="text-center text-muted py-5">
+                        <i class="ti ti-users-off mb-2" style="font-size: 3rem;"></i>
+                        <p class="mb-0">No students enrolled in this section yet</p>
+                        <small>Go to Assigning List to assign students</small>
+                    </div>
+                `;
+            } else {
+                let html = '<div class="list-group">';
+                students.forEach((student, index) => {
+                    html += `
+                        <div class="list-group-item">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <div>
+                                    <div class="fw-semibold">${index + 1}. ${student.first_name} ${student.last_name}</div>
+                                    <small class="text-muted">
+                                        <span class="badge bg-secondary">${student.student_number}</span>
+                                        <span class="badge bg-primary-subtle text-primary ms-1">${student.program}</span>
+                                        <span class="badge bg-info-subtle text-info ms-1">${student.academic_year}</span>
+                                        ${student.registration_number ? `<span class="badge bg-success-subtle text-success ms-1">REG: ${student.registration_number}</span>` : ''}
+                                    </small>
+                                </div>
+                                <button type="button" class="btn btn-sm btn-outline-danger ms-3" title="Remove from section" onclick="removeStudentFromSection('${strandCode}', ${sectionId}, ${student.id})">
+                                    <i class="ti ti-user-minus"></i>
+                                </button>
+                            </div>
                         </div>
                     `;
                 });
+                html += '</div>';
+                studentsList.innerHTML = html;
+            }
+        } catch (error) {
+            console.error('Error fetching section students:', error);
+            studentsList.innerHTML = `
+                <div class="alert alert-danger">
+                    <i class="ti ti-alert-circle me-2"></i>
+                    Error loading students from database. Please try again.<br>
+                    <small>${error?.message || ''}</small>
+                </div>
+            `;
         }
-        
-        // Show modal
-        const modal = new bootstrap.Modal(document.getElementById('sectionDetailsModal'));
-        modal.show();
     }
 
     // Fetch student details from server
     async function fetchStudentDetails(studentIds) {
-        const response = await fetch('{{ route('admin.section-advisers.get-students') }}', {
+        const response = await fetch(routes.getStudents, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -543,34 +681,46 @@
     }
 
     // Update student counts for each section
-    function updateStudentCounts() {
-        // Reset all counts
-        document.querySelectorAll('[class*="student-count-"]').forEach(el => {
-            el.textContent = '0 students';
-        });
+    async function updateStudentCounts() {
+        try {
+            const response = await fetch(routes.getSectionCounts, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': '{{ csrf_token() }}'
+                }
+            });
 
-        if (!Array.isArray(studentAssignments)) {
-            return;
-        }
-        
-        // Count students per section (coerce section number to integer)
-        studentAssignments.forEach(assignment => {
-            const sec = parseInt(assignment.section_number, 10);
-            const countEl = document.querySelector(`.student-count-${assignment.strand_code}-${sec}`);
-            if (countEl) {
-                const currentCount = parseInt(countEl.textContent) || 0;
-                const next = currentCount + 1;
-                countEl.textContent = `${next} student${next !== 1 ? 's' : ''}`;
+            if (!response.ok) {
+                throw new Error('Failed to fetch section counts');
             }
-        });
+
+            const data = await response.json();
+            const counts = data.counts || {};
+
+            // Update all count elements
+            document.querySelectorAll('[class*="student-count-"]').forEach(el => {
+                el.textContent = '0 students';
+            });
+
+            // Set actual counts from database
+            for (const [key, count] of Object.entries(counts)) {
+                const countEl = document.querySelector(`.student-count-${key}`);
+                if (countEl) {
+                    countEl.textContent = `${count} student${count !== 1 ? 's' : ''}`;
+                }
+            }
+        } catch (error) {
+            console.error('Error updating student counts:', error);
+        }
     }
 
     // Remove a student from a section and update session/state
-    async function removeStudentFromSection(strandCode, sectionNumber, studentId) {
+    async function removeStudentFromSection(strandCode, sectionId, studentId) {
         if (!confirm('Remove this student from the section?')) return;
 
         try {
-            const response = await fetch('{{ route('admin.section-advisers.remove-student') }}', {
+            const response = await fetch(routes.removeStudent, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -578,7 +728,7 @@
                 },
                 body: JSON.stringify({
                     strand_code: strandCode,
-                    section_number: sectionNumber,
+                    section_id: sectionId,
                     student_id: studentId
                 })
             });
@@ -592,15 +742,18 @@
             if (Array.isArray(studentAssignments)) {
                 studentAssignments = studentAssignments.filter(a => !(
                     String(a.strand_code) === String(strandCode) &&
-                    parseInt(a.section_number, 10) === parseInt(sectionNumber, 10) &&
+                    parseInt(a.section_id, 10) === parseInt(sectionId, 10) &&
                     String(a.student_id) === String(studentId)
                 ));
             }
 
             // Refresh counts and current modal view
             updateStudentCounts();
-            // Re-open the current modal content by re-calling viewSectionDetails
-            viewSectionDetails(strandCode, sectionNumber);
+            
+            // Get section name from button to refresh modal
+            const sectionBtn = document.querySelector(`.view-section-btn[data-strand="${strandCode}"][data-section="${sectionId}"]`);
+            const sectionName = sectionBtn ? sectionBtn.dataset.sectionName : `${strandCode} - Section ${sectionId}`;
+            viewSectionDetails(strandCode, sectionId, sectionName);
 
             showAlert('Student removed from section.', 'success');
         } catch (e) {
@@ -611,12 +764,20 @@
 
     // Load saved advisers on page load
     function loadSavedAdvisers() {
-        const savedAdvisers = @json($savedAdvisers ?? []);
+        let savedAdvisers = [];
+        try {
+            const dataEl = document.getElementById('savedAdvisersData');
+            if (dataEl && dataEl.textContent) {
+                savedAdvisers = JSON.parse(dataEl.textContent);
+            }
+        } catch(e) {
+            console.error('Error parsing saved advisers:', e);
+        }
         
         if (savedAdvisers && savedAdvisers.length > 0) {
             savedAdvisers.forEach(adviser => {
-                const key = `${adviser.strand_code}-${adviser.section_number}`;
-                const selectElement = document.querySelector(`.adviser-select[data-strand="${adviser.strand_code}"][data-section="${adviser.section_number}"]`);
+                const key = `${adviser.strand_code}-${adviser.section_id}`;
+                const selectElement = document.querySelector(`.adviser-select[data-strand="${adviser.strand_code}"][data-section="${adviser.section_id}"]`);
                 
                 if (selectElement) {
                     selectElement.value = adviser.teacher_id;
@@ -626,11 +787,12 @@
                     // Store in memory
                     adviserAssignments[key] = {
                         teacherId: adviser.teacher_id,
-                        teacherName: teacherName
+                        teacherName: teacherName,
+                        sectionId: adviser.section_id
                     };
                     
                     // Update display
-                    const adviserDisplay = document.querySelector(`.adviser-display-${adviser.strand_code}-${adviser.section_number}`);
+                    const adviserDisplay = document.querySelector(`.adviser-display-${adviser.strand_code}-${adviser.section_id}`);
                     if (adviserDisplay) {
                         adviserDisplay.style.display = 'block';
                         adviserDisplay.querySelector('.adviser-name').textContent = teacherName;
@@ -646,9 +808,13 @@
     }
 
     // Assign a teacher as adviser to a section
-    function assignAdviser(strandCode, sectionNumber, selectElement) {
+    function assignAdviser(strandCode, sectionId, selectElement) {
         const teacherId = selectElement.value;
-        const key = `${strandCode}-${sectionNumber}`;
+        const key = `${strandCode}-${sectionId}`;
+        
+        // Get section name from button
+        const sectionBtn = document.querySelector(`.view-section-btn[data-strand="${strandCode}"][data-section="${sectionId}"]`);
+        const sectionName = sectionBtn ? sectionBtn.dataset.sectionName : `Section ${sectionId}`;
         
         if (teacherId) {
             const selectedOption = selectElement.options[selectElement.selectedIndex];
@@ -657,27 +823,28 @@
             // Store adviser assignment
             adviserAssignments[key] = {
                 teacherId: teacherId,
-                teacherName: teacherName
+                teacherName: teacherName,
+                sectionId: sectionId
             };
             
             // Update display
-            const adviserDisplay = document.querySelector(`.adviser-display-${strandCode}-${sectionNumber}`);
+            const adviserDisplay = document.querySelector(`.adviser-display-${strandCode}-${sectionId}`);
             if (adviserDisplay) {
                 adviserDisplay.style.display = 'block';
                 adviserDisplay.querySelector('.adviser-name').textContent = teacherName;
             }
             
-            showAlert(`${teacherName} assigned as adviser for ${strandCode} - Section ${sectionNumber}`, 'success');
+            showAlert(`${teacherName} assigned as adviser for ${sectionName}`, 'success');
         } else {
             // Remove adviser assignment
             delete adviserAssignments[key];
             
-            const adviserDisplay = document.querySelector(`.adviser-display-${strandCode}-${sectionNumber}`);
+            const adviserDisplay = document.querySelector(`.adviser-display-${strandCode}-${sectionId}`);
             if (adviserDisplay) {
                 adviserDisplay.style.display = 'none';
             }
             
-            showAlert(`Adviser removed from ${strandCode} - Section ${sectionNumber}`, 'info');
+            showAlert(`Adviser removed from ${sectionName}`, 'info');
         }
         
         // Update assigned count
@@ -698,10 +865,10 @@
         // Collect all adviser assignments
         const advisers = [];
         for (const key in adviserAssignments) {
-            const [strandCode, sectionNumber] = key.split('-');
+            const [strandCode, sectionId] = key.split('-');
             advisers.push({
                 strand_code: strandCode,
-                section_number: parseInt(sectionNumber),
+                section_id: parseInt(sectionId),
                 teacher_id: adviserAssignments[key].teacherId
             });
         }
@@ -718,7 +885,7 @@
         saveButton.innerHTML = '<i class="ti ti-loader ti-spin me-2"></i>Saving...';
         
         try {
-            const response = await fetch('{{ route('admin.section-advisers.save-advisers') }}', {
+            const response = await fetch(routes.saveAdvisers, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -786,6 +953,36 @@
     document.addEventListener('DOMContentLoaded', function() {
         loadSavedAdvisers();
         updateStudentCounts(); // Update student counts on page load
+        
+        // Attach event listeners for view section buttons
+        document.querySelectorAll('.view-section-btn').forEach(btn => {
+            btn.addEventListener('click', function() {
+                const strand = this.dataset.strand;
+                const section = this.dataset.section;
+                const sectionName = this.dataset.sectionName;
+                viewSectionDetails(strand, section, sectionName);
+            });
+        });
+        
+        // Attach event listeners for assign teacher buttons
+        document.querySelectorAll('.assign-teacher-btn').forEach(btn => {
+            btn.addEventListener('click', function() {
+                const strand = this.dataset.strand;
+                const section = this.dataset.section;
+                const sectionName = this.dataset.sectionName;
+                const gradeLevel = this.dataset.grade;
+                openSubjectTeacherAssignment(strand, section, sectionName, gradeLevel);
+            });
+        });
+        
+        // Attach event listeners for adviser select dropdowns
+        document.querySelectorAll('.adviser-select').forEach(select => {
+            select.addEventListener('change', function() {
+                const strand = this.dataset.strand;
+                const section = this.dataset.section;
+                assignAdviser(strand, section, this);
+            });
+        });
     });
 
     // View subjects per strand and grade level
@@ -803,7 +1000,7 @@
         modal.show();
 
         try {
-            const response = await fetch('{{ route('admin.section-advisers.get-subjects') }}', {
+            const response = await fetch(routes.getSubjects, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -855,13 +1052,12 @@
     }
 
     // Open subject-teacher assignment modal
-    async function openSubjectTeacherAssignment(strandCode, section) {
-        // Determine grade level based on section (1-2 = G11, 3-4 = G12)
-        const gradeLevel = (section <= 2) ? '11' : '12';
+    async function openSubjectTeacherAssignment(strandCode, sectionId, sectionName, gradeLevel) {
+        // Use the provided grade level from the data attribute
         
         const modalTitle = document.getElementById('modalSubjectTeacherTitle');
         const modalSubtitle = document.getElementById('modalSubjectTeacherSubtitle');
-        modalTitle.textContent = `${strandCode} - Section ${section}`;
+        modalTitle.textContent = sectionName;
         modalSubtitle.textContent = `Grade ${gradeLevel} Subject-Teacher Assignments`;
         
         const modal = new bootstrap.Modal(document.getElementById('subjectTeacherModal'));
@@ -878,15 +1074,15 @@
         
         try {
             // First, ensure adviser is saved
-            const adviserSelect = document.querySelector(`.adviser-select[data-strand="${strandCode}"][data-section="${section}"]`);
+            const adviserSelect = document.querySelector(`.adviser-select[data-strand="${strandCode}"][data-section="${sectionId}"]`);
             const adviserId = adviserSelect?.value;
             
             if (adviserId) {
-                await saveAdvisersToDb([{strand_code: strandCode, section_number: section, teacher_id: parseInt(adviserId)}]);
+                await saveAdvisersToDb([{strand_code: strandCode, section_id: parseInt(sectionId), teacher_id: parseInt(adviserId)}]);
             }
             
             // Fetch subjects
-            const response = await fetch('{{ route('admin.section-advisers.get-subjects') }}', {
+            const response = await fetch(routes.getSubjects, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': '{{ csrf_token() }}' },
                 body: JSON.stringify({ strand_code: strandCode, grade_level: gradeLevel })
@@ -1053,7 +1249,7 @@
         }
         
         try {
-            const response = await fetch('{{ route('admin.section-advisers.subject-teachers') }}', {
+            const response = await fetch(routes.subjectTeachers, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': '{{ csrf_token() }}' },
                 body: JSON.stringify({ subject_id: subjectId })
@@ -1138,7 +1334,7 @@
             };
             console.log('Payload:', JSON.stringify(payload, null, 2));
             
-            const url = '{{ route('admin.section-advisers.save-subject-teacher') }}';
+            const url = routes.saveSubjectTeacher;
             console.log('Posting to URL:', url);
             
             const response = await fetch(url, {
@@ -1169,6 +1365,18 @@
             console.log('Response data:', data);
             
             if (data.success) {
+                // Get the row element FIRST
+                const row = btn?.closest('tr');
+                console.log('Found row element:', row);
+                
+                // Update row data attribute FIRST
+                if (row) {
+                    row.setAttribute('data-assigned', 'true');
+                    console.log('Set data-assigned=true on row');
+                } else {
+                    console.error('❌ Could not find row element to update!');
+                }
+                
                 // Update the current teacher display with success
                 if (currentEl) {
                     const teacherName = select.options[select.selectedIndex]?.text || 'Assigned';
@@ -1190,12 +1398,6 @@
                 select.style.borderColor = '#28a745';
                 select.style.borderWidth = '2px';
                 
-                // Update row data attribute
-                const row = btn.closest('tr');
-                if (row) {
-                    row.setAttribute('data-assigned', 'true');
-                }
-                
                 // Add delete button if it doesn't exist
                 const deleteBtn = document.getElementById(`${rowId}-del-btn`);
                 if (!deleteBtn) {
@@ -1212,8 +1414,10 @@
                     btnContainer.appendChild(newDeleteBtn);
                 }
                 
-                // Update statistics
-                updateAssignmentStatistics();
+                // Update statistics AFTER DOM updates are complete
+                setTimeout(() => {
+                    updateAssignmentStatistics();
+                }, 100);
                 
                 // Show success alert
                 showAlert('✅ ' + data.message, 'success');
@@ -1272,21 +1476,48 @@
     
     // Update assignment statistics
     function updateAssignmentStatistics() {
+        console.log('🔄 Updating assignment statistics...');
+        
         const rows = document.querySelectorAll('.subject-row');
         const total = rows.length;
         let assigned = 0;
         
-        rows.forEach(row => {
-            if (row.getAttribute('data-assigned') === 'true') {
+        rows.forEach((row, index) => {
+            const isAssigned = row.getAttribute('data-assigned') === 'true';
+            console.log(`Row ${index + 1}: data-assigned="${row.getAttribute('data-assigned')}" (${isAssigned ? 'ASSIGNED' : 'NOT ASSIGNED'})`);
+            if (isAssigned) {
                 assigned++;
             }
         });
         
         const unassigned = total - assigned;
         
-        document.getElementById('totalSubjects').textContent = total;
-        document.getElementById('assignedSubjects').textContent = assigned;
-        document.getElementById('unassignedSubjects').textContent = unassigned;
+        console.log(`📊 Statistics: Total=${total}, Assigned=${assigned}, Unassigned=${unassigned}`);
+        
+        // Update with animation
+        const totalEl = document.getElementById('totalSubjects');
+        const assignedEl = document.getElementById('assignedSubjects');
+        const unassignedEl = document.getElementById('unassignedSubjects');
+        
+        if (totalEl) {
+            totalEl.style.transform = 'scale(1.2)';
+            totalEl.textContent = total;
+            setTimeout(() => totalEl.style.transform = 'scale(1)', 200);
+        }
+        
+        if (assignedEl) {
+            assignedEl.style.transform = 'scale(1.2)';
+            assignedEl.textContent = assigned;
+            setTimeout(() => assignedEl.style.transform = 'scale(1)', 200);
+        }
+        
+        if (unassignedEl) {
+            unassignedEl.style.transform = 'scale(1.2)';
+            unassignedEl.textContent = unassigned;
+            setTimeout(() => unassignedEl.style.transform = 'scale(1)', 200);
+        }
+        
+        console.log('✅ Statistics updated successfully');
     }
     
     // Delete/Clear subject-teacher assignment
@@ -1326,10 +1557,12 @@
                 strand_code: strandCode,
                 grade_level: gradeLevel,
                 subject_id: subjectId,
-                teacher_id: null  // Send null to clear the assignment
+                teacher_id: ''  // Send empty string to clear the assignment
             };
             
-            const url = '{{ route('admin.section-advisers.save-subject-teacher') }}';
+            console.log('Delete payload:', JSON.stringify(payload, null, 2));
+            
+            const url = routes.saveSubjectTeacher;
             
             const response = await fetch(url, {
                 method: 'POST',
@@ -1352,6 +1585,20 @@
             }
             
             if (data.success) {
+                // Get the row element FIRST before any DOM manipulation
+                const saveBtn = document.getElementById(`${rowId}-btn`);
+                const row = (btn?.closest('tr') || saveBtn?.closest('tr'));
+                
+                console.log('Found row element:', row);
+                
+                // Update row data attribute FIRST
+                if (row) {
+                    row.setAttribute('data-assigned', 'false');
+                    console.log('Set data-assigned=false on row');
+                } else {
+                    console.error('❌ Could not find row element to update!');
+                }
+                
                 // Update display to unassigned state
                 if (currentEl) {
                     currentEl.innerHTML = `
@@ -1379,14 +1626,10 @@
                     btn.remove();
                 }
                 
-                // Update row data attribute
-                const row = btn?.closest('tr');
-                if (row) {
-                    row.setAttribute('data-assigned', 'false');
-                }
-                
-                // Update statistics
-                updateAssignmentStatistics();
+                // Update statistics AFTER DOM updates are complete
+                setTimeout(() => {
+                    updateAssignmentStatistics();
+                }, 100);
                 
                 showAlert('✅ Teacher assignment removed successfully', 'success');
                 console.log('✅ Delete successful');
@@ -1413,7 +1656,7 @@
     // Helper to save advisers to database
     async function saveAdvisersToDb(advisers) {
         try {
-            const response = await fetch('{{ route('admin.section-advisers.save-advisers') }}', {
+            const response = await fetch(routes.saveAdvisers, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': '{{ csrf_token() }}' },
                 body: JSON.stringify({ advisers })

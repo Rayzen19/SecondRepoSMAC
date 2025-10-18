@@ -18,7 +18,25 @@ class ProfileController extends Controller
     public function show()
     {
         $user = Auth::guard('teacher')->user();
-        $teacher = Teacher::findOrFail($user->user_pk_id);
+        $teacher = Teacher::with([
+            'advisedSections' => function ($query) {
+                $query->where('is_active', true)
+                    ->with(['academicYear', 'strand', 'section']);
+            },
+            'teachingAssignments' => function ($query) {
+                // Only include teaching assignments for the active academic year
+                $query->whereHas('academicYear', function ($q) {
+                        $q->where('is_active', true);
+                    })
+                    ->with([
+                    'academicYear',
+                    'strand',
+                    'subject',
+                    'subjectEnrollments.studentEnrollment.academicYearStrandSection.section'
+                ]);
+            }
+        ])->findOrFail($user->user_pk_id);
+        
         return view('teacher.profile.show', compact('teacher'));
     }
 
@@ -135,5 +153,57 @@ class ProfileController extends Controller
 
         return redirect()->route('teacher.profile.show')
             ->with('success', 'Password changed successfully!');
+    }
+
+    /**
+     * Remove adviser assignment from a section.
+     */
+    public function removeAdviserAssignment($sectionId)
+    {
+        $user = Auth::guard('teacher')->user();
+        $teacher = Teacher::findOrFail($user->user_pk_id);
+
+        // Find the section where this teacher is the adviser
+        $section = \App\Models\AcademicYearStrandSection::where('id', $sectionId)
+            ->where('adviser_teacher_id', $teacher->id)
+            ->first();
+
+        if (!$section) {
+            return redirect()->route('teacher.profile.show')
+                ->with('error', 'Section not found or you are not the adviser of this section.');
+        }
+
+        // Remove adviser assignment
+        $section->adviser_teacher_id = null;
+        $section->save();
+
+        return redirect()->route('teacher.profile.show')
+            ->with('success', 'Successfully removed from adviser assignment.');
+    }
+
+    /**
+     * Remove teaching assignment from a subject.
+     */
+    public function removeTeachingAssignment($assignmentId)
+    {
+        $user = Auth::guard('teacher')->user();
+        $teacher = Teacher::findOrFail($user->user_pk_id);
+
+        // Find the teaching assignment
+        $assignment = \App\Models\AcademicYearStrandSubject::where('id', $assignmentId)
+            ->where('teacher_id', $teacher->id)
+            ->first();
+
+        if (!$assignment) {
+            return redirect()->route('teacher.profile.show')
+                ->with('error', 'Teaching assignment not found or you are not assigned to this subject.');
+        }
+
+        // Remove teaching assignment
+        $assignment->teacher_id = null;
+        $assignment->save();
+
+        return redirect()->route('teacher.profile.show')
+            ->with('success', 'Successfully removed from teaching assignment.');
     }
 }

@@ -47,4 +47,20 @@ class Teacher extends Model
         return $this->belongsToMany(Subject::class, 'teacher_subject')
             ->withTimestamps();
     }
+
+    /**
+     * Get the sections that this teacher advises.
+     */
+    public function advisedSections()
+    {
+        return $this->hasMany(AcademicYearStrandSection::class, 'adviser_teacher_id');
+    }
+
+    /**
+     * Get the subjects that this teacher teaches.
+     */
+    public function teachingAssignments()
+    {
+        return $this->hasMany(AcademicYearStrandSubject::class, 'teacher_id');
+    }
 }

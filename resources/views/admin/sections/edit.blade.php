@@ -37,6 +37,16 @@
                         <input type="text" name="name" value="{{ old('name', $section->name) }}" class="form-control" required>
                         @error('name')<div class="text-danger small">{{ $message }}</div>@enderror
                     </div>
+                    <div class="col-md-6">
+                        <label class="form-label">Strand</label>
+                        <select name="strand_id" class="form-select">
+                            <option value="">Select strand (optional)</option>
+                            @foreach($strands as $strand)
+                                <option value="{{ $strand->id }}" @selected(old('strand_id', $section->strand_id)==$strand->id)>{{ $strand->name }}</option>
+                            @endforeach
+                        </select>
+                        @error('strand_id')<div class="text-danger small">{{ $message }}</div>@enderror
+                    </div>
                 </div>
                 <div class="mt-4 d-flex gap-2">
                     <button type="submit" class="btn btn-primary"><i class="ti ti-device-floppy me-2"></i>Save</button>

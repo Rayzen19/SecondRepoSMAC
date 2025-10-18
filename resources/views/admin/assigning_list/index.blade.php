@@ -116,18 +116,23 @@
                 </div>
                 <div class="d-flex gap-2 align-items-center flex-wrap">
                     <label class="text-muted small mb-0">Assign to Section:</label>
-                    <button type="button" class="btn btn-outline-success btn-sm" onclick="assignToSection(1)">
-                        <i class="ti ti-users me-1"></i>Section 1
-                    </button>
-                    <button type="button" class="btn btn-outline-info btn-sm" onclick="assignToSection(2)">
-                        <i class="ti ti-users me-1"></i>Section 2
-                    </button>
-                    <button type="button" class="btn btn-outline-warning btn-sm" onclick="assignToSection(3)">
-                        <i class="ti ti-users me-1"></i>Section 3
-                    </button>
-                    <button type="button" class="btn btn-outline-danger btn-sm" onclick="assignToSection(4)">
-                        <i class="ti ti-users me-1"></i>Section 4
-                    </button>
+                    @php
+                        $colors = ['success', 'info', 'warning', 'danger', 'primary', 'secondary', 'dark', 'purple'];
+                        $colorIndex = 0;
+                    @endphp
+                    @forelse($sections as $section)
+                        @php
+                            $color = $colors[$colorIndex % count($colors)];
+                            $colorIndex++;
+                        @endphp
+                        <button type="button" 
+                                class="btn btn-outline-{{ $color }} btn-sm" 
+                                onclick="assignToSection({{ $section->id }}, '{{ $section->grade }} {{ $section->name }}', '{{ $section->strand ? $section->strand->code : 'N/A' }}', '{{ $color }}')">
+                            <i class="ti ti-users me-1"></i>{{ $section->grade }} {{ $section->name }}
+                        </button>
+                    @empty
+                        <span class="text-muted small">No sections available</span>
+                    @endforelse
                     <div class="vr"></div>
                     <button type="button" class="btn btn-primary btn-sm" id="saveAssignmentsBtn" onclick="saveAllAssignments()">
                         <i class="ti ti-device-floppy me-1"></i>Save Assignments
@@ -342,7 +347,7 @@
     });
 
     // Assign selected students to a section
-    function assignToSection(sectionNumber) {
+    function assignToSection(sectionId, sectionName, strandCode, badgeColor) {
         const checkedBoxes = document.querySelectorAll('.student-checkbox:checked');
         
         if (checkedBoxes.length === 0) {
@@ -350,22 +355,7 @@
             return;
         }
 
-        const sectionName = `Section ${sectionNumber}`;
-        let sectionBadgeClass = '';
-        switch(sectionNumber) {
-            case 1:
-                sectionBadgeClass = 'bg-success';
-                break;
-            case 2:
-                sectionBadgeClass = 'bg-info';
-                break;
-            case 3:
-                sectionBadgeClass = 'bg-warning';
-                break;
-            case 4:
-                sectionBadgeClass = 'bg-danger';
-                break;
-        }
+        const sectionBadgeClass = `bg-${badgeColor}`;
 
         checkedBoxes.forEach(checkbox => {
             const studentId = checkbox.dataset.studentId;
@@ -378,25 +368,22 @@
             if (sectionDisplay) {
                 sectionDisplay.innerHTML = `<span class="badge ${sectionBadgeClass}">${sectionName}</span>`;
                 sectionDisplay.classList.remove('text-muted', 'small');
-                sectionDisplay.dataset.section = sectionNumber;
+                sectionDisplay.dataset.section = sectionId;
                 sectionDisplay.dataset.strand = studentStrand;
             }
 
             // Store in memory
-            const key = `${studentStrand}-${sectionNumber}`;
+            const key = `${studentStrand}-${sectionId}`;
             if (!sectionAssignments[key]) {
                 sectionAssignments[key] = [];
             }
             
             // Remove student from other sections of same strand
-            for (let i = 1; i <= 4; i++) {
-                if (i !== sectionNumber) {
-                    const otherKey = `${studentStrand}-${i}`;
-                    if (sectionAssignments[otherKey]) {
-                        sectionAssignments[otherKey] = sectionAssignments[otherKey].filter(s => s.id !== studentId);
-                    }
+            Object.keys(sectionAssignments).forEach(k => {
+                if (k.startsWith(studentStrand + '-') && k !== key) {
+                    sectionAssignments[k] = sectionAssignments[k].filter(s => s.id !== studentId);
                 }
-            }
+            });
             
             // Add to current section if not already there
             if (!sectionAssignments[key].find(s => s.id === studentId)) {
@@ -404,7 +391,9 @@
                     id: studentId,
                     name: studentName,
                     studentNo: studentNo,
-                    program: studentStrand
+                    program: studentStrand,
+                    sectionId: sectionId,
+                    sectionName: sectionName
                 });
             }
         });
@@ -425,15 +414,15 @@
     }
 
     // View students in a specific section
-    function viewSectionStudents(strandCode, sectionNumber) {
-        const key = `${strandCode}-${sectionNumber}`;
+    function viewSectionStudents(strandCode, sectionId, sectionName) {
+        const key = `${strandCode}-${sectionId}`;
         const students = sectionAssignments[key] || [];
         
         const modalTitle = document.getElementById('modalSectionTitle');
         const studentsList = document.getElementById('sectionStudentsList');
         
         // Build modal title
-        modalTitle.innerHTML = `${strandCode} - Section ${sectionNumber} (${students.length} students)`;
+        modalTitle.innerHTML = `${sectionName} (${students.length} students)`;
         
         if (students.length === 0) {
             studentsList.innerHTML = `
@@ -456,7 +445,7 @@
                                 </small>
                             </div>
                             <button class="btn btn-sm btn-outline-danger" 
-                                    onclick="removeFromSection('${strandCode}', ${sectionNumber}, '${student.id}')">
+                                    onclick="removeFromSection('${strandCode}', ${sectionId}, '${student.id}', '${sectionName}')">
                                 <i class="ti ti-x"></i>
                             </button>
                         </div>
@@ -473,15 +462,15 @@
     }
 
     // Remove student from section
-    function removeFromSection(strandCode, sectionNumber, studentId) {
-        const key = `${strandCode}-${sectionNumber}`;
+    function removeFromSection(strandCode, sectionId, studentId, sectionName) {
+        const key = `${strandCode}-${sectionId}`;
         if (sectionAssignments[key]) {
             sectionAssignments[key] = sectionAssignments[key].filter(s => s.id !== studentId);
         }
         
         // Update UI
         const sectionDisplay = document.querySelector(`.section-display-${studentId}`);
-        if (sectionDisplay && sectionDisplay.dataset.strand === strandCode && parseInt(sectionDisplay.dataset.section) === sectionNumber) {
+        if (sectionDisplay && sectionDisplay.dataset.strand === strandCode && parseInt(sectionDisplay.dataset.section) === sectionId) {
             sectionDisplay.innerHTML = '<span class="text-muted small">Not assigned</span>';
             sectionDisplay.classList.add('text-muted', 'small');
             delete sectionDisplay.dataset.section;
@@ -490,23 +479,15 @@
         
         // Update counts and refresh modal
         updateSectionCounts();
-        viewSectionStudents(strandCode, sectionNumber);
+        viewSectionStudents(strandCode, sectionId, sectionName);
         showAlert('Student removed from section', 'info');
     }
 
     // Update section counts
     function updateSectionCounts() {
-        @foreach($strands as $strand)
-            for (let i = 1; i <= 4; i++) {
-                const key = '{{ $strand->code }}-' + i;
-                const count = sectionAssignments[key] ? sectionAssignments[key].length : 0;
-                const countElement = document.querySelector(`.section-count-{{ $strand->code }}-${i}`);
-                if (countElement) {
-                    countElement.textContent = count;
-                    countElement.className = count > 0 ? 'badge bg-primary' : 'badge bg-secondary';
-                }
-            }
-        @endforeach
+        // This function can be extended later if you want to show counts on buttons
+        // For now, it's a placeholder for future enhancements
+        console.log('Section assignments updated:', Object.keys(sectionAssignments).length);
     }
 
     // Show alert message
@@ -531,14 +512,13 @@
         // Collect all student assignments
         const assignments = [];
         for (const key in sectionAssignments) {
-            const [strandCode, sectionNumber] = key.split('-');
             const students = sectionAssignments[key];
             
             students.forEach(student => {
                 assignments.push({
                     student_id: student.id,
-                    strand_code: strandCode,
-                    section_number: parseInt(sectionNumber)
+                    strand_code: student.program,
+                    section_id: student.sectionId
                 });
             });
         }
@@ -584,11 +564,21 @@
     // Load saved assignments from session
     function loadSavedAssignments() {
         const savedAssignments = @json(session('student_assignments', []));
+        const sectionsData = @json($sections);
+        
+        // Create a map of section IDs to section info for easy lookup
+        const sectionsMap = {};
+        sectionsData.forEach(section => {
+            sectionsMap[section.id] = {
+                name: `${section.grade} ${section.name}`,
+                strandCode: section.strand ? section.strand.code : 'N/A'
+            };
+        });
         
         if (savedAssignments.length > 0) {
             // Group assignments by strand-section
             savedAssignments.forEach(assignment => {
-                const key = `${assignment.strand_code}-${assignment.section_number}`;
+                const key = `${assignment.strand_code}-${assignment.section_id}`;
                 
                 if (!sectionAssignments[key]) {
                     sectionAssignments[key] = [];
@@ -599,26 +589,28 @@
                     // Find student data from the page
                     const studentCheckbox = document.querySelector(`.student-checkbox[data-student-id="${assignment.student_id}"]`);
                     if (studentCheckbox) {
+                        const sectionInfo = sectionsMap[assignment.section_id];
+                        
                         sectionAssignments[key].push({
                             id: assignment.student_id,
                             name: studentCheckbox.dataset.studentName,
                             studentNo: studentCheckbox.dataset.studentNo,
-                            program: studentCheckbox.dataset.studentStrand
+                            program: studentCheckbox.dataset.studentStrand,
+                            sectionId: assignment.section_id,
+                            sectionName: sectionInfo ? sectionInfo.name : 'Unknown Section'
                         });
                         
                         // Update display on the page
                         const sectionDisplay = document.querySelector(`.section-display-${assignment.student_id}`);
-                        if (sectionDisplay) {
-                            let badgeClass = '';
-                            switch(parseInt(assignment.section_number)) {
-                                case 1: badgeClass = 'bg-success'; break;
-                                case 2: badgeClass = 'bg-info'; break;
-                                case 3: badgeClass = 'bg-warning'; break;
-                                case 4: badgeClass = 'bg-danger'; break;
-                            }
-                            sectionDisplay.innerHTML = `<span class="badge ${badgeClass}">Section ${assignment.section_number}</span>`;
+                        if (sectionDisplay && sectionInfo) {
+                            // Determine badge color based on section index (similar to button colors)
+                            const colors = ['success', 'info', 'warning', 'danger', 'primary', 'secondary', 'dark', 'purple'];
+                            const sectionIndex = sectionsData.findIndex(s => s.id === assignment.section_id);
+                            const badgeClass = `bg-${colors[sectionIndex % colors.length]}`;
+                            
+                            sectionDisplay.innerHTML = `<span class="badge ${badgeClass}">${sectionInfo.name}</span>`;
                             sectionDisplay.classList.remove('text-muted', 'small');
-                            sectionDisplay.dataset.section = assignment.section_number;
+                            sectionDisplay.dataset.section = assignment.section_id;
                             sectionDisplay.dataset.strand = assignment.strand_code;
                         }
                     }
@@ -768,6 +760,23 @@
     @keyframes spin {
         0% { transform: rotate(0deg); }
         100% { transform: rotate(360deg); }
+    }
+    
+    /* Custom purple badge color */
+    .btn-outline-purple {
+        color: #6f42c1;
+        border-color: #6f42c1;
+    }
+    
+    .btn-outline-purple:hover {
+        color: #fff;
+        background-color: #6f42c1;
+        border-color: #6f42c1;
+    }
+    
+    .bg-purple {
+        background-color: #6f42c1 !important;
+        color: white !important;
     }
 </style>
 

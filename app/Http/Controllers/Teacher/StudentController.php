@@ -13,12 +13,13 @@ class StudentController extends Controller
 {
     public function section($sectionAssignmentId)
     {
-        $teacher = auth('teacher')->user();
+        $user = auth('teacher')->user();
+        $teacherId = $user->user_pk_id;
         
         // Get the section assignment
         $sectionAssignment = AcademicYearStrandSection::with(['section', 'strand', 'academicYear'])
             ->where('id', $sectionAssignmentId)
-            ->where('adviser_teacher_id', $teacher->id)
+            ->where('adviser_teacher_id', $teacherId)
             ->firstOrFail();
         
         // Get all students enrolled in this section
@@ -50,7 +51,8 @@ class StudentController extends Controller
     
     public function allSections()
     {
-        $teacher = auth('teacher')->user();
+        $user = auth('teacher')->user();
+        $teacherId = $user->user_pk_id;
         
         // Get current active academic year
         $currentAcademicYear = AcademicYear::where('is_active', true)->first();
@@ -68,7 +70,7 @@ class StudentController extends Controller
             ->get();
         
         // Group sections by strand and then by grade
-        $groupedSections = $assignments->map(function ($assignment) use ($teacher) {
+        $groupedSections = $assignments->map(function ($assignment) use ($teacherId) {
             $studentsCount = StudentEnrollment::where('academic_year_strand_section_id', $assignment->id)
                 ->count();
             
@@ -82,7 +84,7 @@ class StudentController extends Controller
                 'adviser_name' => $assignment->adviserTeacher ? 
                     $assignment->adviserTeacher->last_name . ', ' . $assignment->adviserTeacher->first_name : 
                     'No Adviser',
-                'is_my_section' => $assignment->adviser_teacher_id === $teacher->id,
+                'is_my_section' => $assignment->adviser_teacher_id === $teacherId,
                 'students_count' => $studentsCount,
             ];
         })

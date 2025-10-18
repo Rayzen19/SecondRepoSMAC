@@ -176,8 +176,12 @@ Route::group(['prefix' => 'admin'], function () {
 
         // Section & Advisers Management (separate page)
         Route::get('/section-advisers', [App\Http\Controllers\Admin\SectionAdviserController::class, 'index'])->name('admin.section-advisers.index');
+        Route::get('/section-advisers/grade-11', [App\Http\Controllers\Admin\SectionAdviserController::class, 'grade11'])->name('admin.section-advisers.grade11');
+        Route::get('/section-advisers/grade-12', [App\Http\Controllers\Admin\SectionAdviserController::class, 'grade12'])->name('admin.section-advisers.grade12');
         Route::post('/section-advisers/save-advisers', [App\Http\Controllers\Admin\SectionAdviserController::class, 'saveAdvisers'])->name('admin.section-advisers.save-advisers');
         Route::post('/section-advisers/get-students', [App\Http\Controllers\Admin\SectionAdviserController::class, 'getStudents'])->name('admin.section-advisers.get-students');
+        Route::post('/section-advisers/get-section-students', [App\Http\Controllers\Admin\SectionAdviserController::class, 'getSectionStudents'])->name('admin.section-advisers.get-section-students');
+        Route::post('/section-advisers/get-section-counts', [App\Http\Controllers\Admin\SectionAdviserController::class, 'getSectionCounts'])->name('admin.section-advisers.get-section-counts');
         Route::post('/section-advisers/remove-student', [App\Http\Controllers\Admin\SectionAdviserController::class, 'removeStudent'])->name('admin.section-advisers.remove-student');
         Route::post('/section-advisers/get-subjects', [App\Http\Controllers\Admin\SectionAdviserController::class, 'getSubjects'])->name('admin.section-advisers.get-subjects');
         Route::post('/section-advisers/subject-teachers', [App\Http\Controllers\Admin\SectionAdviserController::class, 'subjectTeachers'])->name('admin.section-advisers.subject-teachers');
@@ -236,6 +240,8 @@ Route::group(['prefix' => 'teacher'], function () {
         Route::delete('/profile/picture', [App\Http\Controllers\Teacher\ProfileController::class, 'deleteProfilePicture'])->name('teacher.profile.picture.delete');
         Route::get('/profile/password/edit', [App\Http\Controllers\Teacher\ProfileController::class, 'editPassword'])->name('teacher.profile.password.edit');
         Route::put('/profile/password', [App\Http\Controllers\Teacher\ProfileController::class, 'updatePassword'])->name('teacher.profile.password.update');
+        Route::delete('/profile/adviser/{section}', [App\Http\Controllers\Teacher\ProfileController::class, 'removeAdviserAssignment'])->name('teacher.profile.adviser.remove');
+        Route::delete('/profile/teaching/{assignment}', [App\Http\Controllers\Teacher\ProfileController::class, 'removeTeachingAssignment'])->name('teacher.profile.teaching.remove');
     Route::get('/class-records/{assignment}', [App\Http\Controllers\Teacher\ClassRecordController::class, 'show'])->name('teacher.class-records.show');
     Route::get('/class-records/{assignment}/students/{student}', [App\Http\Controllers\Teacher\ClassRecordController::class, 'studentShow'])->name('teacher.class-records.students.show');
     Route::get('/class-records/{assignment}/view/{term}', [App\Http\Controllers\Teacher\ClassRecordController::class, 'termShow'])->name('teacher.class-records.term.show');

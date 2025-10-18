@@ -36,6 +36,7 @@
                         <tr>
                             <th>Grade</th>
                             <th>Name</th>
+                            <th>Strand</th>
                             <th>Created</th>
                             <th>Actions</th>
                         </tr>
@@ -45,6 +46,7 @@
                             <tr>
                                 <td>{{ $section->grade }}</td>
                                 <td>{{ $section->name }}</td>
+                                <td>{{ $section->strand ? $section->strand->name : 'N/A' }}</td>
                                 <td>{{ $section->created_at?->format('Y-m-d') }}</td>
                                 <td>
                                     <a href="{{ route('admin.sections.edit', $section) }}" class="btn btn-sm btn-outline-primary">Edit</a>
@@ -52,7 +54,7 @@
                             </tr>
                         @empty
                             <tr>
-                                <td colspan="4" class="text-center">No sections found.</td>
+                                <td colspan="5" class="text-center">No sections found.</td>
                             </tr>
                         @endforelse
                     </tbody>
