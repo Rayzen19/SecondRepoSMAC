@@ -7,7 +7,7 @@
     <meta name="robots" content="noindex, nofollow">
     <title>Login - St. Matthew Senior High School</title>
 
-    <link rel="shortcut icon" type="image/x-icon" href="{{ asset('assets/img/favicon.png') }}">
+    <link rel="shortcut icon" type="image/x-icon" href="{{ asset('assets/images/Image.png') }}">
     <link rel="apple-touch-icon" sizes="180x180" href="{{ asset('assets/img/apple-touch-icon.png') }}">
 
     <!-- Bootstrap CSS -->
@@ -27,7 +27,7 @@
         <div class="row justify-content-center">
             <div class="col-md-6 col-lg-5">
                 <div class="text-center mb-4">
-                    <img src="{{ asset('assets/img/logo.svg') }}" alt="Logo" height="48">
+                    <img src="{{ asset('assets/images/Image.png') }}" alt="SMAC Logo" height="100" class="mb-2">
                 </div>
                 <div class="card shadow-sm">
                     <div class="card-body p-4 p-md-5">
