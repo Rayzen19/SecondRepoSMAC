@@ -52,6 +52,18 @@ class StudentController extends Controller
             ->filter(fn($row) => !is_null($row['student']))
             ->values();
         
+        // Resolve the subject assignment(s) of the current teacher for this AY + Strand (and section if mapped)
+        $assignmentOptions = AcademicYearStrandSubject::with('subject')
+            ->where('teacher_id', $teacherId)
+            ->where('academic_year_id', $sectionAssignment->academic_year_id)
+            ->where('strand_id', $sectionAssignment->strand_id)
+            ->where(function ($q) use ($sectionAssignment) {
+                $q->whereNull('academic_year_strand_section_id')
+                  ->orWhere('academic_year_strand_section_id', $sectionAssignment->id);
+            })
+            ->orderBy('id')
+            ->get();
+
         $total = $students->count();
         $male = $students->filter(fn($row) => strtolower($row['student']->gender ?? '') === 'male')->count();
         $female = $students->filter(fn($row) => strtolower($row['student']->gender ?? '') === 'female')->count();
@@ -59,6 +71,7 @@ class StudentController extends Controller
         return view('teacher.students.section', [
             'sectionAssignment' => $sectionAssignment,
             'students' => $students,
+            'assignmentOptions' => $assignmentOptions,
             'total' => $total,
             'male' => $male,
             'female' => $female,
@@ -86,11 +99,11 @@ class StudentController extends Controller
             ->get();
         
         // Group sections by strand and then by grade
-        $groupedSections = $assignments->map(function ($assignment) use ($teacherId) {
+    $groupedSections = $assignments->map(function ($assignment) use ($teacherId) {
             $studentsCount = StudentEnrollment::where('academic_year_strand_section_id', $assignment->id)
                 ->count();
             
-            return [
+            return (object) [
                 'assignment_id' => $assignment->id,
                 'section_name' => $assignment->section->name ?? 'N/A',
                 'section_grade' => $assignment->section->grade ?? 'N/A',
@@ -107,9 +120,10 @@ class StudentController extends Controller
         ->groupBy('strand_code') // Group by strand
         ->map(function ($strandSections) {
             // Within each strand, group by grade
+            $first = $strandSections->first();
             return [
-                'strand_name' => $strandSections->first()['strand_name'],
-                'strand_code' => $strandSections->first()['strand_code'],
+                'strand_name' => $first->strand_name,
+                'strand_code' => $first->strand_code,
                 'grades' => $strandSections->groupBy('section_grade')
                     ->map(function ($gradeSections) {
                         return $gradeSections->sortBy('section_name')->values();

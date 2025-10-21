@@ -19,11 +19,24 @@ class AssigningListController extends Controller
         // Get all active strands for filter
         $strands = Strand::where('is_active', true)->orderBy('code')->get();
         
-        // Get all sections ordered by grade and name
-        $sections = Section::with('strand')
+        // Get sections filtered by strand and grade level
+        $sectionsQuery = Section::with('strand')
             ->orderBy('grade')
-            ->orderBy('name')
-            ->get();
+            ->orderBy('name');
+        
+        // Filter sections by strand if selected
+        if ($request->filled('strand') && $request->strand !== 'all') {
+            $sectionsQuery->whereHas('strand', function($q) use ($request) {
+                $q->where('code', $request->strand);
+            });
+        }
+        
+        // Filter sections by grade level if selected
+        if ($request->filled('grade_level') && $request->grade_level !== 'all') {
+            $sectionsQuery->where('grade', $request->grade_level);
+        }
+        
+        $sections = $sectionsQuery->get();
         
         // Get distinct grade levels from students
         $gradeLevels = ['11', '12']; // SHS Grade levels

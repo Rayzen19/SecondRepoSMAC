@@ -251,6 +251,7 @@ Route::group(['prefix' => 'teacher'], function () {
         Route::delete('/profile/picture', [App\Http\Controllers\Teacher\ProfileController::class, 'deleteProfilePicture'])->name('teacher.profile.picture.delete');
         Route::get('/profile/password/edit', [App\Http\Controllers\Teacher\ProfileController::class, 'editPassword'])->name('teacher.profile.password.edit');
         Route::put('/profile/password', [App\Http\Controllers\Teacher\ProfileController::class, 'updatePassword'])->name('teacher.profile.password.update');
+        Route::get('/profile/subjects', [App\Http\Controllers\Teacher\ProfileController::class, 'allSubjects'])->name('teacher.profile.subjects.all');
         Route::delete('/profile/adviser/{section}', [App\Http\Controllers\Teacher\ProfileController::class, 'removeAdviserAssignment'])->name('teacher.profile.adviser.remove');
         Route::delete('/profile/teaching/{assignment}', [App\Http\Controllers\Teacher\ProfileController::class, 'removeTeachingAssignment'])->name('teacher.profile.teaching.remove');
     Route::get('/class-records/{assignment}', [App\Http\Controllers\Teacher\ClassRecordController::class, 'show'])->name('teacher.class-records.show');

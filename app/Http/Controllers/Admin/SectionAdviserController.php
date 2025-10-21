@@ -123,17 +123,23 @@ class SectionAdviserController extends Controller
             foreach ($validated['advisers'] as $row) {
                 $strand = Strand::where('code', $row['strand_code'])->first();
                 $section = Section::find($row['section_id']);
-                
-                if ($strand && $section) {
+
+                if ($strand) {
+                    // Use academic_year_id + strand_id as the unique key so we don't fail
+                    // when section_id column or unique constraints differ between environments.
+                    $attributes = [
+                        'teacher_id' => $row['teacher_id'],
+                    ];
+                    if ($section) {
+                        $attributes['section_id'] = $section->id;
+                    }
+
                     \App\Models\AcademicYearStrandAdviser::updateOrCreate(
                         [
                             'academic_year_id' => $activeYear->id,
                             'strand_id' => $strand->id,
-                            'section_id' => $section->id,
                         ],
-                        [
-                            'teacher_id' => $row['teacher_id'],
-                        ]
+                        $attributes
                     );
                 }
             }
@@ -197,11 +203,19 @@ class SectionAdviserController extends Controller
             ], 404);
         }
 
-        // Find the academic_year_strand_section record
+        // Find the academic_year_strand_section record for the active year
         $academicYearStrandSection = \App\Models\AcademicYearStrandSection::where('academic_year_id', $activeYear->id)
             ->where('strand_id', $strand->id)
             ->where('section_id', $validated['section_id'])
             ->first();
+
+        // Fallback: Use most recent mapping for this Strand+Section if none is tied to the active year
+        if (!$academicYearStrandSection) {
+            $academicYearStrandSection = \App\Models\AcademicYearStrandSection::where('strand_id', $strand->id)
+                ->where('section_id', $validated['section_id'])
+                ->orderByDesc('id')
+                ->first();
+        }
 
         if (!$academicYearStrandSection) {
             return response()->json([
@@ -212,9 +226,9 @@ class SectionAdviserController extends Controller
         }
 
         // Get enrolled students
+        // Include all enrollments tied to this section (avoid over-filtering by status)
         $enrollments = \App\Models\StudentEnrollment::with('student')
             ->where('academic_year_strand_section_id', $academicYearStrandSection->id)
-            ->where('status', 'enrolled')
             ->get();
 
         $students = $enrollments->map(function($enrollment) {
@@ -263,10 +277,18 @@ class SectionAdviserController extends Controller
                 ->where('section_id', $section->id)
                 ->first();
 
+            // Fallback: Use latest mapping when none exists for the active year (prevents 0 when AY toggled)
+            if (!$academicYearStrandSection) {
+                $academicYearStrandSection = \App\Models\AcademicYearStrandSection::where('strand_id', $section->strand->id)
+                    ->where('section_id', $section->id)
+                    ->orderByDesc('id')
+                    ->first();
+            }
+
             $count = 0;
             if ($academicYearStrandSection) {
+                // Count all enrollments linked to the section to reflect true assignments
                 $count = \App\Models\StudentEnrollment::where('academic_year_strand_section_id', $academicYearStrandSection->id)
-                    ->where('status', 'enrolled')
                     ->count();
             }
 

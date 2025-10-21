@@ -240,12 +240,9 @@ class ClassRecordController extends Controller
         if (!$user) { abort(401); }
         if ($assignment->teacher_id !== $user->user_pk_id) { abort(403); }
 
-        // Ensure student is enrolled in this class record
-        $isEnrolled = SubjectEnrollment::where('academic_year_strand_subject_id', $assignment->id)
-            ->whereHas('studentEnrollment', function ($q) use ($student) {
-                $q->where('student_id', $student->id);
-            })->exists();
-        if (!$isEnrolled) { abort(404, 'Student not enrolled in this class record'); }
+        // Note: We no longer hard-block students who don't yet have a SubjectEnrollment row
+        // for this specific subject. Teachers may need to input scores first; final grades can
+        // be synced later. We still keep authorization on the assignment's teacher.
 
         $assignment->load(['academicYear', 'strand', 'subject', 'teacher']);
 
@@ -664,13 +661,31 @@ class ClassRecordController extends Controller
             ->get(['id','max_score']);
         $recordsById = $records->keyBy('id');
 
-        // Load enrolled students for validation
-        $enrolledStudentIds = SubjectEnrollment::with('studentEnrollment')
+        // Determine eligible students to accept scores for.
+        // Prefer subject-specific enrollments; if absent, fall back to AY+Strand (and Section if mapped).
+        $subjectEnrolledIds = SubjectEnrollment::with('studentEnrollment')
             ->where('academic_year_strand_subject_id', $assignment->id)
             ->get()
             ->map(function ($se) { return optional($se->studentEnrollment)->student_id; })
             ->filter()->unique()->all();
-        $enrolledSet = array_flip($enrolledStudentIds);
+
+        $eligibleIds = $subjectEnrolledIds;
+
+        if (empty($eligibleIds)) {
+            // Fallback to all students enrolled in this AY + Strand (+ Section when specified)
+            $eligibleIds = StudentEnrollment::query()
+                ->where('academic_year_id', $assignment->academic_year_id)
+                ->where('strand_id', $assignment->strand_id)
+                ->when($assignment->academic_year_strand_section_id, function($q) use ($assignment){
+                    $q->where('academic_year_strand_section_id', $assignment->academic_year_strand_section_id);
+                })
+                ->pluck('student_id')
+                ->filter()
+                ->unique()
+                ->all();
+        }
+
+        $eligibleSet = array_flip($eligibleIds);
 
         $now = now();
         $upserts = [];
@@ -682,7 +697,7 @@ class ClassRecordController extends Controller
 
             foreach ((array)$row as $studentId => $val) {
                 $studentId = (int)$studentId;
-                if (!isset($enrolledSet[$studentId])) continue; // skip non-enrolled
+                if (!isset($eligibleSet[$studentId])) continue; // skip students not eligible for this class context
                 // Sanitize to integer 0..max
                 $raw = is_numeric($val) ? (int)$val : 0;
                 if ($raw < 0) $raw = 0;
@@ -728,7 +743,7 @@ class ClassRecordController extends Controller
 
         $students = $enrollments->map(function ($se) {
             $student = optional($se->studentEnrollment)->student;
-            return $student ? $student->id : null;
+            return $student ? (int)$student->id : null;
         })->filter()->unique()->values();
 
         // Compute initial totals per student for 1st and 2nd using same logic as show()
@@ -738,7 +753,9 @@ class ClassRecordController extends Controller
             'qa' => (float) (($assignment->quarterly_assessment_percentage ?? 0) / 100),
         ];
 
-        $computeInitials = function ($quarterKey) use ($assignment, $students, $weights) {
+        $studentIds = $students->map(fn($id) => (int)$id)->values();
+
+        $computeInitials = function ($quarterKey) use ($assignment, $studentIds, $weights) {
             $recs = SubjectRecord::where('academic_year_strand_subject_id', $assignment->id)
                 ->when($quarterKey === null, function($q){ $q->whereNull('quarter'); }, function($q) use ($quarterKey){ $q->where('quarter', $quarterKey); })
                 ->orderBy('date_given')->orderBy('id')->get();
@@ -750,12 +767,12 @@ class ClassRecordController extends Controller
             $ptMax = (float) $pt->sum('max_score');
             $qaMax = (float) $qa->sum('max_score');
             $results = SubjectRecordResult::whereIn('subject_record_id', $recs->pluck('id')->all())
-                ->whereIn('student_id', $students->all())
+                ->whereIn('student_id', $studentIds->all())
                 ->get(['subject_record_id','student_id','raw_score']);
             $resByRecStu = [];
             foreach ($results as $r) { $resByRecStu[$r->subject_record_id][$r->student_id] = (float) ($r->raw_score ?? 0); }
             $initials = [];
-            foreach ($students as $sid) {
+            foreach ($studentIds as $sid) {
                 $sumRaw = function($col) use ($resByRecStu, $sid){ return (float) $col->sum(function($rec) use ($resByRecStu, $sid){ return $resByRecStu[$rec->id][$sid] ?? 0; }); };
                 $wwRaw = $sumRaw($ww); $ptRaw = $sumRaw($pt); $qaRaw = $sumRaw($qa);
                 $wwPS = $wwMax > 0 ? ($wwRaw / $wwMax) * 100 : null;
@@ -776,7 +793,7 @@ class ClassRecordController extends Controller
         // Upsert into SubjectEnrollment per student for this assignment
         $now = now();
         $upserts = [];
-        foreach ($students as $sid) {
+        foreach ($studentIds as $sid) {
             $fq = $first[$sid] ?? null;
             $sq = $second[$sid] ?? null;
             $avg = ($fq !== null && $sq !== null) ? (($fq + $sq) / 2) : null;

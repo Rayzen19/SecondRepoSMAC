@@ -155,6 +155,33 @@ class ProfileController extends Controller
     }
 
     /**
+     * Display all subjects handled by the teacher.
+     */
+    public function allSubjects()
+    {
+        $user = Auth::guard('teacher')->user();
+        $teacher = Teacher::with([
+            'teachingAssignments' => function ($query) {
+                $query->with([
+                    'academicYear',
+                    'strand',
+                    'subject',
+                    'sectionAssignment.section',
+                    'sectionAssignment.academicYear',
+                    'sectionAssignment.strand',
+                    'subjectEnrollments.studentEnrollment.student',
+                    'subjectEnrollments.studentEnrollment.academicYearStrandSection.section'
+                ])->orderBy('academic_year_id', 'desc');
+            }
+        ])->findOrFail($user->user_pk_id);
+
+        // Group assignments by academic year
+        $assignmentsByYear = $teacher->teachingAssignments->groupBy('academic_year_id');
+        
+        return view('teacher.profile.all-subjects', compact('teacher', 'assignmentsByYear'));
+    }
+
+    /**
      * Remove adviser assignment from a section.
      */
     public function removeAdviserAssignment($sectionId)
@@ -198,9 +225,15 @@ class ProfileController extends Controller
                 ->with('error', 'Teaching assignment not found or you are not assigned to this subject.');
         }
 
-        // Remove teaching assignment
-        $assignment->teacher_id = null;
-        $assignment->save();
+        // Guard: Do not allow removal if students are already enrolled under this assignment
+        $hasEnrollments = $assignment->subjectEnrollments()->exists();
+        if ($hasEnrollments) {
+            return redirect()->route('teacher.profile.show')
+                ->with('error', 'Cannot remove this assignment because students are already enrolled. Please contact the Admin to reassign.');
+        }
+
+        // Safe to remove: delete the assignment record instead of nulling teacher_id (column is NOT NULL)
+        $assignment->delete();
 
         return redirect()->route('teacher.profile.show')
             ->with('success', 'Successfully removed from teaching assignment.');

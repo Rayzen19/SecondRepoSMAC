@@ -201,14 +201,28 @@
                                         <div class="list-group">
                                             @foreach($assignments as $asmt)
                                                 @php
-                                                    $secName = data_get($asmt, 'subjectEnrollments.0.studentEnrollment.academicYearStrandSection.section.name');
+                                                    // Get section from direct assignment or from student enrollments
+                                                    $sectionName = data_get($asmt, 'sectionAssignment.section.name');
+                                                    if (!$sectionName) {
+                                                        $sectionName = data_get($asmt, 'subjectEnrollments.0.studentEnrollment.academicYearStrandSection.section.name');
+                                                    }
                                                     $countStudents = $asmt->subjectEnrollments->filter(fn($se) => data_get($se, 'studentEnrollment.student'))->count();
                                                 @endphp
                                                 <div class="list-group-item">
                                                     <div class="d-flex justify-content-between align-items-center">
                                                         <div>
-                                                            <div class="fw-semibold">{{ data_get($asmt, 'strand.name', 'Strand') }} • {{ data_get($asmt, 'subject.name', 'Subject') }}</div>
-                                                            <div class="small text-muted">Section {{ $secName ?: '—' }}</div>
+                                                            <div class="fw-semibold">
+                                                                {{ data_get($asmt, 'subject.name', 'Subject') }}
+                                                                @if(data_get($asmt, 'subject.code'))
+                                                                    <span class="text-muted">({{ data_get($asmt, 'subject.code') }})</span>
+                                                                @endif
+                                                            </div>
+                                                            <div class="small text-muted">
+                                                                {{ data_get($asmt, 'strand.name', 'Strand') }}
+                                                                @if($sectionName)
+                                                                    • Section {{ $sectionName }}
+                                                                @endif
+                                                            </div>
                                                         </div>
                                                         <div class="d-flex align-items-center gap-2">
                                                             <span class="badge bg-primary">{{ $countStudents }} Students</span>

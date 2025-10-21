@@ -106,6 +106,27 @@
                     @endif
                 </div>
             </div>
+            
+            <!-- Filter Info Message -->
+            @if((request('strand') && request('strand') !== 'all') || (request('grade_level') && request('grade_level') !== 'all'))
+                <div class="alert alert-info alert-dismissible fade show mb-3" role="alert">
+                    <i class="ti ti-info-circle me-2"></i>
+                    <strong>Filter Active:</strong> 
+                    Section buttons are now filtered to match your selected 
+                    @if(request('strand') && request('strand') !== 'all')
+                        <strong>Strand ({{ request('strand') }})</strong>
+                    @endif
+                    @if((request('strand') && request('strand') !== 'all') && (request('grade_level') && request('grade_level') !== 'all'))
+                        and
+                    @endif
+                    @if(request('grade_level') && request('grade_level') !== 'all')
+                        <strong>Grade Level ({{ request('grade_level') }})</strong>
+                    @endif
+                    criteria.
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                </div>
+            @endif
+            
             <!-- Section Assignment Controls -->
             <div class="d-flex gap-2 align-items-center flex-wrap">
                 <div class="btn-group" role="group">
@@ -124,14 +145,27 @@
                         @php
                             $color = $colors[$colorIndex % count($colors)];
                             $colorIndex++;
+                            $strandCode = $section->strand ? $section->strand->code : 'N/A';
+                            $strandName = $section->strand ? $section->strand->name : 'No Strand';
                         @endphp
                         <button type="button" 
                                 class="btn btn-outline-{{ $color }} btn-sm" 
-                                onclick="assignToSection({{ $section->id }}, '{{ $section->grade }} {{ $section->name }}', '{{ $section->strand ? $section->strand->code : 'N/A' }}', '{{ $color }}')">
-                            <i class="ti ti-users me-1"></i>{{ $section->grade }} {{ $section->name }}
+                                onclick="assignToSection({{ $section->id }}, '{{ $section->grade }} {{ $section->name }}', '{{ $strandCode }}', '{{ $color }}')"
+                                title="{{ $strandName }} - Grade {{ $section->grade }}">
+                            <i class="ti ti-users me-1"></i>G{{ $section->grade }} {{ $section->name }}
+                            @if($strandCode !== 'N/A')
+                                <span class="badge bg-white text-{{ $color }} ms-1" style="font-size: 0.7rem;">{{ $strandCode }}</span>
+                            @endif
                         </button>
                     @empty
-                        <span class="text-muted small">No sections available</span>
+                        <span class="text-muted small">
+                            <i class="ti ti-info-circle me-1"></i>
+                            @if((request('strand') && request('strand') !== 'all') || (request('grade_level') && request('grade_level') !== 'all'))
+                                No sections match the selected filters
+                            @else
+                                No sections available
+                            @endif
+                        </span>
                     @endforelse
                     <div class="vr"></div>
                     <button type="button" class="btn btn-primary btn-sm" id="saveAssignmentsBtn" onclick="saveAllAssignments()">

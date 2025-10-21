@@ -99,6 +99,7 @@
                                 <th>Gender</th>
                                 <th>Registration Number</th>
                                 <th>Status</th>
+                                <th class="text-end" style="width:240px;">Actions</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -115,7 +116,6 @@
                                                 <div class="fw-semibold">
                                                     {{ $row['student']->last_name }}, {{ $row['student']->first_name }} {{ $row['student']->middle_name }}
                                                 </div>
-                                                <div class="small text-muted">{{ $row['student']->email }}</div>
                                             </div>
                                         </div>
                                     </td>
@@ -131,6 +131,43 @@
                                         @endphp
                                         <span class="badge bg-{{ $statusColor }}">{{ ucfirst($row['status']) }}</span>
                                     </td>
+                                    <td>
+                                        <div class="d-flex justify-content-end">
+                                            @php $assignCount = isset($assignmentOptions) ? $assignmentOptions->count() : 0; @endphp
+                                            @if($assignCount === 1)
+                                                @php $a = $assignmentOptions->first(); @endphp
+                                                <a href="{{ route('teacher.class-records.students.show', ['assignment' => $a->id, 'student' => $row['student']->student_number]) }}" class="btn btn-sm btn-outline-primary">
+                                                    <i class="ti ti-notes"></i>Record
+                                                </a>
+                                            @elseif($assignCount > 1)
+                                                <div class="btn-group">
+                                                    <button type="button" class="btn btn-sm btn-outline-primary dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false">
+                                                        <i class="ti ti-notes"></i> Add Record
+                                                    </button>
+                                                    <ul class="dropdown-menu dropdown-menu-end">
+                                                        @foreach($assignmentOptions as $opt)
+                                                            <li>
+                                                                <a class="dropdown-item" href="{{ route('teacher.class-records.students.show', ['assignment' => $opt->id, 'student' => $row['student']->student_number]) }}">
+                                                                    {{ $opt->subject->name ?? 'Subject' }}
+                                                                </a>
+                                                            </li>
+                                                        @endforeach
+                                                    </ul>
+                                                </div>
+                                            @else
+                                                <span class="text-muted small">No subject</span>
+                                            @endif
+
+                                            <button type="button" class="btn btn-sm btn-outline-secondary ms-2 js-view-student"
+                                                    data-student-number="{{ $row['student']->student_number }}"
+                                                    data-name="{{ $row['student']->last_name }}, {{ $row['student']->first_name }} {{ $row['student']->middle_name }}"
+                                                    data-gender="{{ ucfirst($row['student']->gender) }}"
+                                                    data-registration="{{ $row['registration_number'] }}"
+                                                    data-status="{{ ucfirst($row['status']) }}">
+                                                <i class="ti ti-user"></i> View Info
+                                            </button>
+                                        </div>
+                                    </td>
                                 </tr>
                             @endforeach
                         </tbody>
@@ -139,5 +176,54 @@
             @endif
         </div>
     </div>
+
+    <!-- Student Quick Info Modal -->
+    <div class="modal fade" id="studentInfoModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title"><i class="ti ti-id"></i> Student Information</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <dl class="row mb-0">
+                        <dt class="col-sm-5">Student Number</dt>
+                        <dd class="col-sm-7" id="si-student-number">—</dd>
+                        <dt class="col-sm-5">Name</dt>
+                        <dd class="col-sm-7" id="si-name">—</dd>
+                        <dt class="col-sm-5">Gender</dt>
+                        <dd class="col-sm-7" id="si-gender">—</dd>
+                        <dt class="col-sm-5">Registration #</dt>
+                        <dd class="col-sm-7" id="si-registration">—</dd>
+                        <dt class="col-sm-5">Enrollment Status</dt>
+                        <dd class="col-sm-7" id="si-status">—</dd>
+                    </dl>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Close</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    @push('scripts')
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            const modalEl = document.getElementById('studentInfoModal');
+            const modal = modalEl ? new bootstrap.Modal(modalEl) : null;
+            document.querySelectorAll('.js-view-student').forEach(function(btn){
+                btn.addEventListener('click', function(){
+                    if(!modal) return;
+                    document.getElementById('si-student-number').textContent = this.dataset.studentNumber || '—';
+                    document.getElementById('si-name').textContent = this.dataset.name || '—';
+                    document.getElementById('si-gender').textContent = this.dataset.gender || '—';
+                    document.getElementById('si-registration').textContent = this.dataset.registration || '—';
+                    document.getElementById('si-status').textContent = this.dataset.status || '—';
+                    modal.show();
+                });
+            });
+        });
+    </script>
+    @endpush
 </div>
 @endsection

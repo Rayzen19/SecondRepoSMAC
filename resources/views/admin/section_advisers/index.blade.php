@@ -599,6 +599,7 @@
             // Fetch students enrolled in this section from database
             const response = await fetch(routes.getSectionStudents, {
                 method: 'POST',
+                credentials: 'same-origin',
                 headers: {
                     'Content-Type': 'application/json',
                     'X-CSRF-TOKEN': '{{ csrf_token() }}'
@@ -665,6 +666,7 @@
     async function fetchStudentDetails(studentIds) {
         const response = await fetch(routes.getStudents, {
             method: 'POST',
+            credentials: 'same-origin',
             headers: {
                 'Content-Type': 'application/json',
                 'X-CSRF-TOKEN': '{{ csrf_token() }}'
@@ -685,6 +687,7 @@
         try {
             const response = await fetch(routes.getSectionCounts, {
                 method: 'POST',
+                credentials: 'same-origin',
                 headers: {
                     'Content-Type': 'application/json',
                     'X-CSRF-TOKEN': '{{ csrf_token() }}'
@@ -722,6 +725,7 @@
         try {
             const response = await fetch(routes.removeStudent, {
                 method: 'POST',
+                credentials: 'same-origin',
                 headers: {
                     'Content-Type': 'application/json',
                     'X-CSRF-TOKEN': '{{ csrf_token() }}'
@@ -1002,6 +1006,7 @@
         try {
             const response = await fetch(routes.getSubjects, {
                 method: 'POST',
+                credentials: 'same-origin',
                 headers: {
                     'Content-Type': 'application/json',
                     'X-CSRF-TOKEN': '{{ csrf_token() }}'
@@ -1084,6 +1089,7 @@
             // Fetch subjects
             const response = await fetch(routes.getSubjects, {
                 method: 'POST',
+                credentials: 'same-origin',
                 headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': '{{ csrf_token() }}' },
                 body: JSON.stringify({ strand_code: strandCode, grade_level: gradeLevel, section_id: sectionId })
             });
@@ -1251,6 +1257,7 @@
         try {
             const response = await fetch(routes.subjectTeachers, {
                 method: 'POST',
+                credentials: 'same-origin',
                 headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': '{{ csrf_token() }}' },
                 body: JSON.stringify({ subject_id: subjectId })
             });
@@ -1340,6 +1347,7 @@
             
             const response = await fetch(url, {
                 method: 'POST',
+                credentials: 'same-origin',
                 headers: { 
                     'Content-Type': 'application/json', 
                     'X-CSRF-TOKEN': '{{ csrf_token() }}',
@@ -1429,16 +1437,17 @@
             } else {
                 showAlert('❌ ' + (data.message || 'Failed to save'), 'danger');
                 console.error('❌ Save failed:', data.message);
-                
-                // Restore previous display on error
+
+                // Restore previous display on error and show server message if available
                 if (currentEl) {
+                    const serverMsg = data.message ? `<div class="fw-semibold text-danger">${data.message}</div>` : '<div class="text-danger">Error - Please try again</div>';
                     currentEl.innerHTML = `
                         <div class="d-flex align-items-center">
                             <div class="rounded-circle bg-warning d-flex align-items-center justify-content-center me-2" style="width: 32px; height: 32px;">
                                 <i class="ti ti-alert-circle text-white"></i>
                             </div>
                             <div>
-                                <div class="text-danger">Error - Please try again</div>
+                                ${serverMsg}
                                 <small class="text-muted">Failed to assign</small>
                             </div>
                         </div>
@@ -1559,7 +1568,7 @@
                 grade_level: gradeLevel,
                 section_id: sectionId,
                 subject_id: subjectId,
-                teacher_id: ''  // Send empty string to clear the assignment
+                teacher_id: null  // Send null to clear the assignment (validator treats null correctly)
             };
             
             console.log('Delete payload:', JSON.stringify(payload, null, 2));
@@ -1568,6 +1577,7 @@
             
             const response = await fetch(url, {
                 method: 'POST',
+                credentials: 'same-origin',
                 headers: { 
                     'Content-Type': 'application/json', 
                     'X-CSRF-TOKEN': '{{ csrf_token() }}',
@@ -1660,13 +1670,18 @@
         try {
             const response = await fetch(routes.saveAdvisers, {
                 method: 'POST',
+                credentials: 'same-origin',
                 headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': '{{ csrf_token() }}' },
                 body: JSON.stringify({ advisers })
             });
-            return await response.json();
+            const data = await response.json();
+            if (!data.success) {
+                throw new Error(data.message || 'Failed to save advisers');
+            }
+            return data;
         } catch (err) {
             console.error('Error saving advisers:', err);
-            return { success: false };
+            throw err;
         }
     }
 </script>

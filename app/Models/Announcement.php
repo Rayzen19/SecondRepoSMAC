@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Facades\Schema;
 use Carbon\Carbon;
 
 class Announcement extends Model
@@ -34,20 +35,41 @@ class Announcement extends Model
     // Scopes
     public function scopeActive($query)
     {
-        return $query->where('is_active', true)
-            ->where(function ($q) {
-                $q->whereNull('published_at')
-                    ->orWhere('published_at', '<=', Carbon::now());
-            })
-            ->where(function ($q) {
-                $q->whereNull('expires_at')
-                    ->orWhere('expires_at', '>=', Carbon::now());
-            });
+        // Guard against missing columns/tables in some environments
+        $table = $this->getTable();
+
+        if (Schema::hasTable($table)) {
+            if (Schema::hasColumn($table, 'is_active')) {
+                $query->where('is_active', true);
+            }
+
+            if (Schema::hasColumn($table, 'published_at')) {
+                $query->where(function ($q) {
+                    $q->whereNull('published_at')
+                        ->orWhere('published_at', '<=', Carbon::now());
+                });
+            }
+
+            if (Schema::hasColumn($table, 'expires_at')) {
+                $query->where(function ($q) {
+                    $q->whereNull('expires_at')
+                        ->orWhere('expires_at', '>=', Carbon::now());
+                });
+            }
+        }
+
+        return $query;
     }
 
     public function scopeLatest($query)
     {
-        return $query->orderBy('published_at', 'desc')->orderBy('created_at', 'desc');
+        $table = $this->getTable();
+
+        // Prefer published_at if it exists, otherwise fall back to created_at
+        if (Schema::hasTable($table) && Schema::hasColumn($table, 'published_at')) {
+            return $query->orderBy('published_at', 'desc')->orderBy('created_at', 'desc');
+        }
+        return $query->orderBy('created_at', 'desc');
     }
 
     // Helper methods

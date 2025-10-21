@@ -19,6 +19,8 @@ use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Crypt;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
 
 class StudentController extends Controller
 {
@@ -106,6 +108,15 @@ class StudentController extends Controller
     // Store a newly created student in storage
     public function store(Request $request)
     {
+        // If a soft-deleted student exists with the same email, purge it to avoid unique constraint conflicts
+        if ($request->filled('email')) {
+            try {
+                Student::onlyTrashed()->where('email', $request->input('email'))->forceDelete();
+            } catch (\Throwable $e) {
+                // non-blocking cleanup
+            }
+        }
+
         $validated = $request->validate([
             'first_name' => 'required|string|max:255',
             'middle_name' => 'nullable|string|max:255',
@@ -181,6 +192,13 @@ class StudentController extends Controller
         }
 
         // Create or update a StudentUser linked via user_pk_id
+        // Clean up any lingering auth user accounts that belong to previously deleted students with the same email
+        SystemUser::where('email', $student->email)
+            ->where('type', 'student')
+            ->where(function($q) use ($student) {
+                $q->whereNull('user_pk_id')->orWhere('user_pk_id', '!=', $student->id);
+            })
+            ->delete();
         $existingUser = SystemUser::where('email', $student->email)->first();
         if (!$existingUser) {
             $user = StudentUser::query()->withoutGlobalScopes()->create([
@@ -330,6 +348,15 @@ class StudentController extends Controller
     // Update the specified student in storage
     public function update(Request $request, Student $student)
     {
+        // If updating email, purge any soft-deleted student with the target email
+        if ($request->filled('email') && $request->input('email') !== $student->email) {
+            try {
+                Student::onlyTrashed()->where('email', $request->input('email'))->forceDelete();
+            } catch (\Throwable $e) {
+                // non-blocking
+            }
+        }
+
         $validated = $request->validate([
             'first_name' => 'required|string|max:255',
             'middle_name' => 'nullable|string|max:255',
@@ -359,13 +386,31 @@ class StudentController extends Controller
     // Remove the specified student from storage
     public function destroy(Student $student)
     {
-        // Permanently delete the student (bypass soft deletes)
-        if (method_exists($student, 'forceDelete')) {
-            $student->forceDelete();
-        } else {
-            // Fallback in case the model does not support forceDelete
-            $student->delete();
-        }
+        // Permanently delete the student and linked auth account
+    DB::transaction(function () use ($student) {
+            // Delete linked auth user (student portal account)
+            $user = SystemUser::where('type', 'student')->where('user_pk_id', $student->id)->first();
+            if ($user) {
+                $user->delete(); // User model does not use SoftDeletes -> hard delete
+            }
+
+            // Optionally remove any profile picture from storage if using a path
+            try {
+                if (!empty($student->profile_picture) && Storage::disk('public')->exists($student->profile_picture)) {
+                    Storage::disk('public')->delete($student->profile_picture);
+                }
+            } catch (\Throwable $e) {
+                // Non-blocking
+            }
+
+            // Force delete student (bypass soft deletes)
+            if (method_exists($student, 'forceDelete')) {
+                $student->forceDelete();
+            } else {
+                $student->delete();
+            }
+        });
+
         return redirect()->route('admin.students.index')->with('success', 'Student permanently deleted.');
     }
 }

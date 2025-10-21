@@ -10,6 +10,7 @@ use App\Models\Strand;
 use App\Models\SubjectRecordResult;
 use App\Models\Announcement;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 
 class DashboardController extends Controller
 {
@@ -22,14 +23,20 @@ class DashboardController extends Controller
         $announcementsCount = Announcement::count();
         $eventsCount = 12; // Placeholder
 
-        // Announcement Statistics
+        // Announcement Statistics (guard against missing columns)
+        $announcementTable = (new Announcement())->getTable();
+        $hasIsActive = Schema::hasTable($announcementTable) && Schema::hasColumn($announcementTable, 'is_active');
+        $hasPublishedAt = Schema::hasTable($announcementTable) && Schema::hasColumn($announcementTable, 'published_at');
+        $hasExpiresAt = Schema::hasTable($announcementTable) && Schema::hasColumn($announcementTable, 'expires_at');
+
         $announcementStats = [
             'total' => Announcement::count(),
-            'active' => Announcement::where('is_active', true)->count(),
-            'scheduled' => Announcement::where('is_active', true)
-                ->where('published_at', '>', now())
-                ->count(),
-            'expired' => Announcement::where('expires_at', '<', now())->count(),
+            'active' => $hasIsActive ? Announcement::where('is_active', true)->count() : Announcement::count(),
+            'scheduled' => ($hasPublishedAt ? (
+                    $hasIsActive ? Announcement::where('is_active', true)->where('published_at', '>', now())->count()
+                                  : Announcement::where('published_at', '>', now())->count()
+                ) : 0),
+            'expired' => $hasExpiresAt ? Announcement::where('expires_at', '<', now())->count() : 0,
         ];
 
         // Recent Announcements (real data from database)

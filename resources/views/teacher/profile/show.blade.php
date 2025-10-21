@@ -144,14 +144,16 @@
                                         ->filter()
                                         ->unique('id');
 
-                                    // Fallback to one section for this AY+Strand if still empty
+                                    // Fallback: include ALL sections for this AY+Strand if still empty
+                                    // This ensures that when a teacher handles multiple sections (e.g., MARCH & APRIL)
+                                    // without explicit per-subject section mapping yet, each section still appears.
                                     if ($enrolledSections->isEmpty()) {
-                                        $fallbackSection = \App\Models\AcademicYearStrandSection::with(['section','strand','academicYear'])
+                                        $fallbackSections = \App\Models\AcademicYearStrandSection::with(['section','strand','academicYear'])
                                             ->where('academic_year_id', $assignment->academic_year_id)
                                             ->where('strand_id', $assignment->strand_id)
-                                            ->first();
-                                        if ($fallbackSection) {
-                                            $enrolledSections = collect([$fallbackSection]);
+                                            ->get();
+                                        if ($fallbackSections->isNotEmpty()) {
+                                            $enrolledSections = $fallbackSections;
                                         }
                                     }
                                 }
@@ -288,9 +290,14 @@
                     <h5 class="card-title mb-0">
                         <i class="ti ti-chalkboard me-2"></i>Subject Assignments
                     </h5>
-                    <a href="{{ route('teacher.class-records.index') }}" class="btn btn-sm btn-outline-primary">
-                        <i class="ti ti-list-details me-1"></i>Class Records
-                    </a>
+                    <div class="d-flex gap-2">
+                        <a href="{{ route('teacher.profile.subjects.all') }}" class="btn btn-sm btn-outline-info">
+                            <i class="ti ti-list me-1"></i>View All
+                        </a>
+                        <a href="{{ route('teacher.class-records.index') }}" class="btn btn-sm btn-outline-primary">
+                            <i class="ti ti-list-details me-1"></i>Class Records
+                        </a>
+                    </div>
                 </div>
                 <div class="card-body">
                     @php
@@ -370,15 +377,14 @@
                                             @endif
 
                                             @if($section['teaching_assignment_ids']->isNotEmpty())
-                                                @foreach($section['teaching_assignment_ids'] as $teachingId)
-                                                    <form action="{{ route('teacher.profile.teaching.remove', $teachingId) }}" method="POST" class="d-inline" onsubmit="return confirm('Are you sure you want to remove this teaching assignment?');">
-                                                        @csrf
-                                                        @method('DELETE')
-                                                        <button type="submit" class="btn btn-sm btn-outline-warning w-100 mb-1">
-                                                            <i class="ti ti-trash me-1"></i>Remove Subject Assignment
-                                                        </button>
-                                                    </form>
-                                                @endforeach
+                                                @php $firstTeachingId = $section['teaching_assignment_ids']->first(); @endphp
+                                                <form action="{{ route('teacher.profile.teaching.remove', $firstTeachingId) }}" method="POST" class="d-inline" onsubmit="return confirm('Are you sure you want to remove this teaching assignment?');">
+                                                    @csrf
+                                                    @method('DELETE')
+                                                    <button type="submit" class="btn btn-sm btn-outline-warning w-100 mb-1">
+                                                        <i class="ti ti-trash me-1"></i>Remove Subject Assignment
+                                                    </button>
+                                                </form>
                                             @endif
                                         </div>
                                     </div>

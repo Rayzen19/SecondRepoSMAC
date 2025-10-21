@@ -14,6 +14,7 @@ class AcademicYearStrandAdviser extends Model
         'academic_year_id',
         'strand_id',
         'teacher_id',
+        'section_id',
     ];
 
     public function academicYear(): BelongsTo

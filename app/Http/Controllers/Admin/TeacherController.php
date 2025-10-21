@@ -18,6 +18,7 @@ use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Str;
 use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\StreamedResponse;
+use Illuminate\Support\Facades\DB;
 
 class TeacherController extends Controller
 {
@@ -105,6 +106,11 @@ class TeacherController extends Controller
 
     public function store(Request $request)
     {
+        // If a soft-deleted teacher exists with the same email, purge to avoid unique index conflicts
+        if ($request->filled('email')) {
+            try { \App\Models\Teacher::onlyTrashed()->where('email', $request->input('email'))->forceDelete(); } catch (\Throwable $e) {}
+        }
+
         $data = $request->validate([
             'first_name' => 'required|string|max:255',
             'middle_name' => 'nullable|string|max:255',
@@ -171,6 +177,7 @@ class TeacherController extends Controller
                 'academicYear',
                 'strand',
                 'subject',
+                'sectionAssignment.section',
                 'subjectEnrollments.studentEnrollment.student',
                 'subjectEnrollments.studentEnrollment.academicYearStrandSection.section',
             ])
@@ -230,6 +237,11 @@ class TeacherController extends Controller
 
     public function update(Request $request, Teacher $teacher)
     {
+        // If changing email, purge any soft-deleted teacher with the target email
+        if ($request->filled('email') && $request->input('email') !== $teacher->email) {
+            try { \App\Models\Teacher::onlyTrashed()->where('email', $request->input('email'))->forceDelete(); } catch (\Throwable $e) {}
+        }
+
         $data = $request->validate([
             'first_name' => 'required|string|max:255',
             'middle_name' => 'nullable|string|max:255',
@@ -270,16 +282,26 @@ class TeacherController extends Controller
 
     public function destroy(Teacher $teacher)
     {
-        // Remove linked auth user if present
-        $user = User::where('type', 'teacher')->where('user_pk_id', $teacher->id)->first();
-        if ($user) {
-            $user->delete();
-        }
+        // Hard delete teacher and related auth user
+    DB::transaction(function () use ($teacher) {
+            // Remove linked auth user if present
+            $user = User::where('type', 'teacher')->where('user_pk_id', $teacher->id)->first();
+            if ($user) {
+                $user->delete();
+            }
 
-        // Delete the teacher record
-        $teacher->delete();
+            // Detach subjects pivot to avoid orphaned relations
+            try { $teacher->subjects()->sync([]); } catch (\Throwable $e) {}
 
-        return redirect()->route('admin.teachers.index')->with('success', 'Teacher deleted successfully.');
+            // Permanently delete teacher
+            if (method_exists($teacher, 'forceDelete')) {
+                $teacher->forceDelete();
+            } else {
+                $teacher->delete();
+            }
+        });
+
+        return redirect()->route('admin.teachers.index')->with('success', 'Teacher permanently deleted.');
     }
 
     public function subjectStudents(Teacher $teacher, AcademicYear $academicYear, AcademicYearStrandSubject $assignment)
