@@ -202,11 +202,11 @@
                                 </li>
 
                                         @auth('admin')
-                                        <!-- <li class="{{ request()->routeIs('admin.messages.*') ? 'active' : '' }}">
+                                        <li class="{{ request()->routeIs('admin.messages.*') ? 'active' : '' }}">
                                             <a class="{{ request()->routeIs('admin.messages.*') ? 'active' : '' }}" href="{{ route('admin.messages.messenger') }}">
                                                 <i class="ti ti-mail"></i><span>Messages</span>
                                             </a>
-                                        </li> -->
+                                        </li>
                                         @endauth
 
                                 <li class="submenu {{ $isManagement ? 'active' : '' }}">
