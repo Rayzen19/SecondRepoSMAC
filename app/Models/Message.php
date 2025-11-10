@@ -9,7 +9,17 @@ class Message extends Model
 {
     use HasFactory;
 
-    protected $fillable = ['sender_id', 'subject', 'body'];
+    protected $fillable = ['sender_id', 'subject', 'body', 'attachment_path', 'attachment_name', 'attachment_type', 'attachment_size'];
+
+    protected static function boot()
+    {
+        parent::boot();
+        
+        // Delete all recipients when message is deleted
+        static::deleting(function ($message) {
+            $message->recipients()->delete();
+        });
+    }
 
     public function recipients()
     {

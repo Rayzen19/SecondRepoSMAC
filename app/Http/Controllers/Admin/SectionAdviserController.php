@@ -38,8 +38,27 @@ class SectionAdviserController extends Controller
             ->orderBy('first_name')
             ->get();
         
-        // Get saved adviser assignments from session
-        $savedAdvisers = session('adviser_assignments', []);
+        // Get saved adviser assignments from database (for current active academic year)
+        $savedAdvisers = [];
+        $activeYear = \App\Models\AcademicYear::where('is_active', true)->first();
+        if ($activeYear) {
+            $assignments = \App\Models\AcademicYearStrandSection::with(['strand', 'section', 'adviserTeacher'])
+                ->where('academic_year_id', $activeYear->id)
+                ->whereNotNull('adviser_teacher_id')
+                ->get();
+            
+            foreach ($assignments as $assignment) {
+                if ($assignment->strand && $assignment->section && $assignment->adviserTeacher) {
+                    $savedAdvisers[] = [
+                        'strand_code' => $assignment->strand->code,
+                        'section_id' => $assignment->section->id,
+                        'section_name' => $assignment->section->name,
+                        'teacher_id' => $assignment->adviserTeacher->id,
+                        'teacher_name' => $assignment->adviserTeacher->last_name . ', ' . $assignment->adviserTeacher->first_name,
+                    ];
+                }
+            }
+        }
         
         return view('admin.section_advisers.index', compact('strands', 'sections', 'teachers', 'savedAdvisers'));
     }
@@ -67,8 +86,30 @@ class SectionAdviserController extends Controller
             ->orderBy('first_name')
             ->get();
         
-        // Get saved adviser assignments from session
-        $savedAdvisers = session('adviser_assignments', []);
+        // Get saved adviser assignments from database (for current active academic year)
+        $savedAdvisers = [];
+        $activeYear = \App\Models\AcademicYear::where('is_active', true)->first();
+        if ($activeYear) {
+            $assignments = \App\Models\AcademicYearStrandSection::with(['strand', 'section', 'adviserTeacher'])
+                ->where('academic_year_id', $activeYear->id)
+                ->whereNotNull('adviser_teacher_id')
+                ->whereHas('section', function($q) {
+                    $q->where('grade', 'G-11');
+                })
+                ->get();
+            
+            foreach ($assignments as $assignment) {
+                if ($assignment->strand && $assignment->section && $assignment->adviserTeacher) {
+                    $savedAdvisers[] = [
+                        'strand_code' => $assignment->strand->code,
+                        'section_id' => $assignment->section->id,
+                        'section_name' => $assignment->section->name,
+                        'teacher_id' => $assignment->adviserTeacher->id,
+                        'teacher_name' => $assignment->adviserTeacher->last_name . ', ' . $assignment->adviserTeacher->first_name,
+                    ];
+                }
+            }
+        }
         
         return view('admin.section_advisers.grade11', compact('strands', 'sections', 'teachers', 'savedAdvisers'));
     }
@@ -96,8 +137,30 @@ class SectionAdviserController extends Controller
             ->orderBy('first_name')
             ->get();
         
-        // Get saved adviser assignments from session
-        $savedAdvisers = session('adviser_assignments', []);
+        // Get saved adviser assignments from database (for current active academic year)
+        $savedAdvisers = [];
+        $activeYear = \App\Models\AcademicYear::where('is_active', true)->first();
+        if ($activeYear) {
+            $assignments = \App\Models\AcademicYearStrandSection::with(['strand', 'section', 'adviserTeacher'])
+                ->where('academic_year_id', $activeYear->id)
+                ->whereNotNull('adviser_teacher_id')
+                ->whereHas('section', function($q) {
+                    $q->where('grade', 'G-12');
+                })
+                ->get();
+            
+            foreach ($assignments as $assignment) {
+                if ($assignment->strand && $assignment->section && $assignment->adviserTeacher) {
+                    $savedAdvisers[] = [
+                        'strand_code' => $assignment->strand->code,
+                        'section_id' => $assignment->section->id,
+                        'section_name' => $assignment->section->name,
+                        'teacher_id' => $assignment->adviserTeacher->id,
+                        'teacher_name' => $assignment->adviserTeacher->last_name . ', ' . $assignment->adviserTeacher->first_name,
+                    ];
+                }
+            }
+        }
         
         return view('admin.section_advisers.grade12', compact('strands', 'sections', 'teachers', 'savedAdvisers'));
     }
@@ -117,30 +180,30 @@ class SectionAdviserController extends Controller
         // Store adviser assignments in session
         session(['adviser_assignments' => $validated['advisers']]);
         
-        // Also persist to database for FK requirements
+        // Also persist to database - update adviser_teacher_id in academic_year_strand_sections
         $activeYear = \App\Models\AcademicYear::where('is_active', true)->first();
         if ($activeYear) {
             foreach ($validated['advisers'] as $row) {
                 $strand = Strand::where('code', $row['strand_code'])->first();
                 $section = Section::find($row['section_id']);
 
-                if ($strand) {
-                    // Use academic_year_id + strand_id as the unique key so we don't fail
-                    // when section_id column or unique constraints differ between environments.
-                    $attributes = [
-                        'teacher_id' => $row['teacher_id'],
-                    ];
-                    if ($section) {
-                        $attributes['section_id'] = $section->id;
-                    }
-
-                    \App\Models\AcademicYearStrandAdviser::updateOrCreate(
+                if ($strand && $section) {
+                    // Find or create the academic_year_strand_section record
+                    $academicYearStrandSection = \App\Models\AcademicYearStrandSection::firstOrCreate(
                         [
                             'academic_year_id' => $activeYear->id,
                             'strand_id' => $strand->id,
+                            'section_id' => $section->id,
                         ],
-                        $attributes
+                        [
+                            'is_active' => true,
+                        ]
                     );
+                    
+                    // Update the adviser_teacher_id
+                    $academicYearStrandSection->update([
+                        'adviser_teacher_id' => $row['teacher_id'],
+                    ]);
                 }
             }
         }

@@ -6,12 +6,15 @@ use App\Http\Controllers\Controller;
 use App\Models\AcademicYear;
 use App\Models\AcademicYearStrandAdviser;
 use App\Models\Auth\StudentUser;
+use App\Models\Auth\GuardianUser;
 use App\Models\Strand;
 use App\Models\Student;
+use App\Models\Guardian;
 use App\Models\User as SystemUser;
 use App\Models\StudentEnrollment;
 use App\Models\SubjectRecord;
 use App\Mail\StudentWelcome;
+use App\Mail\GuardianNotification;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
@@ -75,7 +78,49 @@ class StudentController extends Controller
             ]);
         }
 
-        return redirect()->back()->with('success', 'New password generated and saved.');
+        // Send notification to guardian as well
+        if (!empty($student->guardian_email)) {
+            // Get guardian and generate/retrieve password
+            $guardian = $student->guardians()->first();
+            $guardianPassword = 'Check your previous email';
+            
+            if ($guardian) {
+                // Generate new guardian password
+                $guardianPassword = Str::password(12, symbols: true);
+                
+                // Update guardian user password
+                $guardianUser = SystemUser::where('email', $guardian->email)->where('type', 'guardian')->first();
+                if ($guardianUser) {
+                    $guardianUser->forceFill([
+                        'password' => Hash::make($guardianPassword),
+                    ])->save();
+                    
+                    // Store encrypted copy
+                    $guardian->forceFill([
+                        'generated_password_encrypted' => Crypt::encryptString($guardianPassword),
+                    ])->save();
+                }
+            }
+            
+            try {
+                Mail::to($student->guardian_email)->send(new GuardianNotification(
+                    $student->guardian_name ?? 'Guardian',
+                    $student->name,
+                    $student->email,
+                    $plainPassword,
+                    $student->student_number,
+                    $student->guardian_email,
+                    $guardianPassword
+                ));
+            } catch (\Throwable $e) {
+                Log::warning('Failed to send guardian password generation email', [
+                    'student_id' => $student->id,
+                    'error' => $e->getMessage(),
+                ]);
+            }
+        }
+
+        return redirect()->back()->with('success', 'New password generated and saved. Emails sent to student and guardian.');
     }
 
     // Show the form for creating a new student
@@ -175,6 +220,16 @@ class StudentController extends Controller
     // Create the Student record
     $student = Student::create($validated);
 
+        // Create or find Guardian and link to student
+        $guardianData = null;
+        if (!empty($validated['guardian_email'])) {
+            $guardianData = $this->createOrFindGuardian($validated, $student);
+            if ($guardianData) {
+                // Link guardian to student
+                $student->guardians()->attach($guardianData['guardian']->id);
+            }
+        }
+
         // Create a corresponding user account with generated password
         // Generate a strong random password
         $plainPassword = Str::password(12, symbols: true);
@@ -229,7 +284,7 @@ class StudentController extends Controller
             }
         }
 
-        // Send welcome email with credentials
+        // Send welcome email with credentials to student
         try {
             Mail::to($student->email)->send(new StudentWelcome($student->name, $student->email, $plainPassword));
         } catch (\Throwable $e) {
@@ -241,7 +296,29 @@ class StudentController extends Controller
             ]);
         }
 
-        return redirect()->route('admin.students.index')->with('success', 'Student created successfully and login details emailed.');
+        // Send notification email to guardian with student's credentials
+        if (!empty($student->guardian_email) && $guardianData) {
+            try {
+                Mail::to($student->guardian_email)->send(new GuardianNotification(
+                    $student->guardian_name ?? 'Guardian',
+                    $student->name,
+                    $student->email,
+                    $plainPassword,
+                    $student->student_number,
+                    $guardianData['guardian']->email,
+                    $guardianData['plainPassword'] ?? 'Already set - check your previous email'
+                ));
+            } catch (\Throwable $e) {
+                // Log but don't block creation if mail fails
+                Log::error('Failed sending guardian notification email', [
+                    'student_id' => $student->id,
+                    'guardian_email' => $student->guardian_email,
+                    'error' => $e->getMessage(),
+                ]);
+            }
+        }
+
+        return redirect()->route('admin.students.index')->with('success', 'Student created successfully. Login details have been emailed to student and guardian.');
     }
 
     // Display the specified student
@@ -380,6 +457,40 @@ class StudentController extends Controller
         unset($validated['grade_level']);
 
         $student->update($validated);
+
+        // Update or create guardian if guardian email changed
+        if (!empty($validated['guardian_email'])) {
+            // Check if the guardian email has changed
+            $currentGuardian = $student->guardians()->first();
+            
+            if (!$currentGuardian || $currentGuardian->email !== $validated['guardian_email']) {
+                // Detach old guardian if exists
+                if ($currentGuardian) {
+                    $student->guardians()->detach($currentGuardian->id);
+                }
+                
+                // Create or find new guardian and attach
+                $guardianData = $this->createOrFindGuardian($validated, $student);
+                if ($guardianData) {
+                    // Check if already attached (in case of re-linking)
+                    if (!$student->guardians()->where('guardian_id', $guardianData['guardian']->id)->exists()) {
+                        $student->guardians()->attach($guardianData['guardian']->id);
+                    }
+                }
+            } else {
+                // Same guardian, update their information
+                $nameParts = $this->parseGuardianName($validated['guardian_name'] ?? $currentGuardian->name);
+                $currentGuardian->update([
+                    'first_name' => $nameParts['first_name'],
+                    'middle_name' => $nameParts['middle_name'],
+                    'last_name' => $nameParts['last_name'],
+                    'suffix' => $nameParts['suffix'],
+                    'mobile_number' => $validated['guardian_contact'],
+                    'address' => $validated['address'] ?? $currentGuardian->address,
+                ]);
+            }
+        }
+
         return redirect()->route('admin.students.index')->with('success', 'Student updated successfully.');
     }
 
@@ -387,7 +498,10 @@ class StudentController extends Controller
     public function destroy(Student $student)
     {
         // Permanently delete the student and linked auth account
-    DB::transaction(function () use ($student) {
+        DB::transaction(function () use ($student) {
+            // Detach guardians from student
+            $student->guardians()->detach();
+
             // Delete linked auth user (student portal account)
             $user = SystemUser::where('type', 'student')->where('user_pk_id', $student->id)->first();
             if ($user) {
@@ -412,5 +526,184 @@ class StudentController extends Controller
         });
 
         return redirect()->route('admin.students.index')->with('success', 'Student permanently deleted.');
+    }
+
+    /**
+     * Create or find a guardian based on the provided data
+     * Returns array with guardian and plainPassword
+     */
+    private function createOrFindGuardian(array $validatedData, Student $student): ?array
+    {
+        if (empty($validatedData['guardian_email'])) {
+            return null;
+        }
+
+        // Check if guardian already exists by email
+        $guardian = Guardian::where('email', $validatedData['guardian_email'])->first();
+        $plainPassword = null;
+        $isNewGuardian = false;
+
+        if ($guardian) {
+            // Guardian exists, generate new password if they don't have a user account
+            $existingUser = SystemUser::where('email', $guardian->email)->where('type', 'guardian')->first();
+            if (!$existingUser) {
+                $plainPassword = Str::password(12, symbols: true);
+                $isNewGuardian = true; // Need to create user account
+            }
+            
+            Log::info('Using existing guardian', [
+                'guardian_id' => $guardian->id,
+                'student_id' => $student->id,
+                'needs_user_account' => $isNewGuardian,
+            ]);
+        } else {
+            // Create new guardian
+            $isNewGuardian = true;
+            $plainPassword = Str::password(12, symbols: true);
+            
+            // Parse guardian name into first, middle, last names
+            $guardianName = $validatedData['guardian_name'] ?? 'Guardian';
+            $nameParts = $this->parseGuardianName($guardianName);
+
+            // Generate guardian number
+            $year = now()->year;
+            $lastGuardianNumber = Guardian::withTrashed()
+                ->where('guardian_number', 'like', 'GRD-' . $year . '-%')
+                ->orderByDesc('guardian_number')
+                ->value('guardian_number');
+
+            if ($lastGuardianNumber) {
+                $parts = explode('-', $lastGuardianNumber);
+                $lastSeq = isset($parts[2]) ? (int) $parts[2] : 0;
+            } else {
+                $lastSeq = 0;
+            }
+
+            $guardianNumber = 'GRD-' . $year . '-' . str_pad($lastSeq + 1, 5, '0', STR_PAD_LEFT);
+
+            // Create new guardian
+            try {
+                $guardian = Guardian::create([
+                    'guardian_number' => $guardianNumber,
+                    'first_name' => $nameParts['first_name'],
+                    'middle_name' => $nameParts['middle_name'],
+                    'last_name' => $nameParts['last_name'],
+                    'suffix' => $nameParts['suffix'],
+                    'gender' => 'male', // Default, can be updated later
+                    'email' => $validatedData['guardian_email'],
+                    'mobile_number' => $validatedData['guardian_contact'],
+                    'address' => $validatedData['address'] ?? null,
+                    'status' => 'active',
+                ]);
+
+                Log::info('Created new guardian', [
+                    'guardian_id' => $guardian->id,
+                    'guardian_number' => $guardianNumber,
+                    'student_id' => $student->id,
+                ]);
+            } catch (\Throwable $e) {
+                Log::error('Failed to create guardian', [
+                    'error' => $e->getMessage(),
+                    'student_id' => $student->id,
+                    'guardian_email' => $validatedData['guardian_email'],
+                ]);
+                return null;
+            }
+        }
+
+        // Create guardian user account if needed
+        if ($isNewGuardian && $plainPassword) {
+            try {
+                // Store encrypted copy of the generated password on the guardian profile
+                $guardian->forceFill([
+                    'generated_password_encrypted' => Crypt::encryptString($plainPassword),
+                ])->save();
+
+                // Clean up any lingering auth user accounts
+                SystemUser::where('email', $guardian->email)
+                    ->where('type', 'guardian')
+                    ->where(function($q) use ($guardian) {
+                        $q->whereNull('user_pk_id')->orWhere('user_pk_id', '!=', $guardian->id);
+                    })
+                    ->delete();
+
+                // Create or update GuardianUser
+                $existingUser = SystemUser::where('email', $guardian->email)->first();
+                if (!$existingUser) {
+                    GuardianUser::query()->withoutGlobalScopes()->create([
+                        'name' => $guardian->name,
+                        'email' => $guardian->email,
+                        'password' => Hash::make($plainPassword),
+                        'type' => 'guardian',
+                        'user_pk_id' => $guardian->id,
+                    ]);
+                } else {
+                    if ($existingUser->type === 'guardian') {
+                        $existingUser->forceFill([
+                            'name' => $guardian->name,
+                            'password' => Hash::make($plainPassword),
+                            'user_pk_id' => $guardian->id,
+                        ])->save();
+                    }
+                }
+
+                Log::info('Created guardian user account', [
+                    'guardian_id' => $guardian->id,
+                    'guardian_email' => $guardian->email,
+                ]);
+            } catch (\Throwable $e) {
+                Log::error('Failed to create guardian user account', [
+                    'error' => $e->getMessage(),
+                    'guardian_id' => $guardian->id,
+                ]);
+            }
+        }
+
+        return [
+            'guardian' => $guardian,
+            'plainPassword' => $plainPassword,
+        ];
+    }
+
+    /**
+     * Parse guardian full name into components
+     */
+    private function parseGuardianName(string $fullName): array
+    {
+        $parts = explode(' ', trim($fullName));
+        $suffix = null;
+        
+        // Check for common suffixes
+        $suffixes = ['Jr.', 'Jr', 'Sr.', 'Sr', 'II', 'III', 'IV', 'V'];
+        $lastPart = end($parts);
+        if (in_array($lastPart, $suffixes)) {
+            $suffix = array_pop($parts);
+        }
+
+        $firstName = '';
+        $middleName = null;
+        $lastName = '';
+
+        if (count($parts) === 1) {
+            // Only one name, use as first name
+            $firstName = $parts[0];
+            $lastName = $parts[0];
+        } elseif (count($parts) === 2) {
+            // Two names: first and last
+            $firstName = $parts[0];
+            $lastName = $parts[1];
+        } else {
+            // Three or more names: first, middle(s), last
+            $firstName = array_shift($parts);
+            $lastName = array_pop($parts);
+            $middleName = implode(' ', $parts);
+        }
+
+        return [
+            'first_name' => $firstName,
+            'middle_name' => $middleName,
+            'last_name' => $lastName,
+            'suffix' => $suffix,
+        ];
     }
 }

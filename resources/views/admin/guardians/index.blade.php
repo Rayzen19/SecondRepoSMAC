@@ -26,6 +26,21 @@
 
 @section('content')
 <div class="content">
+    <!-- Success/Error Messages -->
+    @if(session('success'))
+    <div class="alert alert-success alert-dismissible fade show" role="alert">
+        <i class="ti ti-check me-2"></i>{{ session('success') }}
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    </div>
+    @endif
+
+    @if(session('error'))
+    <div class="alert alert-danger alert-dismissible fade show" role="alert">
+        <i class="ti ti-alert-circle me-2"></i>{{ session('error') }}
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    </div>
+    @endif
+
     <div class="card">
         <div class="card-body p-0">
             <div class="custom-datatable-filter table-responsive">
@@ -50,8 +65,15 @@
                             <td><span class="badge bg-{{ $guardian->status === 'active' ? 'success' : 'secondary' }}">{{ ucfirst($guardian->status) }}</span></td>
                             <td>
                                 <div class="action-icon d-inline-flex">
-                                    <a href="{{ route('admin.guardians.show', $guardian) }}" class="me-2"><i class="ti ti-eye"></i></a>
-                                    <a href="{{ route('admin.guardians.edit', $guardian) }}" class="me-2"><i class="ti ti-edit"></i></a>
+                                    <a href="{{ route('admin.guardians.show', $guardian) }}" class="me-2" title="View"><i class="ti ti-eye"></i></a>
+                                    <a href="{{ route('admin.guardians.edit', $guardian) }}" class="me-2" title="Edit"><i class="ti ti-edit"></i></a>
+                                    <form action="{{ route('admin.guardians.destroy', $guardian) }}" method="POST" class="d-inline" onsubmit="return confirm('Are you sure you want to delete this guardian? This action cannot be undone.');">
+                                        @csrf
+                                        @method('DELETE')
+                                        <button type="submit" class="btn btn-link p-0 text-danger" title="Delete" style="border: none; background: none;">
+                                            <i class="ti ti-trash"></i>
+                                        </button>
+                                    </form>
                                 </div>
                             </td>
                         </tr>

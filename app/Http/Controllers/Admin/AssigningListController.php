@@ -8,6 +8,7 @@ use App\Models\Strand;
 use App\Models\Section;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 
 class AssigningListController extends Controller
 {
@@ -33,7 +34,12 @@ class AssigningListController extends Controller
         
         // Filter sections by grade level if selected
         if ($request->filled('grade_level') && $request->grade_level !== 'all') {
-            $sectionsQuery->where('grade', $request->grade_level);
+            $gradeLevel = $request->grade_level;
+            $sectionsQuery->where(function($q) use ($gradeLevel) {
+                $q->where('grade', 'G-' . $gradeLevel)
+                  ->orWhere('grade', 'Grade ' . $gradeLevel)
+                  ->orWhere('grade', $gradeLevel);
+            });
         }
         
         $sections = $sectionsQuery->get();
@@ -78,7 +84,35 @@ class AssigningListController extends Controller
         // Get paginated results
         $students = $query->paginate(20)->withQueryString();
         
-        return view('admin.assigning_list.index', compact('students', 'strands', 'gradeLevels', 'sections'));
+        // Get active academic year
+        $activeYear = \App\Models\AcademicYear::where('is_active', true)->first();
+        
+        // Load existing student enrollments from database
+        $existingAssignments = [];
+        if ($activeYear) {
+            $enrollments = \App\Models\StudentEnrollment::with([
+                'student',
+                'strand',
+                'academicYearStrandSection.section'
+            ])
+            ->where('academic_year_id', $activeYear->id)
+            ->whereNotNull('academic_year_strand_section_id')
+            ->get();
+            
+            foreach ($enrollments as $enrollment) {
+                if ($enrollment->student && $enrollment->strand && $enrollment->academicYearStrandSection && $enrollment->academicYearStrandSection->section) {
+                    $existingAssignments[] = [
+                        'student_id' => $enrollment->student_id,
+                        'strand_code' => $enrollment->strand->code,
+                        'section_id' => $enrollment->academicYearStrandSection->section_id,
+                        'section_name' => $enrollment->academicYearStrandSection->section->name,
+                        'section_grade' => $enrollment->academicYearStrandSection->section->grade,
+                    ];
+                }
+            }
+        }
+        
+        return view('admin.assigning_list.index', compact('students', 'strands', 'gradeLevels', 'sections', 'existingAssignments'));
     }
 
     /**
@@ -137,6 +171,11 @@ class AssigningListController extends Controller
                         'academic_year_strand_section_id' => $academicYearStrandSection->id,
                         'status' => 'enrolled'
                     ]);
+                    try {
+                        $existingEnrollment->syncSubjectEnrollments();
+                    } catch (\Throwable $e) {
+                        Log::warning('Failed to sync subject enrollments for enrollment ID ' . ($existingEnrollment->id ?? 'unknown') . ': ' . $e->getMessage());
+                    }
                 } else {
                     // Generate registration number
                     $registrationNumber = $this->generateRegistrationNumber($activeYear->id);
@@ -150,6 +189,15 @@ class AssigningListController extends Controller
                         'registration_number' => $registrationNumber,
                         'status' => 'enrolled'
                     ]);
+                    // After creating, attempt to sync subject enrollments for the new row
+                    try {
+                        $newEnroll = \App\Models\StudentEnrollment::where('student_id', $assignment['student_id'])
+                            ->where('academic_year_id', $activeYear->id)
+                            ->first();
+                        if ($newEnroll) { $newEnroll->syncSubjectEnrollments(); }
+                    } catch (\Throwable $e) {
+                        Log::warning('Failed to sync subject enrollments after creating enrollment for student ID ' . ($assignment['student_id'] ?? 'unknown') . ': ' . $e->getMessage());
+                    }
                 }
                 
                 $savedCount++;

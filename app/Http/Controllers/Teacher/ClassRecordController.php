@@ -13,6 +13,7 @@ use App\Models\SubjectRecord;
 use App\Models\SubjectRecordResult;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Log;
 
 class ClassRecordController extends Controller
 {
@@ -267,22 +268,43 @@ class ClassRecordController extends Controller
             ? ($assignment->teacher->last_name . ', ' . $assignment->teacher->first_name)
             : null;
 
+        // Get optional filters from query parameters
+        $selectedGrade = $request->query('grade_level');
+        $selectedTerm = $request->query('term'); // 'midterm' or 'finals'
+
+        // Load all SubjectRecords for this assignment with optional filters
+        $recordsQuery = SubjectRecord::where('academic_year_strand_subject_id', $assignment->id);
+        
+        // Apply grade level filter if specified
+        if ($selectedGrade) {
+            $recordsQuery->where('grade_level', $selectedGrade);
+        }
+        
+        // Apply term filter if specified
+        if ($selectedTerm && in_array($selectedTerm, ['midterm', 'finals'])) {
+            $recordsQuery->where('term', $selectedTerm);
+        }
+        
+        $allRecords = $recordsQuery->orderBy('date_given')
+            ->orderBy('id')
+            ->get();
+
+        // Get grade level from the records (use the first available grade_level)
+        $recordGrade = $allRecords->first()->grade_level ?? $grade;
+        if ($recordGrade && is_numeric($recordGrade)) {
+            $recordGrade = 'G-' . $recordGrade;
+        }
+
         $details = [
             'strand' => $assignment->strand?->name,
             'section' => $sectionName,
-            'grade' => $grade,
+            'grade' => $recordGrade,
             'subject' => $assignment->subject?->name,
             'subject_teacher' => $subjectTeacher,
             'adviser' => $adviserName,
             'school_year' => $assignment->academicYear?->name,
             'semester' => $assignment->academicYear?->semester,
         ];
-
-        // Load all SubjectRecords for this assignment
-        $allRecords = SubjectRecord::where('academic_year_strand_subject_id', $assignment->id)
-            ->orderBy('date_given')
-            ->orderBy('id')
-            ->get();
 
         // Fetch this student's scores across all records in one go
         $scores = [];
@@ -299,7 +321,6 @@ class ClassRecordController extends Controller
         $quarters = [
             '1st' => 'First Semester',
             '2nd' => 'Second Semester',
-            null => 'Semester Final Grade',
         ];
 
         $wwWeight = (float) (($assignment->written_works_percentage ?? 0) / 100);
@@ -307,9 +328,19 @@ class ClassRecordController extends Controller
         $qaWeight = (float) (($assignment->quarterly_assessment_percentage ?? 0) / 100);
 
         $quartersData = [];
+        $semesterGrades = []; // Store semester grades for final computation
+        
         foreach ($quarters as $qKey => $qLabel) {
-            $qRecs = $allRecords->filter(function ($r) use ($qKey) {
-                return $r->quarter === $qKey;
+            // Filter by quarter (semester) and optionally by term
+            $qRecs = $allRecords->filter(function ($r) use ($qKey, $selectedTerm) {
+                $matchesQuarter = $r->quarter === $qKey;
+                
+                // If term filter is active, also check term matches
+                if ($selectedTerm && in_array($selectedTerm, ['midterm', 'finals'])) {
+                    return $matchesQuarter && $r->term === $selectedTerm;
+                }
+                
+                return $matchesQuarter;
             })->values();
 
             $ww = $qRecs->where('type', 'written work')->values();
@@ -333,6 +364,11 @@ class ClassRecordController extends Controller
             $qaWS = isset($qaPS) ? $qaPS * $qaWeight : null;
 
             $initial = (isset($wwWS) ? $wwWS : 0) + (isset($ptWS) ? $ptWS : 0) + (isset($qaWS) ? $qaWS : 0);
+
+            // Store semester grades for final computation
+            if ($qKey === '1st' || $qKey === '2nd') {
+                $semesterGrades[$qKey] = $initial;
+            }
 
             // Description mapping using provided logic
             $desc = '0';
@@ -393,6 +429,24 @@ class ClassRecordController extends Controller
             ];
         }
 
+        // Compute final grade as average of first and second semester
+        $finalGrade = null;
+        $finalDescription = '0';
+        if (isset($semesterGrades['1st']) && isset($semesterGrades['2nd'])) {
+            $finalGrade = ($semesterGrades['1st'] + $semesterGrades['2nd']) / 2;
+            if ($finalGrade > 89) {
+                $finalDescription = 'Outstanding';
+            } elseif ($finalGrade > 84) {
+                $finalDescription = 'Very Satisfactory';
+            } elseif ($finalGrade > 79) {
+                $finalDescription = 'Satisfactory';
+            } elseif ($finalGrade > 74) {
+                $finalDescription = 'Fairly Satisfactory';
+            } elseif ($finalGrade > 59) {
+                $finalDescription = 'Did Not Meet Expectations';
+            }
+        }
+
         return view('teacher.class_records.student_show', [
             'assignment' => $assignment,
             'student' => $student,
@@ -403,7 +457,174 @@ class ClassRecordController extends Controller
                 'pt' => $ptWeight,
                 'qa' => $qaWeight,
             ],
+            'finalGrade' => $finalGrade,
+            'finalDescription' => $finalDescription,
+            'semesterGrades' => $semesterGrades,
+            'selectedTerm' => $selectedTerm, // Pass selected term to view
+            'selectedGrade' => $selectedGrade, // Pass selected grade to view
         ]);
+    }
+
+    /**
+     * Show a full-page form to create a new student record scoped to this assignment.
+     * Accepts optional query params: grade_level and term to prefill the form.
+     */
+    public function createStudent(Request $request, AcademicYearStrandSubject $assignment)
+    {
+        $user = Auth::guard('teacher')->user();
+        if (!$user) { abort(401); }
+        if ($assignment->teacher_id !== $user->user_pk_id) { abort(403); }
+
+        $gradeLevel = $request->query('grade_level');
+        $term = $request->query('term');
+
+        return view('teacher.class_records.students.create', [
+            'assignment' => $assignment,
+            'grade_level' => $gradeLevel,
+            'term' => $term,
+        ]);
+    }
+
+    /**
+     * Store a new minimal Student record and redirect to the student's class-record page.
+     * This keeps the implementation intentionally minimal: teachers can refine the student data later.
+     */
+    public function storeStudent(Request $request, AcademicYearStrandSubject $assignment)
+    {
+        $user = Auth::guard('teacher')->user();
+        if (!$user) { abort(401); }
+        if ($assignment->teacher_id !== $user->user_pk_id) { abort(403); }
+
+        $data = $request->validate([
+            'last_name' => ['required','string','max:255'],
+            'first_name' => ['required','string','max:255'],
+            'middle_name' => ['nullable','string','max:255'],
+            'grade_level' => ['nullable','string','max:10'],
+            'term' => ['nullable','string','max:50'],
+        ]);
+
+        // Generate a temporary, unique student number
+        $studentNumber = 'TMP' . now()->format('YmdHis') . rand(100,999);
+
+        $student = new Student();
+        $student->student_number = $studentNumber;
+        $student->last_name = $data['last_name'];
+        $student->first_name = $data['first_name'];
+        $student->middle_name = $data['middle_name'] ?? null;
+        $student->status = 'active';
+        $student->save();
+
+        // If a term was provided, create placeholder assessment records for that term
+        $termRaw = strtolower(trim($data['term'] ?? ''));
+        if (!empty($termRaw)) {
+            // Map common term strings to quarter values used by SubjectRecord
+            $quarter = null;
+            if (str_contains($termRaw, 'mid') || str_contains($termRaw, 'first') || str_contains($termRaw, '1st')) {
+                $quarter = '1st';
+            } elseif (str_contains($termRaw, 'final') || str_contains($termRaw, 'second') || str_contains($termRaw, '2nd')) {
+                $quarter = '2nd';
+            }
+
+            $now = now()->toDateString();
+            $desc = 'Auto-generated placeholder assessment for term: ' . ($data['term'] ?? $termRaw);
+
+            // create one placeholder per assessment category
+            try {
+                $placeholders = [
+                    ['type' => 'written work', 'name' => 'WW (auto)'],
+                    ['type' => 'performance task', 'name' => 'PT (auto)'],
+                    ['type' => 'quarterly assessment', 'name' => 'QA (auto)'],
+                ];
+                foreach ($placeholders as $ph) {
+                    \App\Models\SubjectRecord::create([
+                        'academic_year_strand_subject_id' => $assignment->id,
+                        'name' => $ph['name'] . ' - ' . now()->format('YmdHis'),
+                        'description' => $desc,
+                        'max_score' => 100,
+                        'type' => $ph['type'],
+                        'quarter' => $quarter,
+                        'date_given' => $now,
+                        'remarks' => null,
+                    ]);
+                }
+            } catch (\Exception $e) {
+                // Log but do not block student creation if placeholder creation fails
+                Log::warning('Failed to create placeholder assessments: ' . $e->getMessage());
+            }
+        }
+
+        // Redirect to the student's class-record page (studentShow)
+        return redirect()->route('teacher.class-records.students.show', ['assignment' => $assignment->id, 'student' => $student->id])
+            ->with('success', 'Student record created. Placeholder assessments were added for the selected term. You can refine details later.');
+    }
+
+    /**
+     * Create placeholder SubjectRecord entries for a given student and term.
+     * This is triggered by the 'New Entry' modal to quickly add assessments for another term.
+     */
+    public function addStudentTerm(Request $request, AcademicYearStrandSubject $assignment, Student $student)
+    {
+        $user = Auth::guard('teacher')->user();
+        if (!$user) { abort(401); }
+        if ($assignment->teacher_id !== $user->user_pk_id) { abort(403); }
+
+        $data = $request->validate([
+            'grade_level' => ['nullable','string','max:10'],
+            'term' => ['required','string','max:50'],
+        ]);
+
+        $termRaw = strtolower(trim($data['term'] ?? ''));
+        $quarter = null;
+        if (str_contains($termRaw, 'mid') || str_contains($termRaw, 'first') || str_contains($termRaw, '1st')) {
+            $quarter = '1st';
+        } elseif (str_contains($termRaw, 'final') || str_contains($termRaw, 'second') || str_contains($termRaw, '2nd')) {
+            $quarter = '2nd';
+        }
+
+        $now = now()->toDateString();
+        $desc = 'Auto-generated placeholder assessment for term: ' . ($data['term'] ?? $termRaw) . ' (created for student: ' . ($student->last_name . ', ' . $student->first_name) . ')';
+
+        try {
+            $placeholders = [
+                ['type' => 'written work', 'name' => 'WW (auto)'],
+                ['type' => 'performance task', 'name' => 'PT (auto)'],
+                ['type' => 'quarterly assessment', 'name' => 'QA (auto)'],
+            ];
+            foreach ($placeholders as $ph) {
+                $sr = SubjectRecord::create([
+                    'academic_year_strand_subject_id' => $assignment->id,
+                    'name' => $ph['name'] . ' - ' . now()->format('YmdHis'),
+                    'description' => $desc,
+                    'max_score' => 100,
+                    'type' => $ph['type'],
+                    'quarter' => $quarter,
+                    'date_given' => $now,
+                    'remarks' => null,
+                ]);
+
+                // Create per-student placeholder result so the student immediately has a row to accept scores
+                try {
+                    \App\Models\SubjectRecordResult::create([
+                        'subject_record_id' => $sr->id,
+                        'student_id' => $student->id,
+                        'raw_score' => 0,
+                        'base_score' => null,
+                        'final_score' => null,
+                        'remarks' => null,
+                        'description' => null,
+                        'date_submitted' => now(),
+                    ]);
+                } catch (\Exception $e) {
+                    // Log and continue; missing result row is non-blocking for the placeholder creation
+                    Log::warning('Failed to create SubjectRecordResult for student ' . $student->id . ': ' . $e->getMessage());
+                }
+            }
+        } catch (\Exception $e) {
+            Log::warning('Failed to create placeholder assessments for addStudentTerm: ' . $e->getMessage());
+            return response()->json(['success' => false, 'message' => 'Failed to create placeholder assessments.'], 500);
+        }
+
+        return response()->json(['success' => true, 'message' => 'Placeholder assessments created.']);
     }
 
     public function termShow(Request $request, AcademicYearStrandSubject $assignment, string $term)
@@ -599,13 +820,29 @@ class ClassRecordController extends Controller
         if ($assignment->teacher_id !== $user->user_pk_id) { abort(403); }
 
         $data = $request->validate([
-            'term' => ['required', 'in:first-semester,second-semester,semester-final'],
+            'term' => ['nullable', 'in:first-semester,second-semester,semester-final'],
+            'term_type' => ['nullable', 'in:midterm,finals'], // New term type field
+            'grade_level' => ['nullable', 'string', 'max:10'], // Grade level field
             'category' => ['required', 'in:written_work,performance_task,quarterly_assessment'],
-            'name' => ['required', 'string', 'max:255'],
+            // name/date/max are optional; modal may omit them
+            'name' => ['nullable', 'string', 'max:255'],
             'description' => ['nullable', 'string'],
-            'date_given' => ['required', 'date'],
-            'max_score' => ['required', 'numeric', 'min:1'],
+            'date_given' => ['nullable', 'date'],
+            'max_score' => ['nullable', 'numeric', 'min:1'],
         ]);
+
+        // Provide sensible defaults for omitted fields
+        if (empty($data['name'])) {
+            // Generate a simple default name from category and timestamp
+            $catLabel = isset($data['category']) ? str_replace('_', ' ', $data['category']) : 'Assessment';
+            $data['name'] = ucfirst($catLabel) . ' - ' . now()->format('YmdHis');
+        }
+        if (empty($data['date_given'])) {
+            $data['date_given'] = now()->toDateString();
+        }
+        if (empty($data['max_score'])) {
+            $data['max_score'] = 100;
+        }
 
         // Map category/term to admin SubjectRecord fields
         $typeMap = [
@@ -619,8 +856,10 @@ class ClassRecordController extends Controller
             'semester-final' => null,
         ];
 
-        $type = $typeMap[$data['category']];
-        $quarter = $quarterMap[$data['term']] ?? null;
+    $type = $typeMap[$data['category']];
+    $quarter = isset($data['term']) ? ($quarterMap[$data['term']] ?? null) : null;
+    $termType = $data['term_type'] ?? null; // Get the term type (midterm/finals)
+    $gradeLevel = $data['grade_level'] ?? null; // Get the grade level
 
             // Create a single SubjectRecord linked to this assignment
             SubjectRecord::create([
@@ -630,11 +869,92 @@ class ClassRecordController extends Controller
                 'max_score' => $data['max_score'],
                 'type' => $type,
                 'quarter' => $quarter,
+                'term' => $termType, // Store the term type
+                'grade_level' => $gradeLevel, // Store the grade level
                 'date_given' => $data['date_given'],
                 'remarks' => null,
             ]);
 
         return back()->with('success', 'Assessment added successfully.');
+    }
+
+    /**
+     * Update an existing assessment (SubjectRecord) scoped to this teacher's assignment.
+     */
+    public function updateAssessment(Request $request, AcademicYearStrandSubject $assignment, SubjectRecord $subjectRecord)
+    {
+        $user = Auth::guard('teacher')->user();
+        if (!$user) { abort(401); }
+        if ($assignment->teacher_id !== $user->user_pk_id) { abort(403); }
+
+        if ($subjectRecord->academic_year_strand_subject_id !== $assignment->id) {
+            abort(404);
+        }
+
+        $data = $request->validate([
+            'name' => ['required','string','max:255'],
+            'description' => ['nullable','string'],
+            'date_given' => ['nullable','date'],
+            'max_score' => ['required','numeric','min:1'],
+        ]);
+
+        $subjectRecord->update([
+            'name' => $data['name'],
+            'description' => $data['description'] ?? null,
+            'date_given' => $data['date_given'] ?? $subjectRecord->date_given,
+            'max_score' => $data['max_score'],
+        ]);
+
+        if ($request->wantsJson() || $request->ajax()) {
+            return response()->json(['success' => true]);
+        }
+
+        return back()->with('success', 'Assessment updated successfully.');
+    }
+
+    /**
+     * Delete an existing assessment (SubjectRecord) scoped to this teacher's assignment.
+     */
+    public function destroyAssessment(Request $request, AcademicYearStrandSubject $assignment, SubjectRecord $subjectRecord)
+    {
+        $user = Auth::guard('teacher')->user();
+        if (!$user) { abort(401); }
+        if ($assignment->teacher_id !== $user->user_pk_id) { abort(403); }
+
+        if ($subjectRecord->academic_year_strand_subject_id !== $assignment->id) {
+            abort(404);
+        }
+
+        // Store the name for the success message
+        $assessmentName = $subjectRecord->name;
+
+        // Delete the assessment
+        $subjectRecord->delete();
+
+        if ($request->wantsJson() || $request->ajax()) {
+            return response()->json(['success' => true, 'message' => 'Assessment deleted successfully.']);
+        }
+
+        return back()->with('success', 'Assessment "' . $assessmentName . '" deleted successfully.');
+    }
+
+    /**
+     * Show a full-page create assessment form. Prefills grade_level and term when provided via query string.
+     */
+    public function createAssessment(Request $request, AcademicYearStrandSubject $assignment)
+    {
+        $user = Auth::guard('teacher')->user();
+        if (!$user) { abort(401); }
+        if ($assignment->teacher_id !== $user->user_pk_id) { abort(403); }
+
+        $gradeLevel = $request->query('grade_level');
+        $term = $request->query('term'); // expected values: first-semester, semester-final
+
+        return view('teacher.class_records.assessments.create', [
+            'assignment' => $assignment,
+            'grade_level' => $gradeLevel,
+            'term' => $term,
+        ]);
     }
 
     public function storeScores(Request $request, AcademicYearStrandSubject $assignment)
@@ -846,5 +1166,29 @@ class ClassRecordController extends Controller
         }
 
         return back()->with('success', 'Final grades submitted successfully.');
+    }
+
+    /**
+     * Publish/unpublish grades to make them visible to students
+     */
+    public function toggleGradesPublication(AcademicYearStrandSubject $assignment)
+    {
+        $user = Auth::guard('teacher')->user();
+        if (!$user) {
+            abort(401);
+        }
+
+        // Verify this teacher owns this assignment
+        if ($assignment->teacher_id !== $user->user_pk_id) {
+            abort(403, 'Unauthorized');
+        }
+
+        // Toggle the publication status
+        $assignment->update([
+            'grades_published' => !$assignment->grades_published
+        ]);
+
+        $status = $assignment->grades_published ? 'published' : 'unpublished';
+        return back()->with('success', "Grades have been {$status} successfully. Students can " . ($assignment->grades_published ? 'now' : 'no longer') . " view their grades.");
     }
 }

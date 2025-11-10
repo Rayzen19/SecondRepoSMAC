@@ -6,10 +6,38 @@
         <h4 class="mb-0">Class Record: {{ $assignment->subject?->name ?? '—' }}</h4>
         <div class="text-muted small">{{ $assignment->academicYear?->display_name ?? ($assignment->academicYear?->name) }} • Strand: {{ $assignment->strand?->name ?? '—' }}</div>
     </div>
-    <div>
+    <div class="d-flex gap-2">
+        <!-- Publish/Unpublish Grades Button -->
+        <form action="{{ route('teacher.class-records.toggle-publication', $assignment->id) }}" method="POST" class="d-inline">
+            @csrf
+            @if($assignment->grades_published)
+                <button type="submit" class="btn btn-warning" onclick="return confirm('Are you sure you want to unpublish grades? Students will no longer be able to view their grades.')">
+                    <i class="ti ti-eye-off me-1"></i> Unpublish Grades
+                </button>
+            @else
+                <button type="submit" class="btn btn-success" onclick="return confirm('Are you sure you want to publish grades? Students will be able to view their grades.')">
+                    <i class="ti ti-eye me-1"></i> Publish Grades to Students
+                </button>
+            @endif
+        </form>
         <a href="{{ route('teacher.class-records.index') }}" class="btn btn-outline-secondary"><i class="ti ti-arrow-left me-1"></i> Back</a>
     </div>
 </div>
+
+<!-- Publication Status Badge -->
+@if($assignment->grades_published)
+    <div class="alert alert-success alert-dismissible fade show" role="alert">
+        <i class="ti ti-eye me-2"></i>
+        <strong>Grades Published:</strong> Students can currently view their grades for this subject.
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    </div>
+@else
+    <div class="alert alert-warning alert-dismissible fade show" role="alert">
+        <i class="ti ti-eye-off me-2"></i>
+        <strong>Grades Not Published:</strong> Students cannot view their grades yet. Click "Publish Grades to Students" when ready.
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    </div>
+@endif
 
 @if(isset($classDetails))
 <div class="card mb-3">

@@ -7,6 +7,9 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=0">
     <meta name="robots" content="noindex, nofollow">
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta http-equiv="Expires" content="0">
     <title>Guardian Portal</title>
     <link rel="shortcut icon" type="image/x-icon" href="{{ asset('assets/images/Image.png') }}">
     <link rel="apple-touch-icon" sizes="180x180" href="{{ asset('assets/img/apple-touch-icon.png') }}">
@@ -16,6 +19,7 @@
     <link rel="stylesheet" href="{{ asset('assets/plugins/fontawesome/css/fontawesome.min.css') }}">
     <link rel="stylesheet" href="{{ asset('assets/plugins/fontawesome/css/all.min.css') }}">
     <link rel="stylesheet" href="{{ asset('assets/css/style.css') }}">
+    <link rel="stylesheet" href="{{ asset('assets/css/responsive-sidebar.css') }}">
 </head>
 <body>
     <div class="main-wrapper">
@@ -42,9 +46,24 @@
                                         <i class="ti ti-layout-navbar"></i><span>Dashboard</span>
                                     </a>
                                 </li>
-                                <li class="{{ $routeIs('guardian.students.index') ? 'active' : '' }}">
-                                    <a class="{{ $routeIs('guardian.students.index') ? 'active' : '' }}" href="{{ route('guardian.students.index') }}">
-                                        <i class="ti ti-users"></i><span>Students</span>
+                                <li class="{{ $routeIs('guardian.grades.*') ? 'active' : '' }}">
+                                    <a class="{{ $routeIs('guardian.grades.*') ? 'active' : '' }}" href="{{ route('guardian.grades.index') }}">
+                                        <i class="ti ti-report-analytics"></i><span>Grades</span>
+                                    </a>
+                                </li>
+                                <li class="{{ $routeIs('guardian.enhancement.*') ? 'active' : '' }}">
+                                    <a class="{{ $routeIs('guardian.enhancement.*') ? 'active' : '' }}" href="{{ route('guardian.enhancement.index') }}">
+                                        <i class="ti ti-trending-up"></i><span>Enhancement</span>
+                                    </a>
+                                </li>
+                                <li class="{{ $routeIs('guardian.profile.*') ? 'active' : '' }}">
+                                    <a class="{{ $routeIs('guardian.profile.*') ? 'active' : '' }}" href="{{ route('guardian.profile.show') }}">
+                                        <i class="ti ti-user"></i><span>Profile</span>
+                                    </a>
+                                </li>
+                                <li class="{{ $routeIs('guardian.messages.*') ? 'active' : '' }}">
+                                    <a class="{{ $routeIs('guardian.messages.*') ? 'active' : '' }}" href="{{ route('guardian.messages.messenger') }}">
+                                        <i class="ti ti-mail"></i><span>Messages</span>
                                     </a>
                                 </li>
                                 <li>
@@ -61,7 +80,16 @@
                 </div>
             </div>
         </div>
+        <div class="sidebar-overlay"></div>
         <div class="page-wrapper">
+            <header class="portal-mobile-header">
+                <button type="button" class="mobile-menu-btn" aria-label="Toggle navigation" aria-controls="sidebar" aria-expanded="false">
+                    <i class="ti ti-menu-2"></i>
+                </button>
+                <a href="{{ route('guardian.dashboard') }}" class="portal-mobile-logo">
+                    <img src="{{ asset('assets/images/SMAClogo.png') }}" alt="SMAC Logo">
+                </a>
+            </header>
             <div class="content">
                 @yield('content')
             </div>
@@ -75,5 +103,33 @@
     <script src="{{ asset('assets/js/feather.min.js') }}"></script>
     <script src="{{ asset('assets/js/jquery.slimscroll.min.js') }}"></script>
     <script src="{{ asset('assets/js/script.js') }}"></script>
+    <script>
+        // Enforce fresh load on back/forward (handles bfcache)
+        window.addEventListener('pageshow', function (event) {
+            try {
+                const nav = performance.getEntriesByType('navigation')[0];
+                const fromBFCache = event.persisted || (nav && nav.type === 'back_forward');
+                if (fromBFCache) {
+                    // Force a real request which will hit auth middleware
+                    window.location.reload();
+                }
+            } catch (e) {
+                // Fallback for older browsers
+                if (event.persisted) window.location.reload();
+            }
+        });
+
+        // Gentle fallback: redirect to login on back
+        (function() {
+            if (window.history && window.history.pushState) {
+                window.history.pushState('forward', null, '');
+                window.onpopstate = function() {
+                    window.location.href = "{{ route('guardian.auth.loginForm') }}";
+                };
+            }
+        })();
+    </script>
+    <script src="{{ asset('assets/js/responsive-sidebar.js') }}"></script>
+    @stack('scripts')
 </body>
 </html>

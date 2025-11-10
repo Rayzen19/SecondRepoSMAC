@@ -9,11 +9,21 @@ class LoginController extends Controller
 {
     public function showLoginForm()
     {
+        // If already logged in as guardian, redirect to dashboard
+        if (Auth::guard('guardian')->check()) {
+            return redirect()->route('guardian.dashboard');
+        }
+        
         return view('guardian.auth.login');
     }
 
     public function login(Request $request)
     {
+        // If already logged in as guardian, redirect to dashboard
+        if (Auth::guard('guardian')->check()) {
+            return redirect()->route('guardian.dashboard');
+        }
+        
         $credentials = $request->only('email', 'password');
         if (Auth::guard('guardian')->attempt($credentials, $request->filled('remember'))) {
             $request->session()->regenerate();

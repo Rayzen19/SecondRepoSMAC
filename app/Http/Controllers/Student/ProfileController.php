@@ -116,7 +116,21 @@ class ProfileController extends Controller
 
         $request->validate([
             'current_password' => 'required',
-            'password' => ['required', 'confirmed', Password::min(8)],
+            'password' => [
+                'required', 
+                'confirmed', 
+                Password::min(12)
+                    ->mixedCase()
+                    ->numbers()
+                    ->symbols()
+                    ->uncompromised()
+            ],
+        ], [
+            'password.min' => 'Password must be at least 12 characters long.',
+            'password.mixed_case' => 'Password must contain both uppercase and lowercase letters.',
+            'password.numbers' => 'Password must contain at least one number.',
+            'password.symbols' => 'Password must contain at least one symbol.',
+            'password.uncompromised' => 'This password has appeared in a data breach and should not be used.',
         ]);
 
         // Verify current password

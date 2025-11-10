@@ -11,11 +11,21 @@ class LoginController extends Controller
 {
     public function showLoginForm()
     {
+        // If already logged in as student, redirect to dashboard
+        if (Auth::guard('student')->check()) {
+            return redirect()->route('student.dashboard');
+        }
+        
         return view('student.auth.login');
     }
 
     public function login(Request $request)
     {
+        // If already logged in as student, redirect to dashboard
+        if (Auth::guard('student')->check()) {
+            return redirect()->route('student.dashboard');
+        }
+        
         $credentials = $request->only('email', 'password');
         if (Auth::guard('student')->attempt($credentials, $request->filled('remember'))) {
             $student = Student::where('id', Auth::guard('student')->user()->user_pk_id)->first();

@@ -595,9 +595,21 @@
         }
     }
 
-    // Load saved assignments from session
+    // Load saved assignments from session and database
     function loadSavedAssignments() {
+        // First, load from database (existing enrollments)
+        const existingAssignments = @json($existingAssignments ?? []);
         const savedAssignments = @json(session('student_assignments', []));
+        
+        // Combine both sources, prioritizing session data
+        const allAssignments = [...existingAssignments];
+        savedAssignments.forEach(sessionAssignment => {
+            const exists = allAssignments.find(a => a.student_id === sessionAssignment.student_id);
+            if (!exists) {
+                allAssignments.push(sessionAssignment);
+            }
+        });
+        
         const sectionsData = @json($sections);
         
         // Create a map of section IDs to section info for easy lookup
@@ -609,9 +621,9 @@
             };
         });
         
-        if (savedAssignments.length > 0) {
+        if (allAssignments.length > 0) {
             // Group assignments by strand-section
-            savedAssignments.forEach(assignment => {
+            allAssignments.forEach(assignment => {
                 const key = `${assignment.strand_code}-${assignment.section_id}`;
                 
                 if (!sectionAssignments[key]) {
@@ -654,7 +666,7 @@
             // Update section counts
             updateSectionCounts();
             
-            console.log('Loaded saved assignments:', savedAssignments.length);
+            console.log('Loaded existing and saved assignments:', allAssignments.length);
         }
     }
 

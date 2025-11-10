@@ -7,6 +7,9 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=0">
     <meta name="robots" content="noindex, nofollow">
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta http-equiv="Expires" content="0">
     <title>Student Portal</title>
     <link rel="shortcut icon" type="image/x-icon" href="{{ asset('assets/images/Image.png') }}">
     <link rel="apple-touch-icon" sizes="180x180" href="{{ asset('assets/img/apple-touch-icon.png') }}">
@@ -16,6 +19,7 @@
     <link rel="stylesheet" href="{{ asset('assets/plugins/fontawesome/css/fontawesome.min.css') }}">
     <link rel="stylesheet" href="{{ asset('assets/plugins/fontawesome/css/all.min.css') }}">
     <link rel="stylesheet" href="{{ asset('assets/css/style.css') }}">
+    <link rel="stylesheet" href="{{ asset('assets/css/responsive-sidebar.css') }}">
 </head>
 <body>
     <div class="main-wrapper">
@@ -54,12 +58,27 @@
                                 </li>
                                 <li class="{{ $routeIs('student.grades.index') ? 'active' : '' }}">
                                     <a class="{{ $routeIs('student.grades.index') ? 'active' : '' }}" href="{{ route('student.grades.index') }}">
-                                        <i class="ti ti-report-analytics"></i><span>Grades & DSS</span>
+                                        <i class="ti ti-report-analytics"></i><span>Grades</span>
+                                    </a>
+                                </li>
+                                <li class="{{ $routeIs('student.performance.index') ? 'active' : '' }}">
+                                    <a class="{{ $routeIs('student.performance.index') ? 'active' : '' }}" href="{{ route('student.performance.index') }}">
+                                        <i class="ti ti-chart-line"></i><span>Performance</span>
+                                    </a>
+                                </li>
+                                <li class="{{ $routeIs('student.enhancement.index') ? 'active' : '' }}">
+                                    <a class="{{ $routeIs('student.enhancement.index') ? 'active' : '' }}" href="{{ route('student.enhancement.index') }}">
+                                        <i class="ti ti-brain"></i><span>Enhancement</span>
                                     </a>
                                 </li>
                                 <li class="{{ $routeIs('student.profile.*') ? 'active' : '' }}">
                                     <a class="{{ $routeIs('student.profile.*') ? 'active' : '' }}" href="{{ route('student.profile.show') }}">
                                         <i class="ti ti-user"></i><span>My Profile</span>
+                                    </a>
+                                </li>
+                                <li class="{{ $routeIs('student.messages.*') ? 'active' : '' }}">
+                                    <a class="{{ $routeIs('student.messages.*') ? 'active' : '' }}" href="{{ route('student.messages.messenger') }}">
+                                        <i class="ti ti-mail"></i><span>Messages</span>
                                     </a>
                                 </li>
                                 <li>
@@ -76,7 +95,16 @@
                 </div>
             </div>
         </div>
+        <div class="sidebar-overlay"></div>
         <div class="page-wrapper">
+            <header class="portal-mobile-header">
+                <button type="button" class="mobile-menu-btn" aria-label="Toggle navigation" aria-controls="sidebar" aria-expanded="false">
+                    <i class="ti ti-menu-2"></i>
+                </button>
+                <a href="{{ route('student.dashboard') }}" class="portal-mobile-logo">
+                    <img src="{{ asset('assets/images/SMAClogo.png') }}" alt="SMAC Logo">
+                </a>
+            </header>
             <div class="content">
                 @yield('content')
             </div>
@@ -90,5 +118,32 @@
     <script src="{{ asset('assets/js/feather.min.js') }}"></script>
     <script src="{{ asset('assets/js/jquery.slimscroll.min.js') }}"></script>
     <script src="{{ asset('assets/js/script.js') }}"></script>
+    <script>
+        // Enforce fresh load on back/forward (handles bfcache)
+        window.addEventListener('pageshow', function (event) {
+            try {
+                const nav = performance.getEntriesByType('navigation')[0];
+                const fromBFCache = event.persisted || (nav && nav.type === 'back_forward');
+                if (fromBFCache) {
+                    window.location.reload();
+                }
+            } catch (e) {
+                if (event.persisted) window.location.reload();
+            }
+        });
+
+        // Gentle fallback: redirect to login on back
+        (function() {
+            if (window.history && window.history.pushState) {
+                window.history.pushState('forward', null, '');
+                window.onpopstate = function() {
+                    window.location.href = "{{ route('student.auth.loginForm') }}";
+                };
+            }
+        })();
+    </script>
+    <script src="{{ asset('assets/js/responsive-sidebar.js') }}"></script>
+    @stack('modals')
+    @stack('scripts')
 </body>
 </html>

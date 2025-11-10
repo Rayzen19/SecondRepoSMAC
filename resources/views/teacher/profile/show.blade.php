@@ -46,25 +46,33 @@
                     @if($teacher->profile_picture)
                         <img src="{{ asset('storage/' . $teacher->profile_picture) }}" 
                              alt="Profile Picture" 
+                             id="preview-image-teacher"
                              class="rounded-circle mb-3" 
-                             style="width: 200px; height: 200px; object-fit: cover;">
+                             style="width: 200px; height: 200px; object-fit: cover; border: 3px solid #ddd;">
+                        <div id="preview-placeholder-teacher" class="d-none"></div>
                     @else
-                        <div class="bg-secondary rounded-circle mx-auto mb-3 d-flex align-items-center justify-content-center" 
-                             style="width: 200px; height: 200px;">
+                        <div id="preview-placeholder-teacher" class="bg-secondary rounded-circle mx-auto mb-3 d-flex align-items-center justify-content-center" 
+                             style="width: 200px; height: 200px; border: 3px solid #ddd;">
                             <i class="ti ti-user" style="font-size: 100px; color: white;"></i>
                         </div>
+                        <img src="" id="preview-image-teacher" alt="Profile Picture" class="rounded-circle mb-3 d-none" 
+                             style="width: 200px; height: 200px; object-fit: cover; border: 3px solid #ddd;">
                     @endif
                     
                     <form action="{{ route('teacher.profile.picture.update') }}" method="POST" enctype="multipart/form-data" class="mb-2">
                         @csrf
                         @method('POST')
                         <div class="mb-2">
-                            <input type="file" name="profile_picture" id="profile_picture" class="form-control" accept="image/*" required>
+                            <label for="profile_picture" class="btn btn-primary btn-sm w-100 mb-2">
+                                <i class="ti ti-photo me-1"></i> Choose File
+                            </label>
+                            <input type="file" name="profile_picture" id="profile_picture" class="d-none" accept="image/*" onchange="previewImageTeacher(event)" required>
+                            <div id="file-name-teacher" class="text-muted small mb-2">No file chosen</div>
                             @error('profile_picture')
                                 <div class="text-danger small mt-1">{{ $message }}</div>
                             @enderror
                         </div>
-                        <button type="submit" class="btn btn-primary w-100 mb-2">
+                        <button type="submit" class="btn btn-success w-100 mb-2" id="upload-btn-teacher" style="display: none;">
                             <i class="ti ti-upload me-1"></i>Upload New Picture
                         </button>
                     </form>
@@ -363,30 +371,6 @@
                                                 <i class="ti ti-calendar me-1"></i>{{ $section['academic_year'] }}
                                             </small>
                                         </div>
-
-                                        <!-- Remove Buttons -->
-                                        <div class="mt-3 pt-3 border-top">
-                                            @if($section['is_adviser'])
-                                                <form action="{{ route('teacher.profile.adviser.remove', $section['section_assignment_id']) }}" method="POST" class="d-inline" onsubmit="return confirm('Are you sure you want to remove yourself as adviser from this section?');">
-                                                    @csrf
-                                                    @method('DELETE')
-                                                    <button type="submit" class="btn btn-sm btn-outline-danger w-100 mb-2">
-                                                        <i class="ti ti-user-minus me-1"></i>Remove Adviser Role
-                                                    </button>
-                                                </form>
-                                            @endif
-
-                                            @if($section['teaching_assignment_ids']->isNotEmpty())
-                                                @php $firstTeachingId = $section['teaching_assignment_ids']->first(); @endphp
-                                                <form action="{{ route('teacher.profile.teaching.remove', $firstTeachingId) }}" method="POST" class="d-inline" onsubmit="return confirm('Are you sure you want to remove this teaching assignment?');">
-                                                    @csrf
-                                                    @method('DELETE')
-                                                    <button type="submit" class="btn btn-sm btn-outline-warning w-100 mb-1">
-                                                        <i class="ti ti-trash me-1"></i>Remove Subject Assignment
-                                                    </button>
-                                                </form>
-                                            @endif
-                                        </div>
                                     </div>
                                 </div>
                             @endforeach
@@ -449,5 +433,43 @@
     text-decoration: none;
 }
 </style>
+
+<script>
+function previewImageTeacher(event) {
+    const file = event.target.files[0];
+    const fileNameDisplay = document.getElementById('file-name-teacher');
+    const uploadBtn = document.getElementById('upload-btn-teacher');
+    
+    if (file) {
+        // Update file name display
+        fileNameDisplay.textContent = file.name;
+        fileNameDisplay.classList.remove('text-muted');
+        fileNameDisplay.classList.add('text-success');
+        
+        // Show upload button
+        uploadBtn.style.display = 'block';
+        
+        // Preview the image
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            const preview = document.getElementById('preview-image-teacher');
+            const placeholder = document.getElementById('preview-placeholder-teacher');
+            
+            preview.src = e.target.result;
+            preview.classList.remove('d-none');
+            
+            if (placeholder) {
+                placeholder.classList.add('d-none');
+            }
+        }
+        reader.readAsDataURL(file);
+    } else {
+        fileNameDisplay.textContent = 'No file chosen';
+        fileNameDisplay.classList.add('text-muted');
+        fileNameDisplay.classList.remove('text-success');
+        uploadBtn.style.display = 'none';
+    }
+}
+</script>
 
 @endsection

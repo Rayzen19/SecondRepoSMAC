@@ -9,6 +9,7 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\Rules\Password;
+use Illuminate\Validation\Rule;
 
 class ProfileController extends Controller
 {
@@ -58,7 +59,14 @@ class ProfileController extends Controller
         $teacher = Teacher::findOrFail($user->user_pk_id);
 
         $validated = $request->validate([
-            'email' => 'required|email|unique:teachers,email,' . $teacher->id,
+            'email' => [
+                'required',
+                'email',
+                // Ensure email is unique within teachers table except this teacher
+                Rule::unique('teachers', 'email')->ignore($teacher->id),
+                // And also unique within users table except the linked auth user
+                Rule::unique('users', 'email')->ignore($user->id),
+            ],
             'phone' => 'required|string|max:20',
             'address' => 'nullable|string|max:500',
         ]);
@@ -138,7 +146,21 @@ class ProfileController extends Controller
 
         $request->validate([
             'current_password' => 'required',
-            'password' => ['required', 'confirmed', Password::min(8)],
+            'password' => [
+                'required', 
+                'confirmed', 
+                Password::min(12)
+                    ->mixedCase()
+                    ->numbers()
+                    ->symbols()
+                    ->uncompromised()
+            ],
+        ], [
+            'password.min' => 'Password must be at least 12 characters long.',
+            'password.mixed_case' => 'Password must contain both uppercase and lowercase letters.',
+            'password.numbers' => 'Password must contain at least one number.',
+            'password.symbols' => 'Password must contain at least one symbol.',
+            'password.uncompromised' => 'This password has appeared in a data breach and should not be used.',
         ]);
 
         // Verify current password

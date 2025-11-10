@@ -13,9 +13,15 @@ class AcademicYearController extends Controller
     {
         $user = Auth::guard('student')->user();
         if (!$user) { abort(401); }
+        
+        // Get the actual student ID from the user's user_pk_id
+        $studentId = $user->user_pk_id;
+        if (!$studentId) {
+            abort(403, 'Student profile not linked to this account.');
+        }
 
         $enrollments = StudentEnrollment::with(['academicYear', 'strand', 'academicYearStrandSection.section'])
-            ->where('student_id', $user->id)
+            ->where('student_id', $studentId)
             ->orderByDesc('academic_year_id')
             ->get();
 

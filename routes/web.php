@@ -9,25 +9,27 @@ Route::get('/', function () {
     return view('welcome', compact('announcements'));
 });
 
+// Login selection page - shows Student, Guardian, and Admin options
+Route::get('/login-select', function () {
+    return view('login-select');
+})->name('login.select');
+
 // Provide a generic 'login' route name used by the framework's guest redirect
-// This redirects to the admin login form by default so middleware that
-// expects route('login') will not fail with a RouteNotFoundException.
+// This redirects to the login selection page
 Route::get('/login', function () {
-    return redirect()->route('admin.auth.loginForm');
+    return redirect()->route('login.select');
 })->name('login');
 
 Route::group(['prefix' => 'admin'], function () {
-    // Public pages only when not authenticated as admin
-    Route::middleware('guest:admin')->group(function () {
-        Route::get('/login', [App\Http\Controllers\Admin\LoginController::class, 'showLoginForm'])->name('admin.auth.loginForm');
-        Route::post('/login', [App\Http\Controllers\Admin\LoginController::class, 'login'])->name('admin.auth.login');
+    // Login routes - accessible to everyone except already logged-in admins
+    Route::get('/login', [App\Http\Controllers\Admin\LoginController::class, 'showLoginForm'])->name('admin.auth.loginForm');
+    Route::post('/login', [App\Http\Controllers\Admin\LoginController::class, 'login'])->name('admin.auth.login');
 
-        // Forgot/Reset Password (OTP)
-        Route::get('forgot-password', [AuthController::class, 'showForgotPassword'])->name('admin.auth.forgotForm');
-        Route::post('forgot-password', [AuthController::class, 'sendOtp'])->name('admin.auth.forgotSend');
-        Route::get('reset-password', [AuthController::class, 'showResetPassword'])->name('admin.auth.resetForm');
-        Route::post('reset-password', [AuthController::class, 'resetWithOtp'])->name('admin.auth.resetProcess');
-    });
+    // Forgot/Reset Password (OTP)
+    Route::get('forgot-password', [AuthController::class, 'showForgotPassword'])->name('admin.auth.forgotForm');
+    Route::post('forgot-password', [AuthController::class, 'sendOtp'])->name('admin.auth.forgotSend');
+    Route::get('reset-password', [AuthController::class, 'showResetPassword'])->name('admin.auth.resetForm');
+    Route::post('reset-password', [AuthController::class, 'resetWithOtp'])->name('admin.auth.resetProcess');
 
     Route::middleware(['auth:admin'])->group(function () {
     // Logout (only when authenticated) - use POST to match the sidebar form
@@ -36,6 +38,13 @@ Route::group(['prefix' => 'admin'], function () {
         // Dashboard
         Route::get('/', [App\Http\Controllers\Admin\DashboardController::class, 'index'])->name('admin.index');
         Route::get('/dashboard', [App\Http\Controllers\Admin\DashboardController::class, 'index'])->name('admin.dashboard');
+
+        // Profile
+        Route::get('/profile', [App\Http\Controllers\Admin\ProfileController::class, 'show'])->name('admin.profile.show');
+        Route::get('/profile/edit', [App\Http\Controllers\Admin\ProfileController::class, 'edit'])->name('admin.profile.edit');
+        Route::put('/profile', [App\Http\Controllers\Admin\ProfileController::class, 'update'])->name('admin.profile.update');
+        Route::get('/profile/password/edit', [App\Http\Controllers\Admin\ProfileController::class, 'editPassword'])->name('admin.profile.password.edit');
+        Route::put('/profile/password', [App\Http\Controllers\Admin\ProfileController::class, 'updatePassword'])->name('admin.profile.password.update');
 
         // Students
         Route::get('/students', [App\Http\Controllers\Admin\StudentController::class, 'index'])->name('admin.students.index');
@@ -126,6 +135,7 @@ Route::group(['prefix' => 'admin'], function () {
         Route::get('/guardians/{guardian}', [App\Http\Controllers\Admin\GuardianController::class, 'show'])->name('admin.guardians.show');
         Route::get('/guardians/{guardian}/edit', [App\Http\Controllers\Admin\GuardianController::class, 'edit'])->name('admin.guardians.edit');
         Route::put('/guardians/{guardian}', [App\Http\Controllers\Admin\GuardianController::class, 'update'])->name('admin.guardians.update');
+        Route::delete('/guardians/{guardian}', [App\Http\Controllers\Admin\GuardianController::class, 'destroy'])->name('admin.guardians.destroy');
 
         // Sections
         Route::get('/sections', [App\Http\Controllers\Admin\SectionController::class, 'index'])->name('admin.sections.index');
@@ -181,6 +191,18 @@ Route::group(['prefix' => 'admin'], function () {
         Route::put('/announcements/{announcement}', [App\Http\Controllers\Admin\AnnouncementController::class, 'update'])->name('admin.announcements.update');
         Route::delete('/announcements/{announcement}', [App\Http\Controllers\Admin\AnnouncementController::class, 'destroy'])->name('admin.announcements.destroy');
 
+        // Messages
+        Route::get('/messages', [App\Http\Controllers\Admin\MessageController::class, 'inbox'])->name('admin.messages.inbox');
+        Route::get('/messages/compose', [App\Http\Controllers\Admin\MessageController::class, 'compose'])->name('admin.messages.compose');
+        Route::post('/messages/send', [App\Http\Controllers\Admin\MessageController::class, 'send'])->name('admin.messages.send');
+        Route::get('/messages/{recipient}', [App\Http\Controllers\Admin\MessageController::class, 'show'])->name('admin.messages.show');
+        Route::get('/messenger', [App\Http\Controllers\Admin\MessageController::class, 'messenger'])->name('admin.messages.messenger');
+        Route::get('/messenger/conversation/{user}', [App\Http\Controllers\Admin\MessageController::class, 'conversation'])->name('admin.messages.conversation');
+        Route::post('/messenger/send', [App\Http\Controllers\Admin\MessageController::class, 'sendConversation'])->name('admin.messages.sendConversation');
+        Route::get('/messages/{message}/download', [App\Http\Controllers\Admin\MessageController::class, 'downloadAttachment'])->name('admin.messages.download');
+        Route::delete('/messages/{message}/unsend', [App\Http\Controllers\Admin\MessageController::class, 'unsendMessage'])->name('admin.messages.unsend');
+        Route::get('/api/all-users', [App\Http\Controllers\Admin\MessageController::class, 'getAllUsers'])->name('admin.api.all-users');
+
         // Assigning List
         Route::get('/assigning-list', [App\Http\Controllers\Admin\AssigningListController::class, 'index'])->name('admin.assigning-list.index');
         Route::post('/assigning-list/save-assignments', [App\Http\Controllers\Admin\AssigningListController::class, 'saveAssignments'])->name('admin.assigning-list.save-assignments');
@@ -219,6 +241,20 @@ Route::group(['prefix' => 'admin'], function () {
         Route::get('/messenger', [App\Http\Controllers\Admin\MessageController::class, 'messenger'])->name('admin.messages.messenger');
         Route::get('/messenger/conversation/{user}', [App\Http\Controllers\Admin\MessageController::class, 'conversation'])->name('admin.messages.conversation');
         Route::post('/messenger/send', [App\Http\Controllers\Admin\MessageController::class, 'sendConversation'])->name('admin.messages.sendConversation');
+        Route::get('/messages/{message}/download', [App\Http\Controllers\Admin\MessageController::class, 'downloadAttachment'])->name('admin.messages.download');
+        Route::delete('/messages/{message}/unsend', [App\Http\Controllers\Admin\MessageController::class, 'unsendMessage'])->name('admin.messages.unsend');
+        
+        // API endpoint for user selection
+        Route::get('/api/all-users', [App\Http\Controllers\Admin\MessageController::class, 'getAllUsers'])->name('admin.api.all-users');
+
+        // SMS Routes - Infobip Integration (Commented out - SmsController not yet implemented)
+        // Route::get('/sms', [App\Http\Controllers\Admin\SmsController::class, 'index'])->name('admin.sms.index');
+        // Route::post('/sms/send-single', [App\Http\Controllers\Admin\SmsController::class, 'sendSingle'])->name('admin.sms.send.single');
+        // Route::post('/sms/send-bulk', [App\Http\Controllers\Admin\SmsController::class, 'sendBulk'])->name('admin.sms.send.bulk');
+        // Route::post('/sms/send-notification', [App\Http\Controllers\Admin\SmsController::class, 'sendNotification'])->name('admin.sms.send.notification');
+        // Route::get('/sms/delivery-reports', [App\Http\Controllers\Admin\SmsController::class, 'getDeliveryReports'])->name('admin.sms.delivery.reports');
+        // Route::post('/sms/test', [App\Http\Controllers\Admin\SmsController::class, 'sendTest'])->name('admin.sms.test');
+        // Route::get('/sms/balance', [App\Http\Controllers\Admin\SmsController::class, 'getBalance'])->name('admin.sms.balance');
     });
 });
 
@@ -239,7 +275,7 @@ Route::group(['prefix' => 'teacher'], function () {
     Route::middleware('auth:teacher')->group(function () {
         Route::post('/logout', [App\Http\Controllers\Teacher\LoginController::class, 'logout'])->name('teacher.auth.logout');
         Route::get('/', fn() => redirect()->route('teacher.dashboard'));
-        Route::get('/dashboard', fn() => view('teacher.dashboard'))->name('teacher.dashboard');
+        Route::get('/dashboard', [App\Http\Controllers\Teacher\DashboardController::class, 'index'])->name('teacher.dashboard');
         Route::get('/subjects', [App\Http\Controllers\Teacher\SubjectController::class, 'index'])->name('teacher.subjects.index');
     Route::get('/class-records', [App\Http\Controllers\Teacher\ClassRecordController::class, 'index'])->name('teacher.class-records.index');
         
@@ -252,14 +288,38 @@ Route::group(['prefix' => 'teacher'], function () {
         Route::get('/profile/password/edit', [App\Http\Controllers\Teacher\ProfileController::class, 'editPassword'])->name('teacher.profile.password.edit');
         Route::put('/profile/password', [App\Http\Controllers\Teacher\ProfileController::class, 'updatePassword'])->name('teacher.profile.password.update');
         Route::get('/profile/subjects', [App\Http\Controllers\Teacher\ProfileController::class, 'allSubjects'])->name('teacher.profile.subjects.all');
-        Route::delete('/profile/adviser/{section}', [App\Http\Controllers\Teacher\ProfileController::class, 'removeAdviserAssignment'])->name('teacher.profile.adviser.remove');
-        Route::delete('/profile/teaching/{assignment}', [App\Http\Controllers\Teacher\ProfileController::class, 'removeTeachingAssignment'])->name('teacher.profile.teaching.remove');
+        // Disabled: Teachers cannot remove their own assignments (managed by admin only)
+        // Route::delete('/profile/adviser/{section}', [App\Http\Controllers\Teacher\ProfileController::class, 'removeAdviserAssignment'])->name('teacher.profile.adviser.remove');
+        // Route::delete('/profile/teaching/{assignment}', [App\Http\Controllers\Teacher\ProfileController::class, 'removeTeachingAssignment'])->name('teacher.profile.teaching.remove');
+        
+        // Messaging
+        Route::get('/messages', [App\Http\Controllers\Teacher\MessageController::class, 'inbox'])->name('teacher.messages.inbox');
+        Route::get('/messages/compose', [App\Http\Controllers\Teacher\MessageController::class, 'compose'])->name('teacher.messages.compose');
+        Route::post('/messages/send', [App\Http\Controllers\Teacher\MessageController::class, 'send'])->name('teacher.messages.send');
+        Route::get('/messages/{recipient}', [App\Http\Controllers\Teacher\MessageController::class, 'show'])->name('teacher.messages.show');
+        Route::get('/messenger', [App\Http\Controllers\Teacher\MessageController::class, 'messenger'])->name('teacher.messages.messenger');
+        Route::get('/messenger/conversation/{user}', [App\Http\Controllers\Teacher\MessageController::class, 'conversation'])->name('teacher.messages.conversation');
+        Route::post('/messenger/send', [App\Http\Controllers\Teacher\MessageController::class, 'sendConversation'])->name('teacher.messages.sendConversation');
+        Route::get('/messages/{message}/download', [App\Http\Controllers\Teacher\MessageController::class, 'downloadAttachment'])->name('teacher.messages.download');
+        Route::delete('/messages/{message}/unsend', [App\Http\Controllers\Teacher\MessageController::class, 'unsendMessage'])->name('teacher.messages.unsend');
+        
+        // API endpoint for user selection
+        Route::get('/api/all-users', [App\Http\Controllers\Teacher\MessageController::class, 'getAllUsers'])->name('teacher.api.allUsers');
+        
     Route::get('/class-records/{assignment}', [App\Http\Controllers\Teacher\ClassRecordController::class, 'show'])->name('teacher.class-records.show');
     Route::get('/class-records/{assignment}/students/{student}', [App\Http\Controllers\Teacher\ClassRecordController::class, 'studentShow'])->name('teacher.class-records.students.show');
+    // Create placeholders for a specific student's additional term (invoked from New Entry modal)
+    Route::post('/class-records/{assignment}/students/{student}/add-term', [App\Http\Controllers\Teacher\ClassRecordController::class, 'addStudentTerm'])->name('teacher.class-records.students.add-term');
     Route::get('/class-records/{assignment}/view/{term}', [App\Http\Controllers\Teacher\ClassRecordController::class, 'termShow'])->name('teacher.class-records.term.show');
     Route::post('/class-records/{assignment}/assessments', [App\Http\Controllers\Teacher\ClassRecordController::class, 'storeAssessment'])->name('teacher.class-records.assessments.store');
+    // Teacher-scoped update for assessments
+    Route::post('/class-records/{assignment}/assessments/{subjectRecord}/update', [App\Http\Controllers\Teacher\ClassRecordController::class, 'updateAssessment'])->name('teacher.class-records.assessments.update');
+    // Teacher-scoped delete for assessments
+    Route::delete('/class-records/{assignment}/assessments/{subjectRecord}', [App\Http\Controllers\Teacher\ClassRecordController::class, 'destroyAssessment'])->name('teacher.class-records.assessments.destroy');
     Route::post('/class-records/{assignment}/scores', [App\Http\Controllers\Teacher\ClassRecordController::class, 'storeScores'])->name('teacher.class-records.scores.store');
     Route::post('/class-records/{assignment}/final-grades/submit', [App\Http\Controllers\Teacher\ClassRecordController::class, 'submitFinalGrades'])->name('teacher.class-records.final-grades.submit');
+    // Publish/unpublish grades for students
+    Route::post('/class-records/{assignment}/toggle-publication', [App\Http\Controllers\Teacher\ClassRecordController::class, 'toggleGradesPublication'])->name('teacher.class-records.toggle-publication');
         
         // Students routes
         Route::get('/students/sections/all', [App\Http\Controllers\Teacher\StudentController::class, 'allSections'])->name('teacher.students.all-sections');
@@ -269,15 +329,14 @@ Route::group(['prefix' => 'teacher'], function () {
 
 // Student Portal
 Route::group(['prefix' => 'student'], function () {
-    Route::middleware('guest:student')->group(function () {
-        Route::get('/login', [App\Http\Controllers\Student\LoginController::class, 'showLoginForm'])->name('student.auth.loginForm');
-        Route::post('/login', [App\Http\Controllers\Student\LoginController::class, 'login'])->name('student.auth.login');
+    // Login routes - accessible to everyone except already logged-in students
+    Route::get('/login', [App\Http\Controllers\Student\LoginController::class, 'showLoginForm'])->name('student.auth.loginForm');
+    Route::post('/login', [App\Http\Controllers\Student\LoginController::class, 'login'])->name('student.auth.login');
 
-        Route::get('forgot-password', [AuthController::class, 'showForgotPassword'])->name('student.auth.forgotForm');
-        Route::post('forgot-password', [AuthController::class, 'sendOtp'])->name('student.auth.forgotSend');
-        Route::get('reset-password', [AuthController::class, 'showResetPassword'])->name('student.auth.resetForm');
-        Route::post('reset-password', [AuthController::class, 'resetWithOtp'])->name('student.auth.resetProcess');
-    });
+    Route::get('forgot-password', [AuthController::class, 'showForgotPassword'])->name('student.auth.forgotForm');
+    Route::post('forgot-password', [AuthController::class, 'sendOtp'])->name('student.auth.forgotSend');
+    Route::get('reset-password', [AuthController::class, 'showResetPassword'])->name('student.auth.resetForm');
+    Route::post('reset-password', [AuthController::class, 'resetWithOtp'])->name('student.auth.resetProcess');
 
     Route::middleware('auth:student')->group(function () {
         Route::post('/logout', [App\Http\Controllers\Student\LoginController::class, 'logout'])->name('student.auth.logout');
@@ -289,6 +348,12 @@ Route::group(['prefix' => 'student'], function () {
         // Grades (includes Decision Support System)
         Route::get('/grades', [App\Http\Controllers\Student\GradeController::class, 'index'])->name('student.grades.index');
         
+        // Performance Analytics
+        Route::get('/performance', [App\Http\Controllers\Student\PerformanceController::class, 'index'])->name('student.performance.index');
+        
+        // Enhancement (Decision Support System)
+        Route::get('/enhancement', [App\Http\Controllers\Student\EnhancementController::class, 'index'])->name('student.enhancement.index');
+        
         // Profile routes
         Route::get('/profile', [App\Http\Controllers\Student\ProfileController::class, 'show'])->name('student.profile.show');
         Route::get('/profile/edit', [App\Http\Controllers\Student\ProfileController::class, 'edit'])->name('student.profile.edit');
@@ -297,25 +362,63 @@ Route::group(['prefix' => 'student'], function () {
         Route::delete('/profile/picture', [App\Http\Controllers\Student\ProfileController::class, 'deleteProfilePicture'])->name('student.profile.picture.delete');
         Route::get('/profile/password/edit', [App\Http\Controllers\Student\ProfileController::class, 'editPassword'])->name('student.profile.password.edit');
         Route::put('/profile/password', [App\Http\Controllers\Student\ProfileController::class, 'updatePassword'])->name('student.profile.password.update');
+        
+        // Messaging
+        Route::get('/messages', [App\Http\Controllers\Student\MessageController::class, 'inbox'])->name('student.messages.inbox');
+        Route::get('/messages/compose', [App\Http\Controllers\Student\MessageController::class, 'compose'])->name('student.messages.compose');
+        Route::post('/messages/send', [App\Http\Controllers\Student\MessageController::class, 'send'])->name('student.messages.send');
+        Route::get('/messages/{recipient}', [App\Http\Controllers\Student\MessageController::class, 'show'])->name('student.messages.show');
+        Route::get('/messages/{message}/download', [App\Http\Controllers\Student\MessageController::class, 'downloadAttachment'])->name('student.messages.download');
+        Route::delete('/messages/{message}/unsend', [App\Http\Controllers\Student\MessageController::class, 'unsendMessage'])->name('student.messages.unsend');
+        Route::get('/messenger', [App\Http\Controllers\Student\MessageController::class, 'messenger'])->name('student.messages.messenger');
+        Route::get('/messenger/conversation/{user}', [App\Http\Controllers\Student\MessageController::class, 'conversation'])->name('student.messages.conversation');
+        Route::post('/messenger/send', [App\Http\Controllers\Student\MessageController::class, 'sendConversation'])->name('student.messages.sendConversation');
+        
+        // API endpoint for user selection
+        Route::get('/api/all-users', [App\Http\Controllers\Student\MessageController::class, 'getAllUsers'])->name('student.api.allUsers');
     });
 });
 
 // Guardian Portal
 Route::group(['prefix' => 'guardian'], function () {
-    Route::middleware('guest:guardian')->group(function () {
-        Route::get('/login', [App\Http\Controllers\Guardian\LoginController::class, 'showLoginForm'])->name('guardian.auth.loginForm');
-        Route::post('/login', [App\Http\Controllers\Guardian\LoginController::class, 'login'])->name('guardian.auth.login');
+    // Login routes - accessible to everyone except already logged-in guardians
+    Route::get('/login', [App\Http\Controllers\Guardian\LoginController::class, 'showLoginForm'])->name('guardian.auth.loginForm');
+    Route::post('/login', [App\Http\Controllers\Guardian\LoginController::class, 'login'])->name('guardian.auth.login');
 
-        Route::get('forgot-password', [AuthController::class, 'showForgotPassword'])->name('guardian.auth.forgotForm');
-        Route::post('forgot-password', [AuthController::class, 'sendOtp'])->name('guardian.auth.forgotSend');
-        Route::get('reset-password', [AuthController::class, 'showResetPassword'])->name('guardian.auth.resetForm');
-        Route::post('reset-password', [AuthController::class, 'resetWithOtp'])->name('guardian.auth.resetProcess');
-    });
+    Route::get('forgot-password', [AuthController::class, 'showForgotPassword'])->name('guardian.auth.forgotForm');
+    Route::post('forgot-password', [AuthController::class, 'sendOtp'])->name('guardian.auth.forgotSend');
+    Route::get('reset-password', [AuthController::class, 'showResetPassword'])->name('guardian.auth.resetForm');
+    Route::post('reset-password', [AuthController::class, 'resetWithOtp'])->name('guardian.auth.resetProcess');
 
     Route::middleware('auth:guardian')->group(function () {
         Route::post('/logout', [App\Http\Controllers\Guardian\LoginController::class, 'logout'])->name('guardian.auth.logout');
         Route::get('/', fn() => redirect()->route('guardian.dashboard'));
-        Route::get('/dashboard', fn() => view('guardian.dashboard'))->name('guardian.dashboard');
+        Route::get('/dashboard', [App\Http\Controllers\Guardian\DashboardController::class, 'index'])->name('guardian.dashboard');
         Route::get('/students', fn() => view('guardian.students.index'))->name('guardian.students.index');
+        
+        // Grades
+        Route::get('/grades', [App\Http\Controllers\Guardian\GradeController::class, 'index'])->name('guardian.grades.index');
+        
+        // Enhancement (Decision Support System)
+        Route::get('/enhancement', [App\Http\Controllers\Guardian\EnhancementController::class, 'index'])->name('guardian.enhancement.index');
+        
+        // Profile
+        Route::get('/profile', [App\Http\Controllers\Guardian\ProfileController::class, 'show'])->name('guardian.profile.show');
+        Route::get('/profile/edit', [App\Http\Controllers\Guardian\ProfileController::class, 'edit'])->name('guardian.profile.edit');
+        Route::put('/profile', [App\Http\Controllers\Guardian\ProfileController::class, 'update'])->name('guardian.profile.update');
+        Route::put('/profile/password', [App\Http\Controllers\Guardian\ProfileController::class, 'updatePassword'])->name('guardian.profile.updatePassword');
+        Route::delete('/profile/picture', [App\Http\Controllers\Guardian\ProfileController::class, 'removeProfilePicture'])->name('guardian.profile.removePicture');
+        
+        // Messaging
+        Route::get('/messages', [App\Http\Controllers\Guardian\MessageController::class, 'inbox'])->name('guardian.messages.inbox');
+        Route::get('/messages/compose', [App\Http\Controllers\Guardian\MessageController::class, 'compose'])->name('guardian.messages.compose');
+        Route::post('/messages/send', [App\Http\Controllers\Guardian\MessageController::class, 'send'])->name('guardian.messages.send');
+        Route::get('/messages/{recipient}', [App\Http\Controllers\Guardian\MessageController::class, 'show'])->name('guardian.messages.show');
+        Route::get('/messenger', [App\Http\Controllers\Guardian\MessageController::class, 'messenger'])->name('guardian.messages.messenger');
+        Route::get('/messenger/conversation/{user}', [App\Http\Controllers\Guardian\MessageController::class, 'conversation'])->name('guardian.messages.conversation');
+        Route::post('/messenger/send', [App\Http\Controllers\Guardian\MessageController::class, 'sendConversation'])->name('guardian.messages.sendConversation');
+        Route::get('/messenger/users', [App\Http\Controllers\Guardian\MessageController::class, 'getAllUsers'])->name('guardian.messages.getAllUsers');
+        Route::get('/messages/{message}/download', [App\Http\Controllers\Guardian\MessageController::class, 'downloadAttachment'])->name('guardian.messages.downloadAttachment');
+        Route::delete('/messages/{message}/unsend', [App\Http\Controllers\Guardian\MessageController::class, 'unsendMessage'])->name('guardian.messages.unsend');
     });
 });

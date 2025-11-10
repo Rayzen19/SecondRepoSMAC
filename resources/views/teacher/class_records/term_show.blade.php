@@ -6,8 +6,33 @@
         <h4 class="mb-0">Class Record — {{ $termLabel }}</h4>
         <div class="text-muted small">{{ $details['school_year'] ?? '—' }} • Strand: {{ $details['strand'] ?? '—' }} • Subject: {{ $details['subject'] ?? '—' }}</div>
     </div>
-    <div>
-        <a href="{{ route('teacher.class-records.show', $assignment) }}" class="btn btn-outline-secondary"><i class="ti ti-arrow-left me-1"></i> Back</a>
+    <div class="d-flex align-items-center gap-2">
+        <div>
+            <a href="{{ route('teacher.class-records.show', $assignment) }}" class="btn btn-outline-secondary"><i class="ti ti-arrow-left me-1"></i> Back</a>
+        </div>
+        @php
+            $defaultLevels = ['7','8','9','10','11','12'];
+            $levels = $gradeLevels ?? $defaultLevels;
+            $selectedGrade = request()->query('grade_level');
+            $selectedTerm = request()->query('term');
+        @endphp
+        <div class="d-flex align-items-center gap-2">
+            <div style="min-width:120px;">
+                <select id="filterGradeLevelTerm" class="form-select form-select-sm">
+                    <option value="">All Grades</option>
+                    @foreach($levels as $lvl)
+                        <option value="{{ $lvl }}" {{ $selectedGrade == $lvl ? 'selected' : '' }}>{{ $lvl }}</option>
+                    @endforeach
+                </select>
+            </div>
+            <div style="min-width:140px;">
+                <select id="filterTermTerm" class="form-select form-select-sm">
+                    <option value="">All Terms</option>
+                    <option value="midterm" {{ $selectedTerm == 'midterm' ? 'selected' : '' }}>Midterm</option>
+                    <option value="finals" {{ $selectedTerm == 'finals' ? 'selected' : '' }}>Finals</option>
+                </select>
+            </div>
+        </div>
     </div>
 </div>
 
@@ -186,11 +211,6 @@
         <form action="{{ route('teacher.class-records.scores.store', $assignment) }}" method="post">
             @csrf
             <input type="hidden" name="term" value="{{ $term }}">
-            <div class="d-flex justify-content-end p-2">
-                <button type="submit" class="btn btn-primary btn-sm">
-                    <i class="ti ti-device-floppy me-1"></i> Save Scores
-                </button>
-            </div>
             <div class="table-responsive">
 
                 <table
@@ -464,9 +484,16 @@
                 </table>
             </div>
             <div class="d-flex justify-content-end p-2">
-                <button type="submit" class="btn btn-primary btn-sm">
-                    <i class="ti ti-device-floppy me-1"></i> Save Scores
-                </button>
+                <div class="me-2">
+                    <button type="button" class="btn btn-outline-primary btn-sm" data-bs-toggle="modal" data-bs-target="#modalNewEntry">
+                        <i class="ti ti-plus me-1"></i> New Entry
+                    </button>
+                </div>
+                <div>
+                    <button type="submit" class="btn btn-primary btn-sm">
+                        <i class="ti ti-device-floppy me-1"></i> Save Scores
+                    </button>
+                </div>
             </div>
         </form>
         @endif
@@ -647,6 +674,47 @@
         </div>
     </div>
 </div>
+<!-- New Entry modal -->
+<div class="modal fade" id="modalNewEntry" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">New Entry</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form id="formNewEntry">
+                @csrf
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label">Grade Level</label>
+                        <select name="grade_level" id="newEntryGradeLevel" class="form-select" required>
+                            <option value="">Select grade level</option>
+                            @php
+                                // Provide reasonable defaults if view doesn't pass grade levels
+                                $defaultLevels = ['7','8','9','10','11','12'];
+                                $levels = $gradeLevels ?? $defaultLevels;
+                            @endphp
+                            @foreach($levels as $lvl)
+                                <option value="{{ $lvl }}">{{ $lvl }}</option>
+                            @endforeach
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Term</label>
+                        <select name="term_type" id="newEntryTerm" class="form-select" required>
+                            <option value="midterm">Midterm</option>
+                            <option value="finals">Finals</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Create</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
 @endpush
 
 @push('scripts')
@@ -822,6 +890,53 @@
 
             const infoModal = new bootstrap.Modal(document.getElementById('modalAssessmentInfo'));
             infoModal.show();
+        });
+    })();
+</script>
+@endpush
+
+@push('scripts')
+<script>
+    (function(){
+        const gradeSel = document.getElementById('filterGradeLevelTerm');
+        const termSel = document.getElementById('filterTermTerm');
+        function applyFilters(){
+            if(!gradeSel && !termSel) return;
+            const params = new URLSearchParams(window.location.search);
+            if(gradeSel){
+                if(gradeSel.value) params.set('grade_level', gradeSel.value); else params.delete('grade_level');
+            }
+            if(termSel){
+                if(termSel.value) params.set('term', termSel.value); else params.delete('term');
+            }
+            const target = window.location.pathname + (params.toString() ? ('?' + params.toString()) : '');
+            window.location.href = target;
+        }
+        if(gradeSel) gradeSel.addEventListener('change', applyFilters);
+        if(termSel) termSel.addEventListener('change', applyFilters);
+    })();
+</script>
+@endpush
+
+@push('scripts')
+<script>
+    (function(){
+        const form = document.getElementById('formNewEntry');
+        if (!form) return;
+        form.addEventListener('submit', function(e){
+            e.preventDefault();
+            const grade = document.getElementById('newEntryGradeLevel')?.value || '';
+            const term = document.getElementById('newEntryTerm')?.value || '';
+            // For now, just log the values and close the modal. Replace this with an AJAX POST to your endpoint as needed.
+            console.log('New Entry submitted', { grade_level: grade, term: term });
+            // Close modal using bootstrap
+            const modalEl = document.getElementById('modalNewEntry');
+            if (modalEl) {
+                const mb = bootstrap.Modal.getInstance(modalEl) || new bootstrap.Modal(modalEl);
+                mb.hide();
+            }
+            // Show a simple feedback - you can replace this with a nicer toast
+            alert('New entry created:\nGrade Level: ' + grade + '\nTerm: ' + term + '\n(Implement backend handling to persist.)');
         });
     })();
 </script>

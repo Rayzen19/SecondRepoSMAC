@@ -8,6 +8,10 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=0">
     <meta name="robots" content="noindex, nofollow">
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta http-equiv="Expires" content="0">
+    <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>Teacher Portal</title>
     <link rel="shortcut icon" type="image/x-icon" href="{{ asset('assets/images/Image.png') }}">
     <link rel="apple-touch-icon" sizes="180x180" href="{{ asset('assets/img/apple-touch-icon.png') }}">
@@ -19,6 +23,7 @@
     <!-- Datatable CSS -->
     <link rel="stylesheet" href="{{ asset('assets/css/dataTables.bootstrap5.min.css') }}">
     <link rel="stylesheet" href="{{ asset('assets/css/style.css') }}">
+    <link rel="stylesheet" href="{{ asset('assets/css/responsive-sidebar.css') }}">
 </head>
 
 <body>
@@ -101,6 +106,12 @@
                                     </ul>
                                 </li>
 
+                                <li class="{{ $routeIs('teacher.messages.*') ? 'active' : '' }}">
+                                    <a class="{{ $routeIs('teacher.messages.*') ? 'active' : '' }}" href="{{ route('teacher.messages.messenger') }}">
+                                        <i class="ti ti-mail"></i><span>Messages</span>
+                                    </a>
+                                </li>
+
                                 <li>
                                     <form action="{{ route('teacher.auth.logout') }}" method="POST" class="d-inline">
                                         @csrf
@@ -115,8 +126,16 @@
                 </div>
             </div>
         </div>
-
+        <div class="sidebar-overlay"></div>
         <div class="page-wrapper">
+            <header class="portal-mobile-header">
+                <button type="button" class="mobile-menu-btn" aria-label="Toggle navigation" aria-controls="sidebar" aria-expanded="false">
+                    <i class="ti ti-menu-2"></i>
+                </button>
+                <a href="{{ route('teacher.dashboard') }}" class="portal-mobile-logo">
+                    <img src="{{ asset('assets/images/SMAClogo.png') }}" alt="SMAC Logo">
+                </a>
+            </header>
             <div class="content">
                 @yield('content')
             </div>
@@ -135,6 +154,31 @@
     <script src="{{ asset('assets/js/jquery.dataTables.min.js') }}"></script>
     <script src="{{ asset('assets/js/dataTables.bootstrap5.min.js') }}"></script>
     <script src="{{ asset('assets/js/script.js') }}"></script>
+    <script>
+        // Enforce fresh load on back/forward (handles bfcache)
+        window.addEventListener('pageshow', function (event) {
+            try {
+                const nav = performance.getEntriesByType('navigation')[0];
+                const fromBFCache = event.persisted || (nav && nav.type === 'back_forward');
+                if (fromBFCache) {
+                    window.location.reload();
+                }
+            } catch (e) {
+                if (event.persisted) window.location.reload();
+            }
+        });
+
+        // Gentle fallback: redirect to login on back
+        (function() {
+            if (window.history && window.history.pushState) {
+                window.history.pushState('forward', null, '');
+                window.onpopstate = function() {
+                    window.location.href = "{{ route('teacher.auth.loginForm') }}";
+                };
+            }
+        })();
+    </script>
+    <script src="{{ asset('assets/js/responsive-sidebar.js') }}"></script>
     @stack('modals')
     @stack('scripts')
 </body>

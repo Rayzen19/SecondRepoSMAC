@@ -11,6 +11,7 @@ use App\Models\StudentEnrollment;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
+use Illuminate\Support\Facades\Log;
 
 class StudentEnrollmentController extends Controller
 {
@@ -34,12 +35,24 @@ class StudentEnrollmentController extends Controller
             $query->where('status', $request->string('status'));
         }
 
+        // Clone query for statistics before pagination
+        $statsQuery = clone $query;
+        
+        // Get paginated results
         $enrollments = $query->paginate(15)->withQueryString();
+
+        // Get statistics based on filtered results
+        $stats = [
+            'total' => $statsQuery->count(),
+            'enrolled' => (clone $statsQuery)->where('status', 'enrolled')->count(),
+            'completed' => (clone $statsQuery)->where('status', 'completed')->count(),
+            'dropped' => (clone $statsQuery)->where('status', 'dropped')->count(),
+        ];
 
         $academicYears = AcademicYear::orderByDesc('is_active')->orderByDesc('id')->get();
         $strands = Strand::orderBy('name')->get();
 
-        return view('admin.student_enrollments.index', compact('enrollments', 'academicYears', 'strands'));
+        return view('admin.student_enrollments.index', compact('enrollments', 'academicYears', 'strands', 'stats'));
     }
 
     public function create(Request $request)
@@ -90,7 +103,13 @@ class StudentEnrollmentController extends Controller
                 throw $ex;
             }
         } while ($conflict);
-
+        // Ensure subject enrollments exist for this student enrollment (creates missing rows)
+        try {
+            $enrollment->syncSubjectEnrollments();
+        } catch (\Throwable $e) {
+            // non-fatal: log and continue
+            Log::warning('Failed to sync subject enrollments for enrollment ID ' . ($enrollment->id ?? 'unknown') . ': ' . $e->getMessage());
+        }
         return redirect()
             ->route('admin.student-enrollments.show', $enrollment)
             ->with('success', 'Student enrollment created.');
@@ -132,6 +151,13 @@ class StudentEnrollmentController extends Controller
         ]);
     // Do not allow editing registration_number; keep existing
     $studentEnrollment->update($data);
+
+        // Ensure subject enrollments are in sync after update
+        try {
+            $studentEnrollment->syncSubjectEnrollments();
+        } catch (\Throwable $e) {
+            Log::warning('Failed to sync subject enrollments for enrollment ID ' . ($studentEnrollment->id ?? 'unknown') . ': ' . $e->getMessage());
+        }
 
         return redirect()
             ->route('admin.student-enrollments.show', $studentEnrollment)

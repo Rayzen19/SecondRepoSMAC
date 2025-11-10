@@ -19,7 +19,8 @@ class RedirectIfAuthenticated
         $guards = empty($guards) ? [null] : $guards;
 
         foreach ($guards as $guard) {
-            if (Auth::guard($guard)->check()) {
+            // Only check the specific guard, not all guards
+            if ($guard && Auth::guard($guard)->check()) {
                 return match ($guard) {
                     'admin' => redirect()->route('admin.dashboard'),
                     'teacher' => redirect()->route('teacher.dashboard'),

@@ -6,6 +6,9 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Support\Facades\Log;
+use App\Models\StudentEnrollment;
+use Throwable;
 
 class AcademicYearStrandSubject extends Model
 {
@@ -25,6 +28,11 @@ class AcademicYearStrandSubject extends Model
         'quarterly_assessment_based_grade_percentage',
         'over_all_based_grade_percentage',
         'academic_year_strand_adviser_id',
+        'grades_published',
+    ];
+
+    protected $casts = [
+        'grades_published' => 'boolean',
     ];
 
     public function academicYear(): BelongsTo
@@ -60,5 +68,41 @@ class AcademicYearStrandSubject extends Model
     public function sectionAssignment(): BelongsTo
     {
         return $this->belongsTo(AcademicYearStrandSection::class, 'academic_year_strand_section_id');
+    }
+
+    /**
+     * Booted model events.
+     * When a new assignment is created, ensure SubjectEnrollment rows
+     * exist for all matching StudentEnrollment rows so students see the
+     * new subject immediately on their grades page.
+     */
+    protected static function booted()
+    {
+        static::created(function (AcademicYearStrandSubject $ays) {
+            try {
+                $query = StudentEnrollment::where('academic_year_id', $ays->academic_year_id);
+
+                // If assignment targets a specific section, match that section
+                if ($ays->academic_year_strand_section_id) {
+                    $query->where('academic_year_strand_section_id', $ays->academic_year_strand_section_id);
+                } else {
+                    // otherwise match enrollments in the same strand for the year
+                    $query->where('strand_id', $ays->strand_id);
+                }
+
+                $enrollments = $query->get();
+
+                foreach ($enrollments as $en) {
+                    // create if not exists
+                    $en->subjectEnrollments()->firstOrCreate([
+                        'academic_year_strand_subject_id' => $ays->id,
+                    ]);
+                }
+
+                Log::info('Auto-synced subject enrollments for new assignment', ['ays_id' => $ays->id, 'created_for' => $enrollments->count()]);
+            } catch (Throwable $e) {
+                Log::warning('Failed to auto-sync subject enrollments on AYS created: ' . $e->getMessage(), ['ays_id' => $ays->id ?? null]);
+            }
+        });
     }
 }

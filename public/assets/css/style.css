@@ -194,7 +194,7 @@ ul .btn-primary:not(:disabled):not(.disabled):active:focus, ul .btn-primary:not(
   background-color: rgba(242, 101, 34, 0.75) !important;
 }
 .bg-primary.bg-opacity-100 {
-  background-color: #f26522 !important;
+  background-color: #F26522 !important;
 }
 
 .bg-secondary {
@@ -2171,7 +2171,7 @@ button:focus {
   border-color: rgba(242, 101, 34, 0.75) !important;
 }
 .border.border-primary.border-opacity-100 {
-  border-color: #f26522 !important;
+  border-color: #F26522 !important;
 }
 .border.border-secondary {
   border: 1px solid #3B7080 !important;

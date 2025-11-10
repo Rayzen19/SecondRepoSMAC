@@ -35,7 +35,7 @@
                                 </ul>
                             </div>
                         @endif
-                        <form method="POST" action="{{ url()->current() }}" novalidate>
+                        <form method="POST" action="{{ route('guardian.auth.login') }}" novalidate>
                             @csrf
                             <div class="mb-3">
                                 <label for="email" class="form-label">Email address</label>
@@ -53,7 +53,7 @@
                                 <a href="{{ route('guardian.auth.forgotForm') }}" class="text-primary">Forgot password?</a>
                             </div>
                             <div class="d-flex gap-2">
-                                <a href="{{ url('/') }}" class="btn btn-outline-secondary">Back</a>
+                                <a href="{{ route('login.select') }}" class="btn btn-outline-secondary">Back</a>
                                 <button type="submit" class="btn btn-primary w-100">Sign in</button>
                             </div>
                         </form>

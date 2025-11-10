@@ -6,6 +6,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=0">
     <meta name="description" content="St. Matthew Senior High School">
     <meta name="robots" content="noindex, nofollow">
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta http-equiv="Expires" content="0">
     <title>St. Matthew Senior High School</title>
 
     <!-- Favicon -->
@@ -48,6 +51,7 @@
 
     <!-- Main CSS -->
     <link rel="stylesheet" href="{{ asset('assets/css/style.css') }}">
+    <link rel="stylesheet" href="{{ asset('assets/css/responsive-sidebar.css') }}">
 
 </head>
 
@@ -201,13 +205,19 @@
                                     </a>
                                 </li>
 
-                                        @auth('admin')
-                                        <!-- <li class="{{ request()->routeIs('admin.messages.*') ? 'active' : '' }}">
-                                            <a class="{{ request()->routeIs('admin.messages.*') ? 'active' : '' }}" href="{{ route('admin.messages.messenger') }}">
-                                                <i class="ti ti-mail"></i><span>Messages</span>
-                                            </a>
-                                        </li> -->
-                                        @endauth
+                                @auth('admin')
+                                <li class="{{ request()->routeIs('admin.messages.*') ? 'active' : '' }}">
+                                    <a class="{{ request()->routeIs('admin.messages.*') ? 'active' : '' }}" href="{{ route('admin.messages.messenger') }}">
+                                        <i class="ti ti-mail"></i><span>Messages</span>
+                                    </a>
+                                </li>
+
+                                <li class="{{ request()->routeIs('admin.profile.*') ? 'active' : '' }}">
+                                    <a class="{{ request()->routeIs('admin.profile.*') ? 'active' : '' }}" href="{{ route('admin.profile.show') }}">
+                                        <i class="ti ti-user-circle"></i><span>My Profile</span>
+                                    </a>
+                                </li>
+                                @endauth
 
                                 <li class="submenu {{ $isManagement ? 'active' : '' }}">
                                     <a href="javascript:void(0);" class="{{ $isManagement ? 'subdrop' : '' }}">
@@ -238,7 +248,7 @@
                         </li>
                     </ul>
                     <!-- Logout in sidebar menu at the bottom -->
-                    <div style="position: absolute; bottom: 50px; left: 0; width: 100%; padding: 0 20px;">
+                    <div class="sidebar-logout-block">
                         <form action="{{ route('admin.auth.logout') }}" method="POST" class="d-inline">
                             @csrf
                             <button type="submit" class="btn btn-outline-danger w-100">
@@ -255,7 +265,16 @@
         <!-- /Sidebar -->
 
         <!-- Page Wrapper -->
+        <div class="sidebar-overlay"></div>
         <div class="page-wrapper">
+            <header class="portal-mobile-header">
+                <button type="button" class="mobile-menu-btn" aria-label="Toggle navigation" aria-controls="sidebar" aria-expanded="false">
+                    <i class="ti ti-menu-2"></i>
+                </button>
+                <a href="{{ route('admin.dashboard') }}" class="portal-mobile-logo">
+                    <img src="{{ asset('assets/images/SMAClogo.png') }}" alt="SMAC Logo">
+                </a>
+            </header>
             <div class="content">
                 @yield('breadcrumb')
                 @yield('content')
@@ -304,6 +323,33 @@
     <!-- Custom JS -->
     <script src="{{ asset('assets/js/theme-colorpicker.js') }}"></script>
     <script src="{{ asset('assets/js/script.js') }}"></script>
+    <script>
+        // Enforce fresh load on back/forward (handles bfcache)
+        window.addEventListener('pageshow', function (event) {
+            try {
+                const nav = performance.getEntriesByType('navigation')[0];
+                const fromBFCache = event.persisted || (nav && nav.type === 'back_forward');
+                if (fromBFCache) {
+                    window.location.reload();
+                }
+            } catch (e) {
+                if (event.persisted) window.location.reload();
+            }
+        });
+
+        // Gentle fallback: redirect to login on back
+        (function() {
+            if (window.history && window.history.pushState) {
+                window.history.pushState('forward', null, '');
+                window.onpopstate = function() {
+                    window.location.href = "{{ route('admin.auth.loginForm') }}";
+                };
+            }
+        })();
+    </script>
+    <script src="{{ asset('assets/js/responsive-sidebar.js') }}"></script>
+
+    @stack('scripts')
 
 </body>
 

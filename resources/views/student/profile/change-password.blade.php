@@ -62,11 +62,12 @@
                                    id="password" 
                                    name="password" 
                                    required
+                                   minlength="12"
                                    autocomplete="new-password">
                             @error('password')
                                 <div class="invalid-feedback">{{ $message }}</div>
                             @enderror
-                            <div class="form-text">Password must be at least 8 characters long.</div>
+                            <div class="form-text">Password must be at least 12 characters long (14+ recommended).</div>
                         </div>
 
                         <div class="mb-4">
@@ -76,15 +77,18 @@
                                    id="password_confirmation" 
                                    name="password_confirmation" 
                                    required
+                                   minlength="12"
                                    autocomplete="new-password">
                         </div>
 
                         <div class="alert alert-info">
                             <i class="ti ti-info-circle me-2"></i>
-                            <strong>Password Requirements:</strong>
+                            <strong>Password Policy:</strong>
                             <ul class="mb-0 mt-2">
-                                <li>At least 8 characters long</li>
-                                <li>Make sure your new password is different from your current password</li>
+                                <li><strong>At least 12 characters long</strong> (but 14 or more is better)</li>
+                                <li>A combination of <strong>uppercase letters, lowercase letters, numbers, and symbols</strong></li>
+                                <li><strong>Not a word</strong> that can be found in a dictionary or the name of a person, character, product, or organization</li>
+                                <li>Make sure your new password is <strong>different from your current password</strong></li>
                             </ul>
                         </div>
 

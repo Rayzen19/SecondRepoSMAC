@@ -17,6 +17,7 @@ use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Str;
 use Illuminate\Http\Request;
+use Illuminate\Validation\Rule;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 use Illuminate\Support\Facades\DB;
 
@@ -117,7 +118,14 @@ class TeacherController extends Controller
             'last_name' => 'required|string|max:255',
             'suffix' => 'nullable|string|max:50',
             'gender' => 'required|in:male,female,other',
-            'email' => 'required|email|max:255|unique:teachers,email',
+            // Email must be unique across both teachers and users
+            'email' => [
+                'required',
+                'email',
+                'max:255',
+                Rule::unique('teachers', 'email'),
+                Rule::unique('users', 'email'),
+            ],
             'phone' => 'nullable|string|max:50',
             'address' => 'nullable|string',
             'department' => 'required|string|max:255',
@@ -242,13 +250,31 @@ class TeacherController extends Controller
             try { \App\Models\Teacher::onlyTrashed()->where('email', $request->input('email'))->forceDelete(); } catch (\Throwable $e) {}
         }
 
+        // Find ALL linked auth users for this teacher (there might be duplicates)
+        $linkedUsers = \App\Models\User::where('type', 'teacher')->where('user_pk_id', $teacher->id)->get();
+        $linkedUserIds = $linkedUsers->pluck('id')->toArray();
+
         $data = $request->validate([
             'first_name' => 'required|string|max:255',
             'middle_name' => 'nullable|string|max:255',
             'last_name' => 'required|string|max:255',
             'suffix' => 'nullable|string|max:50',
             'gender' => 'required|in:male,female,other',
-            'email' => 'required|email|max:255|unique:teachers,email,' . $teacher->id,
+            // Email unique across teachers and users, ignoring current records
+            'email' => [
+                'required',
+                'email',
+                'max:255',
+                Rule::unique('teachers', 'email')->ignore($teacher->id),
+                function ($attribute, $value, $fail) use ($linkedUserIds) {
+                    $exists = \App\Models\User::where('email', $value)
+                        ->whereNotIn('id', $linkedUserIds)
+                        ->exists();
+                    if ($exists) {
+                        $fail('The email has already been taken.');
+                    }
+                },
+            ],
             'phone' => 'nullable|string|max:50',
             'address' => 'nullable|string',
             'department' => 'required|string|max:255',
@@ -269,12 +295,23 @@ class TeacherController extends Controller
             $teacher->subjects()->sync([]);
         }
 
-        // Keep auth user in sync if present
-        $user = User::where('type', 'teacher')->where('user_pk_id', $teacher->id)->first();
-        if ($user) {
+        // Update ALL linked auth users (in case there are duplicates)
+        $users = User::where('type', 'teacher')->where('user_pk_id', $teacher->id)->get();
+        foreach ($users as $user) {
             $user->name = $teacher->name;
             $user->email = $teacher->email;
             $user->save();
+        }
+        
+        // Clean up duplicate users - keep only the one with matching email
+        if ($users->count() > 1) {
+            $correctUser = $users->firstWhere('email', $teacher->email);
+            if ($correctUser) {
+                // Delete other duplicate users
+                $users->where('id', '!=', $correctUser->id)->each(function($user) {
+                    $user->delete();
+                });
+            }
         }
 
         return redirect()->route('admin.teachers.show', $teacher)->with('success', 'Teacher updated successfully.');

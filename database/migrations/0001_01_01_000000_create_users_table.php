@@ -27,7 +27,7 @@ return new class extends Migration
 
         // Seed default users: admin, teacher, and student
         DB::table('users')->updateOrInsert(
-            ['email' => 'admin@school.test'],
+            ['email' => 'joh@gmail.com'],
             [
                 'name' => 'Administrator',
                 'password' => Hash::make('password'),

@@ -38,8 +38,7 @@
                     <li class="nav-item"><a class="nav-link" href="#contact">Contact</a></li>
                 </ul>
                 <div class="ms-lg-3 d-flex gap-2">
-                    <a href="/admin" class="btn btn-info text-white fw-semibold shadow-sm rounded-pill px-4"><i class="ti ti-lock me-1"></i> Admin Portal</a>
-                    <a href="/student" class="btn btn-outline-info disabled fw-semibold rounded-pill px-4" aria-disabled="true"><i class="ti ti-users me-1"></i> Student Portal</a>
+                    <a href="{{ route('login.select') }}" class="btn btn-info text-white fw-semibold shadow-sm rounded-pill px-4"><i class="ti ti-lock me-1"></i> Login</a>
                 </div>
             </div>
         </div>
@@ -53,7 +52,7 @@
                     <h1 class="display-5 fw-bold mb-3" style="color:#313131">Inspiring Excellence, Nurturing Values</h1>
                     <p class="lead text-black">Private, non-sectarian K-12 school in Bacoor, Cavite. Modern facilities, dedicated teachers, and an inclusive community.</p>
                     <div class="d-flex gap-2 mt-3">
-                        <a href="/admin" class="btn btn-info btn-lg text-white fw-semibold shadow-sm rounded-pill px-4"><i class="ti ti-layout-navbar me-1"></i> Go to Admin</a>
+                        <a href="/admin" class="btn btn-info btn-lg text-white fw-semibold shadow-sm rounded-pill px-4"><i class="ti ti-layout-navbar me-1"></i> Login</a>
                         <a href="#contact" class="btn btn-outline-info btn-lg fw-semibold rounded-pill px-4"><i class="ti ti-mail me-1"></i> Contact Us</a>
                     </div>
                     <div class="mt-3">

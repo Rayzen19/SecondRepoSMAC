@@ -19,6 +19,8 @@ class SubjectRecord extends Model
         'max_score',
         'type',
         'quarter',
+        'term',
+        'grade_level',
         'date_given',
         'remarks',
     ];

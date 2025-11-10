@@ -19,23 +19,34 @@
         </div>
     </div>
 @else
-    <div class="row g-3">
-        @foreach($subjects as $s)
-            <div class="col-12 col-md-6 col-lg-4">
-                <div class="card h-100">
-                    <div class="card-body">
-                        <div class="d-flex align-items-start justify-content-between">
-                            <div>
-                                <div class="fw-semibold text-uppercase text-muted small">{{ $s['subject_code'] ?? '—' }}</div>
-                                <h5 class="mb-1">{{ $s['subject_name'] ?? '—' }}</h5>
-                                <div class="text-muted small">{{ $s['teacher'] ? 'Teacher: ' . $s['teacher'] : '—' }}</div>
-                            </div>
-                            <span class="badge bg-primary-subtle text-primary">{{ $activeYear?->name }}</span>
-                        </div>
-                    </div>
-                </div>
+    <div class="card">
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table align-middle">
+                    <thead>
+                        <tr>
+                            <th style="width: 10%">Code</th>
+                            <th>Subject</th>
+                            <th>Teacher</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach($subjects as $s)
+                            <tr>
+                                <td class="text-nowrap fw-semibold">{{ $s['subject_code'] ?? '—' }}</td>
+                                <td>{{ $s['subject_name'] ?? '—' }}</td>
+                                <td class="text-nowrap">{{ $s['teacher'] ?? '—' }}</td>
+                            </tr>
+                        @endforeach
+                    </tbody>
+                </table>
             </div>
-        @endforeach
+            <div class="alert alert-info mt-3 mb-0">
+                <i class="ti ti-info-circle me-2"></i>
+                Grades will be visible here once they are published by your teachers.
+            </div>
+            <div class="text-muted small mt-2">Semester: <span class="fw-semibold">{{ $activeYear?->semester ?? '—' }}</span></div>
+        </div>
     </div>
 @endif
 @endsection
