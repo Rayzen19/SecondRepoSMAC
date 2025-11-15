@@ -27,6 +27,7 @@ class Student extends Model
         'guardian_contact',
         'guardian_email',
         'program',
+        'grade_level',
         'academic_year',
         'academic_year_id',
         'status',
@@ -72,6 +73,14 @@ class Student extends Model
         return $this->belongsToMany(Guardian::class, 'guardian_students')
             ->withTimestamps()
             ->withPivot('deleted_at');
+    }
+
+    /**
+     * Get the pre-enrollments for this student
+     */
+    public function preEnrollments(): HasMany
+    {
+        return $this->hasMany(PreEnrollment::class);
     }
 
 }

@@ -6,6 +6,7 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=0">
+    <meta name="csrf-token" content="{{ csrf_token() }}">
     <meta name="robots" content="noindex, nofollow">
     <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
     <meta http-equiv="Pragma" content="no-cache">
@@ -61,6 +62,11 @@
                                         <i class="ti ti-report-analytics"></i><span>Grades</span>
                                     </a>
                                 </li>
+                                <li class="{{ $routeIs('student.scores.index') ? 'active' : '' }}">
+                                    <a class="{{ $routeIs('student.scores.index') ? 'active' : '' }}" href="{{ route('student.scores.index') }}">
+                                        <i class="ti ti-list-numbers"></i><span>Scores</span>
+                                    </a>
+                                </li>
                                 <li class="{{ $routeIs('student.performance.index') ? 'active' : '' }}">
                                     <a class="{{ $routeIs('student.performance.index') ? 'active' : '' }}" href="{{ route('student.performance.index') }}">
                                         <i class="ti ti-chart-line"></i><span>Performance</span>
@@ -80,6 +86,18 @@
                                     <a class="{{ $routeIs('student.messages.*') ? 'active' : '' }}" href="{{ route('student.messages.messenger') }}">
                                         <i class="ti ti-mail"></i><span>Messages</span>
                                     </a>
+                                </li>
+                                <li class="{{ isset($preEnrollmentEnabled) && $preEnrollmentEnabled && $routeIs('student.pre-enrollment.*') ? 'active' : '' }}">
+                                    @if(isset($preEnrollmentEnabled) && $preEnrollmentEnabled)
+                                        <a class="{{ $routeIs('student.pre-enrollment.*') ? 'active' : '' }}" href="{{ route('student.pre-enrollment.index') }}" title="Pre-enrollment is now available">
+                                            <i class="ti ti-file-check"></i><span>Pre-Enrollment</span>
+                                            <span class="badge bg-success ms-1" style="font-size: 0.65rem;">Available</span>
+                                        </a>
+                                    @else
+                                        <a class="disabled" style="pointer-events: none; opacity: 0.6; cursor: not-allowed;" title="Pre-enrollment is not yet available">
+                                            <i class="ti ti-file-check"></i><span>Pre-Enrollment</span>
+                                        </a>
+                                    @endif
                                 </li>
                                 <li>
                                     <form action="{{ route('student.auth.logout') }}" method="POST" class="d-inline">

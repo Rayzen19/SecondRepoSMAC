@@ -3,12 +3,14 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Mail\PasswordResetOtp;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Mail;
 
 class AuthController extends Controller
 {
@@ -39,13 +41,42 @@ class AuthController extends Controller
 
     public function sendOtp(Request $request)
     {
+        // Rate limiting: max 3 attempts per 10 minutes per email
+        $email = $request->input('email');
+        if ($email) {
+            $recentAttempts = DB::table('password_otps')
+                ->where('email', $email)
+                ->where('created_at', '>=', now()->subMinutes(10))
+                ->count();
+                
+            if ($recentAttempts >= 3) {
+                return back()
+                    ->withErrors(['email' => 'Too many OTP requests. Please wait 10 minutes before trying again.'])
+                    ->withInput();
+            }
+        }
+
         $data = $request->validate([
             'email' => ['required', 'email', 'exists:users,email'],
         ]);
 
+        // Get the user to send personalized email
+        $user = User::where('email', $data['email'])->first();
+        
+        if (!$user) {
+            return back()->withErrors(['email' => 'No account found with this email address.'])->withInput();
+        }
+
         // Generate 6-digit OTP
         $code = (string) random_int(100000, 999999);
 
+        // Delete any old unused OTPs for this email
+        DB::table('password_otps')
+            ->where('email', $data['email'])
+            ->whereNull('used_at')
+            ->delete();
+
+        // Store new OTP
         DB::table('password_otps')->insert([
             'email' => $data['email'],
             'code_hash' => Hash::make($code),
@@ -54,15 +85,51 @@ class AuthController extends Controller
             'updated_at' => now(),
         ]);
 
-        // For development, log the OTP so testers can retrieve it
-        Log::info('Password reset OTP', ['email' => $data['email'], 'otp' => $code]);
+        // Send email with OTP
+        try {
+            Mail::to($data['email'])->send(
+                new PasswordResetOtp(
+                    $user->name ?? 'User',
+                    $code,
+                    $user->type ?? 'User'
+                )
+            );
 
-        return redirect()->route('admin.auth.resetForm')->with('status', 'An OTP has been sent to your email. ['.  $code . ']');
+            // For development, also log the OTP
+            Log::info('Password reset OTP sent', [
+                'email' => $data['email'],
+                'otp' => $code,
+                'name' => $user->name,
+                'type' => $user->type
+            ]);
+
+            return redirect()
+                ->route('admin.auth.resetForm')
+                ->with('status', 'An OTP has been sent to your email address. Please check your inbox and spam folder.')
+                ->with('email', $data['email']);
+                
+        } catch (\Exception $e) {
+            Log::error('Failed to send password reset OTP email', [
+                'email' => $data['email'],
+                'error' => $e->getMessage(),
+                'otp' => $code // Include OTP in log for development
+            ]);
+
+            // Still redirect to reset form but show the OTP in development mode
+            if (config('app.debug')) {
+                return redirect()
+                    ->route('admin.auth.resetForm')
+                    ->with('status', 'Email service temporarily unavailable. For testing, use this OTP: ' . $code)
+                    ->with('email', $data['email']);
+            }
+
+            return back()->withErrors(['email' => 'Failed to send email. Please try again later or contact support.'])->withInput();
+        }
     }
 
     public function showResetPassword()
     {
-        return view('admin.auth.reset');
+        return view('admin.auth.reset')->with('email', session('email', ''));
     }
 
     public function resetWithOtp(Request $request)
@@ -81,9 +148,15 @@ class AuthController extends Controller
             ->orderByDesc('id')
             ->first();
 
-        if (!$otpRow || !Hash::check($validated['otp'], $otpRow->code_hash)) {
+        if (!$otpRow) {
             return back()
-                ->withErrors(['otp' => 'Invalid or expired OTP.'])
+                ->withErrors(['otp' => 'OTP has expired or does not exist. Please request a new one.'])
+                ->withInput($request->except(['password', 'password_confirmation']));
+        }
+
+        if (!Hash::check($validated['otp'], $otpRow->code_hash)) {
+            return back()
+                ->withErrors(['otp' => 'Invalid OTP code. Please check and try again.'])
                 ->withInput($request->except(['password', 'password_confirmation']));
         }
 
@@ -99,6 +172,15 @@ class AuthController extends Controller
             'updated_at' => now(),
         ]);
 
-        return redirect()->route('admin.auth.loginForm')->with('status', 'Password has been reset. You can now log in.');
+        // Log the password reset
+        Log::info('Password reset successful', [
+            'email' => $validated['email'],
+            'user_id' => $user->id,
+            'user_type' => $user->type
+        ]);
+
+        return redirect()
+            ->route('admin.auth.loginForm')
+            ->with('status', 'Password has been reset successfully. You can now log in with your new password.');
     }
 }

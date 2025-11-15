@@ -44,41 +44,56 @@
 
                         <div class="mb-3">
                             <label for="current_password" class="form-label">Current Password <span class="text-danger">*</span></label>
-                            <input type="password" 
-                                   class="form-control @error('current_password') is-invalid @enderror" 
-                                   id="current_password" 
-                                   name="current_password" 
-                                   required
-                                   autocomplete="current-password">
+                            <div class="position-relative">
+                                <input type="password" 
+                                       class="form-control @error('current_password') is-invalid @enderror" 
+                                       id="current_password" 
+                                       name="current_password" 
+                                       required
+                                       autocomplete="current-password">
+                                <button type="button" class="btn btn-sm position-absolute end-0 top-50 translate-middle-y" onclick="togglePasswordVisibility('current_password', this)" style="border: none; background: transparent;">
+                                    <i class="fa fa-eye"></i>
+                                </button>
+                            </div>
                             @error('current_password')
-                                <div class="invalid-feedback">{{ $message }}</div>
+                                <div class="invalid-feedback d-block">{{ $message }}</div>
                             @enderror
                         </div>
 
                         <div class="mb-3">
                             <label for="password" class="form-label">New Password <span class="text-danger">*</span></label>
-                            <input type="password" 
-                                   class="form-control @error('password') is-invalid @enderror" 
-                                   id="password" 
-                                   name="password" 
-                                   required
-                                   minlength="12"
-                                   autocomplete="new-password">
+                            <div class="position-relative">
+                                <input type="password" 
+                                       class="form-control @error('password') is-invalid @enderror" 
+                                       id="password" 
+                                       name="password" 
+                                       required
+                                       minlength="12"
+                                       autocomplete="new-password">
+                                <button type="button" class="btn btn-sm position-absolute end-0 top-50 translate-middle-y" onclick="togglePasswordVisibility('password', this)" style="border: none; background: transparent;">
+                                    <i class="fa fa-eye"></i>
+                                </button>
+                            </div>
                             @error('password')
-                                <div class="invalid-feedback">{{ $message }}</div>
+                                <div class="invalid-feedback d-block">{{ $message }}</div>
                             @enderror
                             <div class="form-text">Password must be at least 12 characters long (14+ recommended).</div>
                         </div>
 
                         <div class="mb-4">
                             <label for="password_confirmation" class="form-label">Confirm New Password <span class="text-danger">*</span></label>
-                            <input type="password" 
-                                   class="form-control" 
-                                   id="password_confirmation" 
-                                   name="password_confirmation" 
-                                   required
-                                   minlength="12"
-                                   autocomplete="new-password">
+                            <div class="position-relative">
+                                <input type="password" 
+                                       class="form-control" 
+                                       id="password_confirmation" 
+                                       name="password_confirmation" 
+                                       required
+                                       minlength="12"
+                                       autocomplete="new-password">
+                                <button type="button" class="btn btn-sm position-absolute end-0 top-50 translate-middle-y" onclick="togglePasswordVisibility('password_confirmation', this)" style="border: none; background: transparent;">
+                                    <i class="fa fa-eye"></i>
+                                </button>
+                            </div>
                         </div>
 
                         <div class="alert alert-info">
@@ -107,3 +122,22 @@
     </div>
 </div>
 @endsection
+
+@push('scripts')
+<script>
+function togglePasswordVisibility(inputId, button) {
+    const input = document.getElementById(inputId);
+    const icon = button.querySelector('i');
+    
+    if (input.type === 'password') {
+        input.type = 'text';
+        icon.classList.remove('fa-eye');
+        icon.classList.add('fa-eye-slash');
+    } else {
+        input.type = 'password';
+        icon.classList.remove('fa-eye-slash');
+        icon.classList.add('fa-eye');
+    }
+}
+</script>
+@endpush

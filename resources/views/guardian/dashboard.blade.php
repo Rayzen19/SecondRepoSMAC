@@ -215,13 +215,13 @@
                 @if($recentMessages && $recentMessages->count() > 0)
                     <div class="list-group list-group-flush">
                         @foreach($recentMessages as $message)
-                        <div class="list-group-item px-0 {{ $message->read_at ? '' : 'bg-light' }}">
+                        <div class="list-group-item px-0 {{ $message->recipients->first() && $message->recipients->first()->read_at ? '' : 'bg-light' }}">
                             <div class="d-flex justify-content-between align-items-start">
                                 <div class="flex-grow-1">
                                     <div class="d-flex align-items-center mb-1">
                                         <i class="ti ti-user-circle me-2" style="font-size: 20px;"></i>
-                                        <strong>{{ $message->sender_name }}</strong>
-                                        @if(!$message->read_at)
+                                        <strong>{{ $message->sender ? $message->sender->name : 'Unknown' }}</strong>
+                                        @if($message->recipients->first() && !$message->recipients->first()->read_at)
                                             <span class="badge bg-primary ms-2">New</span>
                                         @endif
                                     </div>

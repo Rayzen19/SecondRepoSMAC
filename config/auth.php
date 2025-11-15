@@ -44,6 +44,10 @@ return [
             'driver' => 'session',
             'provider' => 'admins',
         ],
+        'co-admin' => [
+            'driver' => 'session',
+            'provider' => 'co-admins',
+        ],
         'teacher' => [
             'driver' => 'session',
             'provider' => 'teachers',
@@ -83,6 +87,10 @@ return [
         'admins' => [
             'driver' => 'eloquent',
             'model' => App\Models\Auth\AdminUser::class,
+        ],
+        'co-admins' => [
+            'driver' => 'eloquent',
+            'model' => App\Models\Auth\CoAdminUser::class,
         ],
         'teachers' => [
             'driver' => 'eloquent',

@@ -10,6 +10,7 @@ use App\Models\Auth\GuardianUser;
 use App\Models\Strand;
 use App\Models\Student;
 use App\Models\Guardian;
+use App\Models\Section;
 use App\Models\User as SystemUser;
 use App\Models\StudentEnrollment;
 use App\Models\SubjectRecord;
@@ -30,13 +31,83 @@ class StudentController extends Controller
     // Display a listing of students
     public function index(Request $request)
     {
-        $students = Student::all();
+        $query = Student::with(['studentEnrollments' => function($q) {
+            $q->where('status', 'enrolled')
+              ->with(['academicYearStrandSection.section', 'academicYear'])
+              ->whereHas('academicYear', function($aq) {
+                  $aq->where('is_active', true);
+              });
+        }]);
+        
+        // Apply filters
+        if ($request->filled('status')) {
+            $status = $request->input('status');
+            $query->where('status', $status);
+        }
+        
+        if ($request->filled('strand')) {
+            $strandId = $request->input('strand');
+            // Filter students by program/strand
+            $strand = Strand::find($strandId);
+            if ($strand) {
+                $query->where(function($q) use ($strand) {
+                    $q->where('program', $strand->code)
+                      ->orWhere('program', $strand->name);
+                });
+            }
+        }
+        
+        if ($request->filled('grade_level')) {
+            $gradeLevel = $request->input('grade_level');
+            // Filter students by grade level through their enrollments
+            $query->whereHas('studentEnrollments', function($q) use ($gradeLevel) {
+                $q->where('status', 'enrolled')
+                  ->whereHas('academicYearStrandSection', function($sq) use ($gradeLevel) {
+                      $sq->whereHas('section', function($ssq) use ($gradeLevel) {
+                          $ssq->where('grade', $gradeLevel);
+                      });
+                  })
+                  ->whereHas('academicYear', function($aq) {
+                      $aq->where('is_active', true);
+                  });
+            });
+        }
+        
+        if ($request->filled('section')) {
+            $sectionId = $request->input('section');
+            // Filter students by section through their enrollments
+            $query->whereHas('studentEnrollments', function($q) use ($sectionId) {
+                $q->where('status', 'enrolled')
+                  ->whereHas('academicYearStrandSection', function($sq) use ($sectionId) {
+                      $sq->where('section_id', $sectionId);
+                  })
+                  ->whereHas('academicYear', function($aq) {
+                      $aq->where('is_active', true);
+                  });
+            });
+        }
+        
+        $students = $query->get();
         $no_students = $students->count();
         $no_active_students = $students->where('status', 'active')->count();
         $no_dropped_students = $students->where('status', 'dropped')->count();
         $no_graduated_students = $students->where('status', 'graduated')->count();
         $no_new_students = $students->where('created_at', '>=', now()->startOfYear())->count();
-        return view('admin.students.index', compact('students', 'no_students', 'no_active_students', 'no_dropped_students', 'no_graduated_students', 'no_new_students'));
+        
+        // Get all strands for filter dropdown
+        $strands = Strand::where('is_active', true)->orderBy('name')->get();
+        
+        // Get sections based on filters
+        $sectionsQuery = Section::query();
+        if ($request->filled('grade_level')) {
+            $sectionsQuery->where('grade', $request->input('grade_level'));
+        }
+        if ($request->filled('strand')) {
+            $sectionsQuery->where('strand_id', $request->input('strand'));
+        }
+        $sections = $sectionsQuery->orderBy('name')->get();
+        
+        return view('admin.students.index', compact('students', 'no_students', 'no_active_students', 'no_dropped_students', 'no_graduated_students', 'no_new_students', 'strands', 'sections'));
     }
 
     // Generate or regenerate a student's password and store encrypted copy
@@ -321,6 +392,71 @@ class StudentController extends Controller
         return redirect()->route('admin.students.index')->with('success', 'Student created successfully. Login details have been emailed to student and guardian.');
     }
 
+    // Show the form for editing the specified student
+    public function edit(Student $student)
+    {
+        // Get the active Academic Year
+        $activeYear = AcademicYear::where('is_active', true)->orderByDesc('id')->first()
+            ?? AcademicYear::orderByDesc('id')->first();
+
+        // Active strands for the active year based on configured subjects
+        $activeStrands = collect();
+        if ($activeYear) {
+            $activeStrands = AcademicYearStrandAdviser::with('strand')
+                ->where('academic_year_id', $activeYear->id)
+                ->get()
+                ->pluck('strand')
+                ->filter()
+                ->unique('id')
+                ->values();
+        }
+
+        // Fallback to all strands if none configured for the year
+        if ($activeStrands->isEmpty()) {
+            $activeStrands = Strand::where('is_active', true)->orderBy('name')->get();
+        }
+
+        return view('admin.students.edit', compact('student', 'activeStrands'));
+    }
+
+    // Update the specified student in storage
+    public function update(Request $request, Student $student)
+    {
+        $validated = $request->validate([
+            'first_name' => 'required|string|max:255',
+            'middle_name' => 'nullable|string|max:255',
+            'last_name' => 'required|string|max:255',
+            'suffix' => 'nullable|string|max:50',
+            'gender' => 'required|in:male,female,other',
+            'birthdate' => 'required|date',
+            'email' => 'required|email|unique:students,email,' . $student->id,
+            'mobile_number' => 'required|string|unique:students,mobile_number,' . $student->id,
+            'address' => 'nullable|string',
+            'guardian_name' => 'nullable|string|max:255',
+            'guardian_contact' => 'required|string|unique:students,guardian_contact,' . $student->id,
+            'guardian_email' => 'required|email|unique:students,guardian_email,' . $student->id,
+            'program' => 'required|string|max:255',
+            'grade_level' => 'nullable|string|max:50',
+            'status' => 'required|in:active,graduated,dropped,inactive',
+        ]);
+
+        // Update the student record
+        $student->update($validated);
+
+        // Update the linked StudentUser email if it changed
+        if ($student->wasChanged('email')) {
+            $user = SystemUser::where('type', 'student')->where('user_pk_id', $student->id)->first();
+            if ($user) {
+                $user->update([
+                    'email' => $student->email,
+                    'name' => $student->name,
+                ]);
+            }
+        }
+
+        return redirect()->route('admin.students.index')->with('success', 'Student updated successfully.');
+    }
+
     // Display the specified student
     public function show(Student $student)
     {
@@ -345,7 +481,35 @@ class StudentController extends Controller
         $totalEnrollments = $enrollments->flatten()->count();
         $totalSubjects = $enrollments->flatten()->flatMap(fn($e) => $e->subjectEnrollments)->count();
 
-        return view('admin.students.show', compact('student', 'enrollments', 'academicYears', 'totalEnrollments', 'totalSubjects'));
+        // Get strand-specific subjects
+        $strandSubjects = collect();
+        if ($student->program) {
+            // Find the strand by code or name
+            $strand = Strand::where('code', $student->program)
+                ->orWhere('name', $student->program)
+                ->first();
+            
+            if ($strand) {
+                // Get all subjects for this strand
+                $strandSubjects = $strand->subjects()
+                    ->wherePivot('is_active', true)
+                    ->wherePivotNull('deleted_at')
+                    ->get()
+                    ->map(function($subject) {
+                        return [
+                            'id' => $subject->id,
+                            'code' => $subject->code,
+                            'name' => $subject->name,
+                            'hours' => $subject->hours,
+                            'units' => $subject->units,
+                            'type' => $subject->type,
+                            'semester' => $subject->semester,
+                        ];
+                    });
+            }
+        }
+
+        return view('admin.students.show', compact('student', 'enrollments', 'academicYears', 'totalEnrollments', 'totalSubjects', 'strandSubjects'));
     }
 
     public function exportSubjectResults(Student $student, StudentEnrollment $enrollment, SubjectRecord $subjectRecord)
@@ -400,100 +564,6 @@ class StudentController extends Controller
         return new StreamedResponse($callback, 200, $headers);
     }
 
-    // Show the form for editing the specified student
-    public function edit(Student $student)
-    {
-        // For selects
-        $activeYear = AcademicYear::where('is_active', true)->orderByDesc('id')->first()
-            ?? AcademicYear::orderByDesc('id')->first();
-        $activeStrands = collect();
-        if ($activeYear) {
-            $activeStrands = \App\Models\AcademicYearStrandSubject::with('strand')
-                ->where('academic_year_id', $activeYear->id)
-                ->get()
-                ->pluck('strand')
-                ->filter()
-                ->unique('id')
-                ->values();
-        }
-        if ($activeStrands->isEmpty()) {
-            $activeStrands = \App\Models\Strand::where('is_active', true)->orderBy('name')->get();
-        }
-        return view('admin.students.edit', compact('student', 'activeYear', 'activeStrands'));
-    }
-
-    // Update the specified student in storage
-    public function update(Request $request, Student $student)
-    {
-        // If updating email, purge any soft-deleted student with the target email
-        if ($request->filled('email') && $request->input('email') !== $student->email) {
-            try {
-                Student::onlyTrashed()->where('email', $request->input('email'))->forceDelete();
-            } catch (\Throwable $e) {
-                // non-blocking
-            }
-        }
-
-        $validated = $request->validate([
-            'first_name' => 'required|string|max:255',
-            'middle_name' => 'nullable|string|max:255',
-            'last_name' => 'required|string|max:255',
-            'suffix' => 'nullable|string|max:50',
-            'gender' => 'required|in:male,female,other',
-            'birthdate' => 'required|date',
-            'email' => 'required|email|unique:students,email,' . $student->id,
-            'mobile_number' => 'required|string|unique:students,mobile_number,' . $student->id,
-            'address' => 'nullable|string',
-            'guardian_name' => 'nullable|string|max:255',
-            'guardian_contact' => 'required|string|unique:students,guardian_contact,' . $student->id,
-            'guardian_email' => 'required|email|unique:students,guardian_email,' . $student->id,
-            'program' => 'required|string|max:255',
-            'grade_level' => 'required|string|in:Grade 11,Grade 12',
-            'status' => 'required|in:active,graduated,dropped',
-        ]);
-
-        // Update the academic_year field with the selected grade_level
-        $validated['academic_year'] = $validated['grade_level'];
-        unset($validated['grade_level']);
-
-        $student->update($validated);
-
-        // Update or create guardian if guardian email changed
-        if (!empty($validated['guardian_email'])) {
-            // Check if the guardian email has changed
-            $currentGuardian = $student->guardians()->first();
-            
-            if (!$currentGuardian || $currentGuardian->email !== $validated['guardian_email']) {
-                // Detach old guardian if exists
-                if ($currentGuardian) {
-                    $student->guardians()->detach($currentGuardian->id);
-                }
-                
-                // Create or find new guardian and attach
-                $guardianData = $this->createOrFindGuardian($validated, $student);
-                if ($guardianData) {
-                    // Check if already attached (in case of re-linking)
-                    if (!$student->guardians()->where('guardian_id', $guardianData['guardian']->id)->exists()) {
-                        $student->guardians()->attach($guardianData['guardian']->id);
-                    }
-                }
-            } else {
-                // Same guardian, update their information
-                $nameParts = $this->parseGuardianName($validated['guardian_name'] ?? $currentGuardian->name);
-                $currentGuardian->update([
-                    'first_name' => $nameParts['first_name'],
-                    'middle_name' => $nameParts['middle_name'],
-                    'last_name' => $nameParts['last_name'],
-                    'suffix' => $nameParts['suffix'],
-                    'mobile_number' => $validated['guardian_contact'],
-                    'address' => $validated['address'] ?? $currentGuardian->address,
-                ]);
-            }
-        }
-
-        return redirect()->route('admin.students.index')->with('success', 'Student updated successfully.');
-    }
-
     // Remove the specified student from storage
     public function destroy(Student $student)
     {
@@ -526,6 +596,89 @@ class StudentController extends Controller
         });
 
         return redirect()->route('admin.students.index')->with('success', 'Student permanently deleted.');
+    }
+
+    /**
+     * Add a subject to a student's active enrollment
+     */
+    public function addSubject(Request $request, Student $student)
+    {
+        $validated = $request->validate([
+            'subject_id' => 'required|exists:subjects,id',
+        ]);
+
+        // Get the active enrollment for this student
+        $activeEnrollment = StudentEnrollment::with(['subjectEnrollments.academicYearStrandSubject'])
+            ->where('student_id', $student->id)
+            ->where('status', 'enrolled')
+            ->whereHas('academicYear', function($q) {
+                $q->where('is_active', true);
+            })
+            ->first();
+
+        if (!$activeEnrollment) {
+            return response()->json([
+                'success' => false,
+                'message' => 'No active enrollment found for this student.'
+            ], 400);
+        }
+
+        // Check if subject is already enrolled
+        $existingSubject = $activeEnrollment->subjectEnrollments
+            ->filter(function($enrollment) use ($validated) {
+                return $enrollment->academicYearStrandSubject 
+                    && $enrollment->academicYearStrandSubject->subject_id == $validated['subject_id'];
+            })
+            ->isNotEmpty();
+
+        if ($existingSubject) {
+            return response()->json([
+                'success' => false,
+                'message' => 'This subject is already enrolled for this student.'
+            ], 400);
+        }
+
+        // Get the academic year strand subject record
+        $academicYearStrandSubject = DB::table('academic_year_strand_subjects')
+            ->where('academic_year_id', $activeEnrollment->academic_year_id)
+            ->where('strand_id', $activeEnrollment->strand_id)
+            ->where('subject_id', $validated['subject_id'])
+            ->where('is_active', true)
+            ->whereNull('deleted_at')
+            ->first();
+
+        if (!$academicYearStrandSubject) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Subject is not configured for this strand and academic year.'
+            ], 400);
+        }
+
+        // Create subject enrollment
+        try {
+            DB::table('subject_enrollments')->insert([
+                'student_enrollment_id' => $activeEnrollment->id,
+                'academic_year_strand_subject_id' => $academicYearStrandSubject->id,
+                'created_at' => now(),
+                'updated_at' => now(),
+            ]);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Subject added successfully to student enrollment.'
+            ]);
+        } catch (\Throwable $e) {
+            Log::error('Failed to add subject to student', [
+                'student_id' => $student->id,
+                'subject_id' => $validated['subject_id'],
+                'error' => $e->getMessage()
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to add subject. Please try again.'
+            ], 500);
+        }
     }
 
     /**

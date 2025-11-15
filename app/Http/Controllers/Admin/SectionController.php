@@ -54,4 +54,14 @@ class SectionController extends Controller
 
         return redirect()->route('admin.sections.index')->with('success', 'Section updated.');
     }
+
+    public function destroy(Section $section)
+    {
+        try {
+            $section->delete();
+            return redirect()->route('admin.sections.index')->with('success', 'Section deleted successfully.');
+        } catch (\Exception $e) {
+            return redirect()->route('admin.sections.index')->with('error', 'Unable to delete section. It may have associated students.');
+        }
+    }
 }

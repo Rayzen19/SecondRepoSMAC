@@ -163,67 +163,10 @@
 							</div>
 						</div>
 					</div>
-				</div>
 			</div>
-
-			<!-- Attendance Overview Card -->
-			<div class="card shadow-sm rounded-4 mb-4">
-    <div class="card-header bg-opacity-10 rounded-top-4">
-        <h5 class="mb-0 fw-bold" style="color:#313131"><i class="ti ti-calendar-check me-2" style="color:#313131"></i>Attendance Overview</h5>
-    </div>
-    <div class="card-body">
-        <div class="row mb-3">
-            <div class="col-md-4">
-                <div class="text-center">
-                    <div class="fw-semibold mb-1"style="color:#313131">Daily Attendance</div>
-					<span class="display-6 fw-bold "style="color:#313131">{{ $attendance['daily']['students'] }}%</span>
-                    <div class="small text-muted">Students</div>
-					<span class="fw-bold">{{ $attendance['daily']['teachers'] }}%</span>
-                    <div class="small text-muted">Teachers</div>
-                </div>
-            </div>
-            <div class="col-md-4">
-                <div class="text-center">
-                    <div class="fw-semibold mb-1" style="color:#313131">Weekly Attendance</div>
-					<span class="display-6 fw-bold"style="color:#313131">{{ $attendance['weekly']['students'] }}%</span>
-                    <div class="small text-muted">Students</div>
-					<span class="fw-bold">{{ $attendance['weekly']['teachers'] }}%</span>
-                    <div class="small text-muted">Teachers</div>
-                </div>
-            </div>
-            <div class="col-md-4">
-                <div class="text-center">
-                    <div class="fw-semibold mb-1" style="color:#313131">Monthly Attendance</div>
-					<span class="display-6 fw-bold"style="color:#313131">{{ $attendance['monthly']['students'] }}%</span>
-                    <div class="small text-muted">Students</div>
-					<span class="fw-bold">{{ $attendance['monthly']['teachers'] }}%</span>
-                    <div class="small text-muted">Teachers</div>
-                </div>
-            </div>
-        </div>
-        <div class="table-responsive">
-            <table class="table table-bordered align-middle mb-0">
-                <thead class="table-light">
-                    <tr>
-                        <th>Section</th>
-                        <th>Absentee %</th>
-                    </tr>
-                </thead>
-                <tbody>
-					@foreach($attendance['absentee'] as $abs)
-					<tr>
-						<td>{{ $abs['section'] }}</td>
-						<td><span class="badge" style="background-color:#14532d">{{ $abs['percent'] }}%</span></td>
-					</tr>
-					@endforeach
-                </tbody>
-            </table>
-        </div>
-    </div>
-</div>
 		</div>
-		
-		<div class="col-lg-4 d-flex flex-column">
+		</div>
+				<div class="col-lg-4 d-flex flex-column">
 			<!-- Top Performing Students -->
 			<div class="card shadow-sm rounded-4 mb-4">
 				<div class="card-header bg-opacity-10 rounded-top-4">

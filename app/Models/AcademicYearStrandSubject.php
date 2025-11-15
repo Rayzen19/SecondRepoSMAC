@@ -29,10 +29,14 @@ class AcademicYearStrandSubject extends Model
         'over_all_based_grade_percentage',
         'academic_year_strand_adviser_id',
         'grades_published',
+        'school_year_ended',
+        'school_year_ended_at',
     ];
 
     protected $casts = [
         'grades_published' => 'boolean',
+        'school_year_ended' => 'boolean',
+        'school_year_ended_at' => 'datetime',
     ];
 
     public function academicYear(): BelongsTo

@@ -239,6 +239,14 @@ class ClassRecordController extends Controller
     {
         $user = Auth::guard('teacher')->user();
         if (!$user) { abort(401); }
+        
+        Log::info('studentShow - Authorization check', [
+            'assignment_id' => $assignment->id,
+            'assignment_teacher_id' => $assignment->teacher_id,
+            'user_pk_id' => $user->user_pk_id,
+            'match' => $assignment->teacher_id === $user->user_pk_id
+        ]);
+        
         if ($assignment->teacher_id !== $user->user_pk_id) { abort(403); }
 
         // Note: We no longer hard-block students who don't yet have a SubjectEnrollment row
@@ -638,13 +646,49 @@ class ClassRecordController extends Controller
 
         $assignment->load(['academicYear', 'strand', 'subject', 'teacher']);
 
+        // Get sections that this teacher handles (adviser or has students enrolled in their subject)
+        $allSections = AcademicYearStrandSection::with('section', 'adviserTeacher')
+            ->where('academic_year_id', $assignment->academic_year_id)
+            ->where('strand_id', $assignment->strand_id)
+            ->where(function($q) use ($user, $assignment) {
+                // Teacher is adviser of the section
+                $q->where('adviser_teacher_id', $user->user_pk_id)
+                  // OR there are students enrolled in this teacher's subject from this section
+                  ->orWhereHas('studentEnrollments.subjectEnrollments', function($qq) use ($assignment) {
+                      $qq->where('academic_year_strand_subject_id', $assignment->id);
+                  });
+            })
+            ->get()
+            ->map(function($ayss) {
+                return [
+                    'id' => $ayss->id,
+                    'name' => optional($ayss->section)->name,
+                ];
+            })
+            ->filter(function($sec) {
+                return !empty($sec['name']);
+            })
+            ->unique('id')
+            ->values();
+
+        // Get selected section from query parameter
+        $selectedSectionId = $request->query('section');
+
         // Resolve section/adviser similar to show()
         $sectionName = null; $grade = null; $adviserName = null;
         $sectionQuery = AcademicYearStrandSection::with('section', 'adviserTeacher')
             ->where('academic_year_id', $assignment->academic_year_id)
             ->where('strand_id', $assignment->strand_id);
-        $preferred = (clone $sectionQuery)->where('adviser_teacher_id', $assignment->teacher_id)->first();
-        $sectionAssignment = $preferred ?: $sectionQuery->first();
+        
+        // If a section is selected, use that specific section
+        if ($selectedSectionId) {
+            $sectionAssignment = $sectionQuery->where('id', $selectedSectionId)->first();
+        } else {
+            // Otherwise, prefer adviser's section for this teacher
+            $preferred = (clone $sectionQuery)->where('adviser_teacher_id', $assignment->teacher_id)->first();
+            $sectionAssignment = $preferred ?: $sectionQuery->first();
+        }
+        
         if ($sectionAssignment) {
             $sectionName = optional($sectionAssignment->section)->name;
             $grade = optional($sectionAssignment->section)->grade;
@@ -669,9 +713,18 @@ class ClassRecordController extends Controller
             'semester' => $assignment->academicYear?->semester,
         ];
 
-        $enrollments = SubjectEnrollment::with(['studentEnrollment.student'])
-            ->where('academic_year_strand_subject_id', $assignment->id)
-            ->get();
+        // Fetch enrollments and filter by section if selected
+        $enrollmentsQuery = SubjectEnrollment::with(['studentEnrollment.student', 'studentEnrollment.academicYearStrandSection'])
+            ->where('academic_year_strand_subject_id', $assignment->id);
+
+        // If a section is selected, filter students by that section
+        if ($selectedSectionId) {
+            $enrollmentsQuery->whereHas('studentEnrollment', function($q) use ($selectedSectionId) {
+                $q->where('academic_year_strand_section_id', $selectedSectionId);
+            });
+        }
+
+        $enrollments = $enrollmentsQuery->get();
 
         $students = $enrollments->map(function ($se) {
             $student = optional($se->studentEnrollment)->student;
@@ -810,6 +863,7 @@ class ClassRecordController extends Controller
             'scoresByRecord' => $scoresByRecord,
             'firstSemInitials' => $firstSemInitials,
             'secondSemInitials' => $secondSemInitials,
+            'sections' => $allSections,
         ]);
     }
 
@@ -1190,5 +1244,29 @@ class ClassRecordController extends Controller
 
         $status = $assignment->grades_published ? 'published' : 'unpublished';
         return back()->with('success', "Grades have been {$status} successfully. Students can " . ($assignment->grades_published ? 'now' : 'no longer') . " view their grades.");
+    }
+
+    /**
+     * End of school year - finalize records for the class
+     */
+    public function endOfSchoolYear(AcademicYearStrandSubject $assignment)
+    {
+        $user = Auth::guard('teacher')->user();
+        if (!$user) {
+            abort(401);
+        }
+
+        // Verify this teacher owns this assignment
+        if ($assignment->teacher_id !== $user->user_pk_id) {
+            abort(403, 'Unauthorized');
+        }
+
+        // Mark the school year as ended for this assignment
+        $assignment->update([
+            'school_year_ended' => true,
+            'school_year_ended_at' => now(),
+        ]);
+
+        return back()->with('success', 'School year has been successfully ended for this class. All records are now finalized. Pre-enrollment button has been disabled for students in this class.');
     }
 }

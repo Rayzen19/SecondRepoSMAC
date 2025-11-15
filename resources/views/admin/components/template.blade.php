@@ -4,6 +4,7 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=0">
+    <meta name="csrf-token" content="{{ csrf_token() }}">
     <meta name="description" content="St. Matthew Senior High School">
     <meta name="robots" content="noindex, nofollow">
     <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
@@ -50,8 +51,10 @@
     <link rel="stylesheet" href="{{ asset('assets/plugins/select2/css/select2.min.css') }}">
 
     <!-- Main CSS -->
-    <link rel="stylesheet" href="{{ asset('assets/css/style.css') }}">
+    <link rel="stylesheet" href="{{ asset('assets/css/style.css') }}?v={{ time() }}">
     <link rel="stylesheet" href="{{ asset('assets/css/responsive-sidebar.css') }}">
+
+    @stack('styles')
 
 </head>
 
@@ -90,7 +93,17 @@
                         role="tablist">
                         <li class="nav-item"><a class="nav-link active border-0" href="#">Menu</a></li>
                         <li class="nav-item"><a class="nav-link border-0" href="{{ route('admin.messages.messenger') }}">Chats</a></li>
-                        <li class="nav-item"><a class="nav-link border-0" href="{{ route('admin.messages.messenger') }}">Inbox</a></li>
+                        <li class="nav-item">
+                            <a class="nav-link border-0 position-relative" href="{{ route('admin.message-reports.index') }}">
+                                Reports
+                                @php
+                                    $pendingCount = \App\Models\MessageReport::where('status', 'pending')->count();
+                                @endphp
+                                @if($pendingCount > 0)
+                                    <span class="badge bg-warning rounded-pill position-absolute top-0 start-100 translate-middle" style="font-size: 9px;">{{ $pendingCount }}</span>
+                                @endif
+                            </a>
+                        </li>
                     </ul>
                 </div>
             </div>
@@ -146,6 +159,7 @@
                         $isStudents = request()->routeIs('admin.students.*');
                         $isGuardians = request()->routeIs('admin.guardians.*');
                         $isEnrollments = request()->routeIs('admin.student-enrollments.*');
+                        $isPreEnrollments = request()->routeIs('admin.pre-enrollments.*');
                         $isManagement = request()->routeIs('admin.subjects.*') || request()->routeIs('admin.strands.*') || request()->routeIs('admin.sections.*');
                         $isAcademic = request()->routeIs('admin.academic-years.*') || request()->routeIs('admin.subject-records.*') || request()->routeIs('admin.assessment-types.*') || request()->routeIs('admin.subject-record-results.*');
                     @endphp
@@ -158,11 +172,27 @@
                                         <i class="ti ti-layout-navbar"></i><span>Dashboard</span>
                                     </a>
                                 </li>
+
+                                <li class="{{ request()->routeIs('admin.profile.*') ? 'active' : '' }}">
+                                    <a class="{{ request()->routeIs('admin.profile.*') ? 'active' : '' }}" href="{{ route('admin.profile.show') }}">
+                                        <i class="ti ti-user-circle"></i><span>My Profile</span>
+                                    </a>
+                                </li>
+
                                 <li class="{{ $isTeachers ? 'active' : '' }}">
                                     <a class="{{ $isTeachers ? 'active' : '' }}" href="{{ route('admin.teachers.index') }}">
                                         <i class="ti ti-users"></i><span>Teachers</span>
                                     </a>
                                 </li>
+
+                                @auth('admin')
+                                <li class="{{ request()->routeIs('admin.co-admins.*') ? 'active' : '' }}">
+                                    <a class="{{ request()->routeIs('admin.co-admins.*') ? 'active' : '' }}" href="{{ route('admin.co-admins.index') }}">
+                                        <i class="ti ti-user-star"></i><span>Co-Admins</span>
+                                    </a>
+                                </li>
+                                @endauth
+
                                 <li class="{{ $isStudents ? 'active' : '' }}">
                                     <a class="{{ $isStudents ? 'active' : '' }}" href="{{ route('admin.students.index') }}">
                                         <i class="ti ti-layout-board-split"></i><span>Student</span>
@@ -181,11 +211,23 @@
                                     </a>
                                 </li>
 
-                                <li class="{{ request()->routeIs('admin.attendance.*') ? 'active' : '' }}">
+                                <li class="{{ $isPreEnrollments ? 'active' : '' }}">
+                                    <a class="{{ $isPreEnrollments ? 'active' : '' }}" href="{{ route('admin.pre-enrollments.index') }}" style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
+                                        <i class="ti ti-file-text"></i><span style="flex: 1; overflow: hidden; text-overflow: ellipsis;">Pre-Enrollment Submissions</span>
+                                        @php
+                                            $pendingPreEnrollments = \App\Models\PreEnrollment::where('status', 'pending')->count();
+                                        @endphp
+                                        @if($pendingPreEnrollments > 0)
+                                            <span class="badge bg-warning rounded-pill ms-2" style="flex-shrink: 0;">{{ $pendingPreEnrollments }}</span>
+                                        @endif
+                                    </a>
+                                </li>
+
+                                <!-- <li class="{{ request()->routeIs('admin.attendance.*') ? 'active' : '' }}">
                                     <a class="{{ request()->routeIs('admin.attendance.*') ? 'active' : '' }}" href="{{ route('admin.attendance.index') }}">
                                         <i class="ti ti-calendar-check"></i><span>Attendance</span>
                                     </a>
-                                </li>
+                                </li> -->
 
                                 <li class="{{ request()->routeIs('admin.announcements.*') ? 'active' : '' }}">
                                     <a class="{{ request()->routeIs('admin.announcements.*') ? 'active' : '' }}" href="{{ route('admin.announcements.index') }}">
@@ -205,16 +247,28 @@
                                     </a>
                                 </li>
 
+                                <li class="{{ request()->routeIs('admin.archive.*') ? 'active' : '' }}">
+                                    <a class="{{ request()->routeIs('admin.archive.*') ? 'active' : '' }}" href="{{ route('admin.archive.index') }}">
+                                        <i class="ti ti-archive"></i><span>Archive</span>
+                                    </a>
+                                </li>
+
                                 @auth('admin')
-                                <li class="{{ request()->routeIs('admin.messages.*') ? 'active' : '' }}">
-                                    <a class="{{ request()->routeIs('admin.messages.*') ? 'active' : '' }}" href="{{ route('admin.messages.messenger') }}">
+                                <li class="{{ request()->routeIs('admin.messages.*') && !request()->routeIs('admin.message-reports.*') ? 'active' : '' }}">
+                                    <a class="{{ request()->routeIs('admin.messages.*') && !request()->routeIs('admin.message-reports.*') ? 'active' : '' }}" href="{{ route('admin.messages.messenger') }}">
                                         <i class="ti ti-mail"></i><span>Messages</span>
                                     </a>
                                 </li>
 
-                                <li class="{{ request()->routeIs('admin.profile.*') ? 'active' : '' }}">
-                                    <a class="{{ request()->routeIs('admin.profile.*') ? 'active' : '' }}" href="{{ route('admin.profile.show') }}">
-                                        <i class="ti ti-user-circle"></i><span>My Profile</span>
+                                <li class="{{ request()->routeIs('admin.message-reports.*') ? 'active' : '' }}">
+                                    <a class="{{ request()->routeIs('admin.message-reports.*') ? 'active' : '' }}" href="{{ route('admin.message-reports.index') }}">
+                                        <i class="ti ti-flag"></i><span>Message Reports</span>
+                                        @php
+                                            $pendingReports = \App\Models\MessageReport::where('status', 'pending')->count();
+                                        @endphp
+                                        @if($pendingReports > 0)
+                                            <span class="badge bg-warning rounded-pill ms-auto">{{ $pendingReports }}</span>
+                                        @endif
                                     </a>
                                 </li>
                                 @endauth
@@ -291,6 +345,15 @@
 
     <!-- jQuery -->
     <script src="{{ asset('assets/js/jquery-3.7.1.min.js') }}"></script>
+
+    <!-- Setup CSRF Token for AJAX requests -->
+    <script>
+        $.ajaxSetup({
+            headers: {
+                'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
+            }
+        });
+    </script>
 
     <!-- Bootstrap Core JS -->
     <script src="{{ asset('assets/js/bootstrap.bundle.min.js') }}"></script>

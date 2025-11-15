@@ -19,14 +19,14 @@
     <!-- Alert Container -->
     <div id="alertContainer"></div>
 
-    <!-- Grade Level Filter -->
+    <!-- Filters -->
     <div class="card mb-3">
         <div class="card-header bg-light">
-            <h5 class="card-title mb-0"><i class="ti ti-filter me-2"></i>Filter by Grade Level</h5>
+            <h5 class="card-title mb-0"><i class="ti ti-filter me-2"></i>Filter By Grade Level</h5>
         </div>
         <div class="card-body">
-            <div class="row g-3 align-items-center">
-                <div class="col-md-4">
+            <div class="row g-3 align-items-end">
+                <div class="col-md-3">
                     <label class="form-label">Grade Level</label>
                     <select class="form-select" id="gradeLevelFilter" onchange="filterSections()">
                         <option value="all">All Grade Levels</option>
@@ -34,7 +34,16 @@
                         <option value="12">Grade 12</option>
                     </select>
                 </div>
-                <div class="col-md-8">
+                <div class="col-md-3">
+                    <label class="form-label">Strand</label>
+                    <select class="form-select" id="strandFilter" onchange="filterSections()">
+                        <option value="all">All Strands</option>
+                        @foreach($strands as $strand)
+                            <option value="{{ $strand->code }}">{{ $strand->code }} - {{ Str::limit($strand->name, 25) }}</option>
+                        @endforeach
+                    </select>
+                </div>
+                <div class="col-md-6">
                     <div class="alert alert-info mb-0">
                         <i class="ti ti-info-circle me-2"></i>
                         <strong>Note:</strong> Filter sections by grade level to view only relevant sections and their assigned students.
@@ -54,9 +63,17 @@
                         <span id="assignedCount">0</span> section(s) with advisers assigned
                     </small>
                 </div>
-                <button type="button" class="btn btn-success" onclick="saveAllAdvisers()" id="saveAdvisersBtn">
-                    <i class="ti ti-device-floppy me-2"></i>Save All Adviser Assignments
-                </button>
+                <div class="d-flex gap-2">
+                    <button type="button" class="btn btn-warning" data-bs-toggle="modal" data-bs-target="#modalDisablePreEnrollment">
+                        <i class="ti ti-lock me-2"></i>Disable Pre-Enrollment
+                    </button>
+                    <button type="button" class="btn btn-danger" data-bs-toggle="modal" data-bs-target="#modalEndOfSchoolYear">
+                        <i class="ti ti-calendar-check me-2"></i>End of School Year
+                    </button>
+                    <button type="button" class="btn btn-success" onclick="saveAllAdvisers()" id="saveAdvisersBtn">
+                        <i class="ti ti-device-floppy me-2"></i>Save All Adviser Assignments
+                    </button>
+                </div>
             </div>
         </div>
         @foreach($strands as $strand)
@@ -295,6 +312,62 @@
             </div>
         </div>
 
+        <!-- Modal for Disable Pre-Enrollment -->
+        <div class="modal fade" id="modalDisablePreEnrollment" tabindex="-1" aria-hidden="true">
+            <div class="modal-dialog modal-dialog-centered">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title">Disable Pre-Enrollment</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <form method="post" action="{{ route('admin.section-advisers.disable-pre-enrollment') }}">
+                        @csrf
+                        <div class="modal-body">
+                            <p class="mb-3">This will <strong>disable the pre-enrollment system</strong> for all students.</p>
+                            <div class="alert alert-warning">
+                                <i class="ti ti-alert-triangle me-2"></i>
+                                <strong>Warning:</strong> Students will no longer be able to pre-enroll for the next school year. 
+                                This action is typically used after the pre-enrollment period has ended.
+                            </div>
+                            <p class="mb-0">Do you want to proceed with disabling pre-enrollment?</p>
+                        </div>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
+                            <button type="submit" class="btn btn-warning">Yes, Disable Pre-Enrollment</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- Modal for End of School Year -->
+        <div class="modal fade" id="modalEndOfSchoolYear" tabindex="-1" aria-hidden="true">
+            <div class="modal-dialog modal-dialog-centered">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title">End of School Year</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <form method="post" action="{{ route('admin.section-advisers.end-of-school-year') }}">
+                        @csrf
+                        <div class="modal-body">
+                            <p class="mb-3">This will finalize the school year records for <strong>all sections and classes</strong>.</p>
+                            <div class="alert alert-danger">
+                                <i class="ti ti-alert-triangle me-2"></i>
+                                <strong>Warning:</strong> This action will close the school year for ALL students across ALL sections. 
+                                Make sure all grades have been submitted and finalized before proceeding. This action cannot be undone.
+                            </div>
+                            <p class="mb-0">Do you want to proceed?</p>
+                        </div>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
+                            <button type="submit" class="btn btn-danger">Yes, End School Year</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
         <!-- Modal for assigning teachers to subjects per section -->
         <div class="modal fade" id="subjectTeacherModal" tabindex="-1" aria-labelledby="subjectTeacherModalLabel" aria-hidden="true">
             <div class="modal-dialog modal-xl modal-dialog-scrollable">
@@ -511,16 +584,26 @@
         console.error('Error parsing student assignments:', e);
     }
 
-    // Filter sections by grade level
+    // Filter sections by grade level and strand
     function filterSections() {
         const gradeLevel = document.getElementById('gradeLevelFilter').value;
+        const strandFilter = document.getElementById('strandFilter').value;
         const strandCards = document.querySelectorAll('.strand-card');
         
         strandCards.forEach(card => {
-            const strand = card.dataset.strand;
+            const strandCode = card.dataset.strand;
+            
+            // Check if strand matches filter
+            const strandMatches = (strandFilter === 'all' || strandFilter === strandCode);
+            
+            if (!strandMatches) {
+                // Hide entire strand card if it doesn't match strand filter
+                card.style.display = 'none';
+                return;
+            }
             
             if (gradeLevel === 'all') {
-                // Show all sections and headers
+                // Show all sections and headers for matching strand
                 card.style.display = 'block';
                 card.querySelectorAll('.section-item, .list-group-item.bg-light').forEach(el => {
                     el.style.display = 'block';
@@ -551,7 +634,7 @@
                     grade12Header.style.display = (gradeLevel === '12') ? 'block' : 'none';
                 }
                 
-                // Hide strand card if no sections match the filter
+                // Hide strand card if no sections match the grade filter
                 card.style.display = hasVisibleSections ? 'block' : 'none';
             }
         });
@@ -704,13 +787,18 @@
             // Update all count elements
             document.querySelectorAll('[class*="student-count-"]').forEach(el => {
                 el.textContent = '0 students';
+                el.classList.remove('fw-bold', 'text-success');
             });
 
-            // Set actual counts from database
+            // Set actual counts from database and highlight sections with students
             for (const [key, count] of Object.entries(counts)) {
                 const countEl = document.querySelector(`.student-count-${key}`);
                 if (countEl) {
                     countEl.textContent = `${count} student${count !== 1 ? 's' : ''}`;
+                    // Highlight sections that have students enrolled
+                    if (count > 0) {
+                        countEl.classList.add('fw-bold', 'text-success');
+                    }
                 }
             }
         } catch (error) {
@@ -739,7 +827,7 @@
 
             const data = await response.json();
             if (!response.ok || !data.success) {
-                throw new Error('Failed to remove student');
+                throw new Error(data.message || 'Failed to remove student');
             }
 
             // Update local session cache in JS
@@ -751,18 +839,102 @@
                 ));
             }
 
-            // Refresh counts and current modal view
+            // Refresh counts
             updateStudentCounts();
             
-            // Get section name from button to refresh modal
+            // Refresh the modal content without closing it
             const sectionBtn = document.querySelector(`.view-section-btn[data-strand="${strandCode}"][data-section="${sectionId}"]`);
             const sectionName = sectionBtn ? sectionBtn.dataset.sectionName : `${strandCode} - Section ${sectionId}`;
-            viewSectionDetails(strandCode, sectionId, sectionName);
+            
+            // Refresh the student list in the existing modal
+            await refreshModalContent(strandCode, sectionId, sectionName);
 
             showAlert('Student removed from section.', 'success');
         } catch (e) {
             console.error(e);
             showAlert('Could not remove student. Please try again.', 'danger');
+        }
+    }
+
+    // Refresh modal content without closing and reopening
+    async function refreshModalContent(strandCode, sectionId, sectionName) {
+        const studentsList = document.getElementById('studentsList');
+        const modalTitle = document.getElementById('modalSectionTitle');
+        
+        // Show loading state
+        studentsList.innerHTML = `
+            <div class="text-center text-muted py-3">
+                <i class="ti ti-loader ti-spin mb-2" style="font-size: 2rem;"></i>
+                <p class="mb-0">Refreshing...</p>
+            </div>
+        `;
+
+        try {
+            // Fetch fresh student data from database
+            const response = await fetch(routes.getSectionStudents, {
+                method: 'POST',
+                credentials: 'same-origin',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': '{{ csrf_token() }}'
+                },
+                body: JSON.stringify({
+                    strand_code: strandCode,
+                    section_id: sectionId
+                })
+            });
+
+            if (!response.ok) {
+                throw new Error('Failed to fetch section students');
+            }
+
+            const data = await response.json();
+            const students = data.students || [];
+
+            // Update modal title with count
+            modalTitle.textContent = `${sectionName} (${students.length} student${students.length !== 1 ? 's' : ''})`;
+
+            if (students.length === 0) {
+                studentsList.innerHTML = `
+                    <div class="text-center text-muted py-5">
+                        <i class="ti ti-users-off mb-2" style="font-size: 3rem;"></i>
+                        <p class="mb-0">No students enrolled in this section yet</p>
+                        <small>Go to Assigning List to assign students</small>
+                    </div>
+                `;
+            } else {
+                let html = '<div class="list-group">';
+                students.forEach((student, index) => {
+                    html += `
+                        <div class="list-group-item">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <div>
+                                    <div class="fw-semibold">${index + 1}. ${student.first_name} ${student.last_name}</div>
+                                    <small class="text-muted">
+                                        <span class="badge bg-secondary">${student.student_number}</span>
+                                        <span class="badge bg-primary-subtle text-primary ms-1">${student.program}</span>
+                                        <span class="badge bg-info-subtle text-info ms-1">${student.academic_year}</span>
+                                        ${student.registration_number ? `<span class="badge bg-success-subtle text-success ms-1">REG: ${student.registration_number}</span>` : ''}
+                                    </small>
+                                </div>
+                                <button type="button" class="btn btn-sm btn-outline-danger ms-3" title="Remove from section" onclick="removeStudentFromSection('${strandCode}', ${sectionId}, ${student.id})">
+                                    <i class="ti ti-user-minus"></i>
+                                </button>
+                            </div>
+                        </div>
+                    `;
+                });
+                html += '</div>';
+                studentsList.innerHTML = html;
+            }
+        } catch (error) {
+            console.error('Error refreshing modal:', error);
+            studentsList.innerHTML = `
+                <div class="alert alert-danger">
+                    <i class="ti ti-alert-circle me-2"></i>
+                    Error refreshing student list. Please close and reopen the modal.
+                </div>
+            `;
         }
     }
 
@@ -1119,13 +1291,12 @@
             
             // Build enhanced table
             let html = '<div class="card border-0 shadow-sm"><div class="card-body p-0"><div class="table-responsive">';
-            html += '<table class="table table-hover align-middle mb-0" style="border-collapse: separate; border-spacing: 0;">';
+            html += '<table class="table table-hover align-middle mb-0" style="border-collapse: separate; border-spacing: 0; table-layout: fixed; width: 100%;">';
             html += '<thead style="background: linear-gradient(to right, #f8f9fa, #e9ecef); border-bottom: 2px solid #dee2e6;"><tr>';
-            html += '<th class="text-center fw-bold" style="width: 5%; padding: 1rem; color: #495057;">#</th>';
-            html += '<th class="fw-bold" style="width: 12%; padding: 1rem; color: #495057;"><i class="ti ti-tag me-2"></i>Code</th>';
-            html += '<th class="fw-bold" style="width: 30%; padding: 1rem; color: #495057;"><i class="ti ti-book me-2"></i>Subject Name</th>';
-            html += '<th class="fw-bold" style="width: 25%; padding: 1rem; color: #495057;"><i class="ti ti-user me-2"></i>Assigned Teacher</th>';
-            html += '<th class="fw-bold" style="width: 28%; padding: 1rem; color: #495057;"><i class="ti ti-settings me-2"></i>Actions</th>';
+            html += '<th class="text-center fw-bold" style="width: 50px; padding: 0.75rem 0.5rem; color: #495057;">#</th>';
+            html += '<th class="fw-bold" style="width: 120px; padding: 0.75rem 0.5rem; color: #495057;"><i class="ti ti-tag me-1"></i>Code</th>';
+            html += '<th class="fw-bold" style="padding: 0.75rem 0.5rem; color: #495057;"><i class="ti ti-book me-1"></i>Subject Name</th>';
+            html += '<th class="fw-bold" style="width: 200px; padding: 0.75rem 0.5rem; color: #495057;"><i class="ti ti-user me-1"></i>Assigned Teacher</th>';
             html += '</tr></thead><tbody>';
             
             for (let i = 0; i < data.subjects.length; i++) {
@@ -1135,63 +1306,52 @@
                 const currentTeacher = isAssigned ? subj.assigned_teacher.name : '<span class="text-muted fst-italic">Not assigned yet</span>';
                 
                 html += `<tr class="subject-row" style="transition: all 0.3s ease;" data-assigned="${isAssigned ? 'true' : 'false'}">
-                    <td class="text-center fw-bold text-muted" style="padding: 1rem; font-size: 0.9rem;">${i + 1}</td>
-                    <td style="padding: 1rem;">
-                        <span class="badge px-3 py-2" style="background-color: #6c757d; font-size: 0.875rem; font-weight: 500;">${subj.code}</span>
+                    <td class="text-center fw-bold text-muted" style="padding: 0.75rem 0.5rem; font-size: 0.875rem;">${i + 1}</td>
+                    <td style="padding: 0.75rem 0.5rem;">
+                        <span class="badge px-2 py-1" style="background-color: #6c757d; font-size: 0.75rem; font-weight: 500;">${subj.code}</span>
                     </td>
-                    <td style="padding: 1rem;">
-                        <div class="d-flex flex-column">
-                            <span class="fw-semibold mb-1">${subj.name}</span>
-                            <div>
-                                ${subj.type ? `<span class="badge bg-light text-dark me-1" style="font-size: 0.75rem;"><i class="ti ti-category me-1"></i>${subj.type}</span>` : ''}
-                                ${subj.semester ? `<span class="badge bg-info-subtle text-info" style="font-size: 0.75rem;"><i class="ti ti-calendar me-1"></i>${subj.semester}</span>` : ''}
+                    <td style="padding: 0.75rem 0.5rem;">
+                        <div class="d-flex flex-column gap-1">
+                            <div class="fw-semibold" style="font-size: 0.875rem; line-height: 1.3;">${subj.name}</div>
+                            <div class="d-flex flex-wrap gap-1">
+                                ${subj.type ? `<span class="badge bg-light text-dark" style="font-size: 0.7rem;"><i class="ti ti-category" style="font-size: 0.7rem;"></i> ${subj.type}</span>` : ''}
+                                ${subj.semester ? `<span class="badge bg-info-subtle text-info" style="font-size: 0.7rem;"><i class="ti ti-calendar" style="font-size: 0.7rem;"></i> ${subj.semester}</span>` : ''}
+                            </div>
+                            <div id="${rowId}-current" class="mt-1">
+                                ${isAssigned ? `
+                                    <div class="d-flex align-items-center gap-1">
+                                        <i class="ti ti-user-check text-success" style="font-size: 0.875rem;"></i>
+                                        <span class="text-success" style="font-size: 0.75rem; font-weight: 500;">${currentTeacher}</span>
+                                    </div>
+                                ` : `
+                                    <div class="d-flex align-items-center gap-1">
+                                        <i class="ti ti-alert-circle text-warning" style="font-size: 0.875rem;"></i>
+                                        <span class="text-muted fst-italic" style="font-size: 0.75rem;">Not assigned yet</span>
+                                    </div>
+                                `}
+                            </div>
+                            <div class="d-flex gap-1 align-items-center mt-1 flex-wrap">
+                                <select id="${rowId}-teacher" class="form-select form-select-sm" style="flex: 1; min-width: 150px; font-size: 0.8rem; padding: 0.25rem 0.5rem;">
+                                    <option value="">Loading teachers...</option>
+                                </select>
+                                <button class="btn btn-sm btn-primary px-2 py-1" id="${rowId}-btn" 
+                                        onclick="saveSubjectTeacher('${rowId}', '${strandCode}', '${gradeLevel}', ${sectionId}, ${subj.id})"
+                                        style="white-space: nowrap; font-size: 0.75rem; font-weight: 500;">
+                                    <i class="ti ti-device-floppy" style="font-size: 0.875rem;"></i> Save
+                                </button>
+                                ${isAssigned ? `
+                                    <button class="btn btn-sm btn-danger px-2 py-1" id="${rowId}-del-btn" 
+                                            onclick="deleteSubjectTeacher('${rowId}', '${strandCode}', '${gradeLevel}', ${sectionId}, ${subj.id})"
+                                            style="font-size: 0.75rem; font-weight: 500;"
+                                            title="Remove assigned teacher">
+                                        <i class="ti ti-trash" style="font-size: 0.875rem;"></i>
+                                    </button>
+                                ` : ''}
                             </div>
                         </div>
                     </td>
-                    <td style="padding: 1rem;">
-                        <div id="${rowId}-current" class="d-flex align-items-center">
-                            ${isAssigned ? `
-                                <div class="d-flex align-items-center">
-                                    <div class="rounded-circle bg-success d-flex align-items-center justify-content-center me-2" style="width: 32px; height: 32px;">
-                                        <i class="ti ti-user-check text-white"></i>
-                                    </div>
-                                    <div>
-                                        <div class="fw-semibold text-success">${currentTeacher}</div>
-                                        <small class="text-muted">Currently assigned</small>
-                                    </div>
-                                </div>
-                            ` : `
-                                <div class="d-flex align-items-center">
-                                    <div class="rounded-circle bg-warning d-flex align-items-center justify-content-center me-2" style="width: 32px; height: 32px;">
-                                        <i class="ti ti-alert-circle text-white"></i>
-                                    </div>
-                                    <div>
-                                        <div class="text-muted fst-italic">Not assigned yet</div>
-                                        <small class="text-muted">Please assign a teacher</small>
-                                    </div>
-                                </div>
-                            `}
-                        </div>
-                    </td>
-                    <td style="padding: 1rem;">
-                        <div class="d-flex gap-2 align-items-center">
-                            <select id="${rowId}-teacher" class="form-select form-select-sm shadow-sm" style="flex: 1; min-width: 150px; border: 2px solid #dee2e6;">
-                                <option value="">Loading teachers...</option>
-                            </select>
-                            <button class="btn btn-sm btn-primary shadow-sm px-3" id="${rowId}-btn" 
-                                    onclick="saveSubjectTeacher('${rowId}', '${strandCode}', '${gradeLevel}', ${sectionId}, ${subj.id})"
-                                    style="white-space: nowrap; min-width: 85px; font-weight: 500;">
-                                <i class="ti ti-device-floppy me-1"></i>Save
-                            </button>
-                            ${isAssigned ? `
-                                <button class="btn btn-sm btn-danger shadow-sm px-3" id="${rowId}-del-btn" 
-                                        onclick="deleteSubjectTeacher('${rowId}', '${strandCode}', '${gradeLevel}', ${sectionId}, ${subj.id})"
-                                        style="white-space: nowrap; font-weight: 500;"
-                                        title="Remove assigned teacher">
-                                    <i class="ti ti-trash"></i>
-                                </button>
-                            ` : ''}
-                        </div>
+                    <td style="padding: 0.75rem 0.5rem; display: none;">
+                        <!-- Hidden column for assigned teacher - kept for compatibility -->
                     </td>
                 </tr>`;
             }

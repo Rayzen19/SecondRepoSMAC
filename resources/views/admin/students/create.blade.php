@@ -152,6 +152,17 @@
                         </div>
                         <div class="col-md-6">
                             <div class="mb-3">
+                                <label class="form-label">Grade Level <span class="text-danger">*</span></label>
+                                <select name="grade_level" class="form-select" required>
+                                    <option value="" disabled {{ old('grade_level') ? '' : 'selected' }}>Select grade level</option>
+                                    <option value="11" {{ old('grade_level') == '11' ? 'selected' : '' }}>Grade 11</option>
+                                    <option value="12" {{ old('grade_level') == '12' ? 'selected' : '' }}>Grade 12</option>
+                                </select>
+                                @error('grade_level')<div class="text-red-600 text-xs">{{ $message }}</div>@enderror
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
                                 <label class="form-label">Academic Year <span class="text-danger">*</span></label>
                                 {{-- Hidden inputs so values are submitted (disabled fields are not sent) --}}
                                 <input type="hidden" name="academic_year_id" value="{{ old('academic_year_id', optional($activeYear)->id) }}">

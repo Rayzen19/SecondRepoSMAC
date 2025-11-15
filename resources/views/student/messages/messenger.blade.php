@@ -5,6 +5,7 @@
     .conversation-item {
         cursor: pointer;
         transition: all 0.2s ease;
+        position: relative;
     }
     .conversation-item:hover {
         background-color: #f8f9fa;
@@ -13,11 +14,59 @@
         background-color: #e7f3ff;
         border-left: 3px solid #007bff;
     }
+    .conversation-item.has-unread {
+        font-weight: 600;
+        background-color: #fff8f0;
+    }
+    .unread-badge {
+        animation: pulse 2s infinite;
+    }
+    @keyframes pulse {
+        0%, 100% { opacity: 1; }
+        50% { opacity: 0.7; }
+    }
     .user-select-item {
         padding: 10px 15px;
         cursor: pointer;
         transition: background-color 0.2s;
         border-bottom: 1px solid #f0f0f0;
+    }
+    
+    /* Typing Indicator Animation */
+    .typing-dots {
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+    }
+    .typing-dots span {
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        background-color: #6c757d;
+        animation: typing-bounce 1.4s infinite ease-in-out;
+    }
+    .typing-dots span:nth-child(1) {
+        animation-delay: 0s;
+    }
+    .typing-dots span:nth-child(2) {
+        animation-delay: 0.2s;
+    }
+    .typing-dots span:nth-child(3) {
+        animation-delay: 0.4s;
+    }
+    @keyframes typing-bounce {
+        0%, 60%, 100% {
+            transform: translateY(0);
+            opacity: 0.7;
+        }
+        30% {
+            transform: translateY(-10px);
+            opacity: 1;
+        }
+    }
+    #typing-indicator {
+        padding-left: 15px;
+        margin-top: 10px;
     }
     .user-select-item:hover {
         background-color: #f8f9fa;
@@ -57,14 +106,18 @@
             <div class="card-body p-0">
                 <ul id="conversation-list" class="list-group list-group-flush">
                     @forelse($partners as $p)
-                    <li class="list-group-item conversation-item" data-user-id="{{ $p->id }}" data-user-name="{{ $p->name }}" data-user-email="{{ $p->email }}">
-                        <div class="d-flex justify-content-between">
+                    <li class="list-group-item conversation-item {{ $p->unread_count > 0 ? 'has-unread' : '' }}" data-user-id="{{ $p->id }}" data-user-name="{{ $p->name }}" data-user-email="{{ $p->email }}">
+                        <div class="d-flex justify-content-between align-items-center">
                             <div>
                                 <strong>{{ $p->name }}</strong>
                                 <div class="small text-muted">{{ $p->email }}</div>
                             </div>
                             <div class="text-end">
-                                <span class="badge bg-primary d-none" id="unread-{{ $p->id }}">0</span>
+                                @if($p->unread_count > 0)
+                                <span class="badge bg-danger unread-badge" id="unread-{{ $p->id }}">{{ $p->unread_count }}</span>
+                                @else
+                                <span class="badge bg-danger d-none" id="unread-{{ $p->id }}">0</span>
+                                @endif
                             </div>
                         </div>
                     </li>
@@ -85,6 +138,15 @@
             </div>
             <div class="card-body overflow-auto" id="thread-body" style="height:60vh">
                 <div id="thread-messages" class="d-flex flex-column gap-3"></div>
+                <!-- Typing Indicator -->
+                <div id="typing-indicator" class="d-flex align-items-center gap-2 p-2" style="display: none !important;">
+                    <div class="typing-dots">
+                        <span></span>
+                        <span></span>
+                        <span></span>
+                    </div>
+                    <small class="text-muted" id="typing-text">Someone is typing...</small>
+                </div>
             </div>
             <div class="card-footer">
                 <form id="send-form">
@@ -171,6 +233,19 @@
                     toInput.value = userId;
                     threadHeader.textContent = data.conversation_with.name || '';
                     threadMessages.innerHTML = '';
+                    
+                    // Hide unread badge for this conversation
+                    const unreadBadge = document.getElementById('unread-' + userId);
+                    if (unreadBadge) {
+                        unreadBadge.classList.add('d-none');
+                        unreadBadge.textContent = '0';
+                    }
+                    
+                    // Remove has-unread class from conversation item
+                    const conversationItem = document.querySelector('.conversation-item[data-user-id="' + userId + '"]');
+                    if (conversationItem) {
+                        conversationItem.classList.remove('has-unread');
+                    }
                     
                     // Track the last message ID
                     lastMessageId = 0;
@@ -375,8 +450,125 @@
             });
         });
 
+        // ===== TYPING INDICATOR LOGIC =====
+        const typingIndicator = document.getElementById('typing-indicator');
+        const typingText = document.getElementById('typing-text');
+        let typingTimeout = null;
+        let isCurrentlyTyping = false;
+
+        // Send typing status to recipient
+        function sendTypingStatus(isTyping) {
+            if (!currentUserId) return;
+            
+            fetch("{{ route('student.messages.typing') }}", {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': document.querySelector('input[name="_token"]').value
+                },
+                body: JSON.stringify({
+                    recipient_id: currentUserId,
+                    is_typing: isTyping
+                })
+            }).catch(err => console.error('Typing broadcast error:', err));
+        }
+
+        // Listen for input in message field
+        messageInput.addEventListener('input', function() {
+            if (!currentUserId) return;
+            
+            // Start typing
+            if (!isCurrentlyTyping) {
+                isCurrentlyTyping = true;
+                sendTypingStatus(true);
+            }
+            
+            // Clear previous timeout
+            clearTimeout(typingTimeout);
+            
+            // Stop typing after 2 seconds of no input
+            typingTimeout = setTimeout(() => {
+                isCurrentlyTyping = false;
+                sendTypingStatus(false);
+            }, 2000);
+        });
+
+        // Stop typing when form is submitted
+        sendForm.addEventListener('submit', function() {
+            clearTimeout(typingTimeout);
+            if (isCurrentlyTyping) {
+                isCurrentlyTyping = false;
+                sendTypingStatus(false);
+            }
+        });
+
+        // Show/hide typing indicator
+        function showTypingIndicator(userName) {
+            typingText.textContent = `${userName} is typing...`;
+            typingIndicator.style.display = 'flex';
+            // Auto-scroll to show typing indicator
+            const threadBody = document.getElementById('thread-body');
+            threadBody.scrollTop = threadBody.scrollHeight;
+        }
+
+        function hideTypingIndicator() {
+            typingIndicator.style.display = 'none';
+        }
+
         // Stop auto-refresh when leaving the page
         window.addEventListener('beforeunload', stopAutoRefresh);
+
+        // Real-time unread count polling
+        let unreadCountInterval = null;
+
+        function updateUnreadCounts() {
+            fetch("{{ route('student.api.unread-counts-by-partner') }}")
+                .then(r => r.json())
+                .then(data => {
+                    if (data.success && data.unread_counts) {
+                        // Update each conversation item
+                        document.querySelectorAll('.conversation-item').forEach(item => {
+                            const userId = item.dataset.userId;
+                            const unreadBadge = document.getElementById('unread-' + userId);
+                            const unreadCount = data.unread_counts[userId] || 0;
+                            
+                            if (unreadBadge) {
+                                if (unreadCount > 0 && userId !== String(currentUserId)) {
+                                    unreadBadge.textContent = unreadCount;
+                                    unreadBadge.classList.remove('d-none');
+                                    item.classList.add('has-unread');
+                                } else {
+                                    unreadBadge.classList.add('d-none');
+                                    item.classList.remove('has-unread');
+                                }
+                            }
+                        });
+                    }
+                })
+                .catch(err => console.error('Failed to fetch unread counts:', err));
+        }
+
+        // Start polling for unread counts every 5 seconds
+        function startUnreadCountPolling() {
+            if (unreadCountInterval) {
+                clearInterval(unreadCountInterval);
+            }
+            updateUnreadCounts(); // Initial update
+            unreadCountInterval = setInterval(updateUnreadCounts, 5000);
+        }
+
+        function stopUnreadCountPolling() {
+            if (unreadCountInterval) {
+                clearInterval(unreadCountInterval);
+                unreadCountInterval = null;
+            }
+        }
+
+        // Start polling when page loads
+        startUnreadCountPolling();
+
+        // Stop polling when leaving
+        window.addEventListener('beforeunload', stopUnreadCountPolling);
 
         // Load all users for new conversation modal
         let allUsers = [];
@@ -592,84 +784,94 @@
             }
         });
 
-        // ===== REAL-TIME PUSHER INTEGRATION =====
-        // Initialize Pusher
-        try {
-            const pusher = new Pusher('{{ env('PUSHER_APP_KEY') }}', {
-                cluster: '{{ env('PUSHER_APP_CLUSTER') }}',
-                forceTLS: true
-            });
+        // ===== REAL-TIME LARAVEL ECHO INTEGRATION =====
+        // Make sure Echo is loaded (add @@vite directive if not already present)
+        if (typeof window.Echo !== 'undefined') {
+            try {
+                console.log('✓ Laravel Echo available, subscribing to channel...');
+                
+                // Subscribe to the current user's private channel using Laravel Echo
+                const channel = window.Echo.private('user.{{ auth()->id() }}');
 
-            // Subscribe to the current user's private channel
-            const channel = pusher.subscribe('private-user.{{ auth()->id() }}');
+                console.log('✓ Subscribed to private channel: user.{{ auth()->id() }}');
 
-            console.log('Pusher initialized for user {{ auth()->id() }}');
+                // Listen for new messages
+                channel.listen('.message.sent', function(data) {
+                    console.log('✓ Real-time message received:', data);
 
-            // Listen for new messages
-            channel.bind('message.sent', function(data) {
-                console.log('Real-time message received:', data);
+                    // Only process if we're viewing the conversation with the sender
+                    if (currentUserId && parseInt(data.sender_id) === parseInt(currentUserId)) {
+                        // Append the message to the conversation
+                        const messageDiv = document.createElement('div');
+                        messageDiv.className = 'd-flex justify-content-start mb-3';
+                        messageDiv.setAttribute('data-message-id', data.id);
+                        
+                        let attachmentHtml = '';
+                        if (data.attachment_path) {
+                            const fileIcon = getFileIcon(data.attachment_type);
+                            const fileSize = formatFileSize(data.attachment_size);
+                            attachmentHtml = `
+                                <div class="mt-2">
+                                    <a href="/student/messages/${data.id}/download" class="btn btn-sm btn-outline-primary">
+                                        <i class="ti ti-${fileIcon} me-1"></i>
+                                        ${escapeHtml(data.attachment_name)}
+                                        <span class="badge bg-secondary ms-2">${fileSize}</span>
+                                    </a>
+                                </div>
+                            `;
+                        }
 
-                // Only process if we're viewing the conversation with the sender
-                if (currentUserId && parseInt(data.sender_id) === parseInt(currentUserId)) {
-                    // Append the message to the conversation
-                    const messageDiv = document.createElement('div');
-                    messageDiv.className = 'd-flex justify-content-start mb-3';
-                    messageDiv.setAttribute('data-message-id', data.id);
-                    
-                    let attachmentHtml = '';
-                    if (data.attachment_path) {
-                        const fileIcon = getFileIcon(data.attachment_type);
-                        const fileSize = formatFileSize(data.attachment_size);
-                        attachmentHtml = `
-                            <div class="mt-2">
-                                <a href="/student/messages/${data.id}/download" class="btn btn-sm btn-outline-primary">
-                                    <i class="ti ti-${fileIcon} me-1"></i>
-                                    ${escapeHtml(data.attachment_name)}
-                                    <span class="badge bg-secondary ms-2">${fileSize}</span>
-                                </a>
+                        messageDiv.innerHTML = `
+                            <div class="message-bubble bg-light p-3 rounded shadow-sm" style="max-width:70%">
+                                <div class="mb-1"><strong>${escapeHtml(data.sender_name || 'User')}</strong></div>
+                                <div>${escapeHtml(data.body)}</div>
+                                ${attachmentHtml}
+                                <div class="small text-muted mt-2">${formatDate(data.created_at)}</div>
                             </div>
                         `;
+
+                        threadMessages.appendChild(messageDiv);
+                        threadMessages.scrollTop = threadMessages.scrollHeight;
+
+                        // Update lastMessageId
+                        if (data.id > lastMessageId) {
+                            lastMessageId = data.id;
+                        }
+
+                        // Show notification if not in focus
+                        if (document.hidden) {
+                            showNotification('New message from ' + (data.sender_name || 'User'));
+                        }
                     }
 
-                    messageDiv.innerHTML = `
-                        <div class="message-bubble bg-light p-3 rounded shadow-sm" style="max-width:70%">
-                            <div class="mb-1"><strong>${escapeHtml(data.sender_name || 'User')}</strong></div>
-                            <div>${escapeHtml(data.body)}</div>
-                            ${attachmentHtml}
-                            <div class="small text-muted mt-2">${formatDate(data.created_at)}</div>
-                        </div>
-                    `;
+                    // Update conversation list (add sender if not exists)
+                    updateConversationList(data);
+                });
 
-                    threadMessages.appendChild(messageDiv);
-                    threadMessages.scrollTop = threadMessages.scrollHeight;
-
-                    // Update lastMessageId
-                    if (data.id > lastMessageId) {
-                        lastMessageId = data.id;
+                // Listen for typing events
+                channel.listen('.user.typing', function(data) {
+                    console.log('✓ Typing event received:', data);
+                    
+                    // Only show if typing from current conversation partner
+                    if (currentUserId && parseInt(data.user_id) === parseInt(currentUserId)) {
+                        if (data.is_typing) {
+                            showTypingIndicator(data.user_name);
+                        } else {
+                            hideTypingIndicator();
+                        }
                     }
+                });
 
-                    // Show notification if not in focus
-                    if (document.hidden) {
-                        showNotification('New message from ' + (data.sender_name || 'User'));
-                    }
-                }
+                // Handle connection state
+                console.log('✓ Echo real-time messaging is active');
 
-                // Update conversation list (add sender if not exists)
-                updateConversationList(data);
-            });
-
-            // Handle connection state
-            pusher.connection.bind('connected', function() {
-                console.log('✓ Pusher connected successfully');
-            });
-
-            pusher.connection.bind('error', function(err) {
-                console.error('Pusher connection error:', err);
-            });
-
-        } catch (error) {
-            console.error('Failed to initialize Pusher:', error);
-            console.log('Real-time messaging will not work. Please check your Pusher credentials.');
+            } catch (error) {
+                console.error('❌ Failed to initialize Laravel Echo:', error);
+                console.log('⚠️ Falling back to polling...');
+            }
+        } else {
+            console.warn('⚠️ Laravel Echo not available. Make sure @@vite directive is added and npm run dev is running.');
+            console.log('⚠️ Messages will use polling instead of real-time updates.');
         }
 
         // Helper function to update conversation list
@@ -733,7 +935,7 @@
     })();
 </script>
 
-<!-- Pusher JavaScript Library -->
-<script src="https://js.pusher.com/8.2.0/pusher.min.js"></script>
+<!-- Load Laravel Echo via Vite for real-time messaging -->
+@vite(['resources/js/app.js'])
 
 @endpush

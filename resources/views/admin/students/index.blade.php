@@ -102,6 +102,63 @@
         <!-- /No of Student -->
 
     </div>
+    
+    <!-- Filters -->
+    <div class="card">
+        <div class="card-body">
+            <form method="GET" action="{{ route('admin.students.index') }}" class="row g-3" id="filterForm">
+                <div class="col-md-3">
+                    <label for="status" class="form-label">Status</label>
+                    <select name="status" id="status" class="form-select">
+                        <option value="">All Status</option>
+                        <option value="active" {{ request('status') == 'active' ? 'selected' : '' }}>Active</option>
+                        <option value="inactive" {{ request('status') == 'inactive' ? 'selected' : '' }}>Inactive</option>
+                        <option value="dropped" {{ request('status') == 'dropped' ? 'selected' : '' }}>Dropped</option>
+                        <option value="graduated" {{ request('status') == 'graduated' ? 'selected' : '' }}>Graduated</option>
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <label for="strand" class="form-label">Strand/Track</label>
+                    <select name="strand" id="strand" class="form-select">
+                        <option value="">All Strands</option>
+                        @foreach($strands as $strand)
+                            <option value="{{ $strand->id }}" {{ request('strand') == $strand->id ? 'selected' : '' }}>
+                                {{ $strand->name }} ({{ $strand->code }})
+                            </option>
+                        @endforeach
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <label for="grade_level" class="form-label">Grade Level</label>
+                    <select name="grade_level" id="grade_level" class="form-select">
+                        <option value="">All Grades</option>
+                        <option value="11" {{ request('grade_level') == '11' ? 'selected' : '' }}>Grade 11</option>
+                        <option value="12" {{ request('grade_level') == '12' ? 'selected' : '' }}>Grade 12</option>
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <label for="section" class="form-label">Section</label>
+                    <select name="section" id="section" class="form-select">
+                        <option value="">All Sections</option>
+                        @foreach($sections as $section)
+                            <option value="{{ $section->id }}" {{ request('section') == $section->id ? 'selected' : '' }}>
+                                {{ $section->name }}
+                            </option>
+                        @endforeach
+                    </select>
+                </div>
+                <div class="col-md-2 d-flex align-items-end">
+                    <button type="submit" class="btn btn-primary me-2">
+                        <i class="ti ti-filter me-1"></i>Filter
+                    </button>
+                    <a href="{{ route('admin.students.index') }}" class="btn btn-secondary">
+                        <i class="ti ti-x me-1"></i>Clear
+                    </a>
+                </div>
+            </form>
+        </div>
+    </div>
+    
     <div class="card">
         <div class="card-body p-0">
             <div class="custom-datatable-filter table-responsive">
@@ -111,6 +168,8 @@
                             <th>Student</th>
                             <th>Guardian</th>
                             <th>Program</th>
+                            <th>Grade Level</th>
+                            <th>Section</th>
                             <th>Status</th>
                             <th></th>
                         </tr>
@@ -154,6 +213,34 @@
                                 </div>
                             </td>
                             <td>
+                                <div class="ms-2">
+                                    @if($student->grade_level)
+                                        <span class="badge badge-primary badge-xs">
+                                            {{ $student->grade_level }}
+                                        </span>
+                                    @else
+                                        <span class="text-muted fs-12">-</span>
+                                    @endif
+                                </div>
+                            </td>
+                            <td>
+                                <div class="ms-2">
+                                    @php
+                                        $activeEnrollment = $student->studentEnrollments->first();
+                                        $section = $activeEnrollment && $activeEnrollment->academicYearStrandSection 
+                                            ? $activeEnrollment->academicYearStrandSection->section 
+                                            : null;
+                                    @endphp
+                                    @if($section)
+                                        <span class="badge badge-info badge-xs">
+                                            {{ $section->name }}
+                                        </span>
+                                    @else
+                                        <span class="text-muted fs-12">Not Assigned</span>
+                                    @endif
+                                </div>
+                            </td>
+                            <td>
                                 <span class="badge 
                                     @if($student->status == 'active') badge-success
                                     @elseif($student->status == 'graduated') badge-primary
@@ -166,6 +253,7 @@
                             </td>
                             <td>
                                 <div class="action-icon d-inline-flex">
+                                    <a href="{{ route('admin.students.show', $student) }}" class="me-2"><i class="ti ti-eye"></i></a>
                                     <a href="{{ route('admin.students.edit', $student) }}" class="me-2"><i class="ti ti-edit"></i></a>
                                     <form action="{{ route('admin.students.destroy', $student) }}" method="POST" onsubmit="return confirm('Delete this student?');">
                                         @csrf
@@ -182,4 +270,21 @@
         </div>
     </div>
 </div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const strandSelect = document.getElementById('strand');
+    const gradeLevelSelect = document.getElementById('grade_level');
+    const filterForm = document.getElementById('filterForm');
+    
+    // Auto-submit form when strand or grade level changes to update section dropdown
+    strandSelect.addEventListener('change', function() {
+        filterForm.submit();
+    });
+    
+    gradeLevelSelect.addEventListener('change', function() {
+        filterForm.submit();
+    });
+});
+</script>
 @endsection

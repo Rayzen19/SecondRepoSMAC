@@ -31,7 +31,12 @@
                     
                     <h4 class="fw-bold mb-1">{{ $admin->name }}</h4>
                     <p class="text-muted mb-3">
-                        <i class="ti ti-shield-check me-1"></i>Administrator
+                        <i class="ti ti-shield-check me-1"></i>
+                        @if($admin->type === 'co-admin')
+                            Co-Administrator
+                        @else
+                            Administrator
+                        @endif
                     </p>
                     <p class="mb-4">
                         <i class="ti ti-mail me-1"></i>{{ $admin->email }}
@@ -74,7 +79,13 @@
                                 </tr>
                                 <tr>
                                     <td class="fw-bold">Account Type:</td>
-                                    <td><span class="badge bg-success">Administrator</span></td>
+                                    <td>
+                                        @if($admin->type === 'co-admin')
+                                            <span class="badge bg-info">Co-Administrator</span>
+                                        @else
+                                            <span class="badge bg-success">Administrator</span>
+                                        @endif
+                                    </td>
                                 </tr>
                                 <tr>
                                     <td class="fw-bold">Member Since:</td>

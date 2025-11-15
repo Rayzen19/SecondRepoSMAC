@@ -53,7 +53,7 @@
                         </div>
                         <div class="col-6">
                             <div class="p-3 border rounded-3 text-center">
-                                <div class="text-muted small">Subjects</div>
+                                <div class="text-muted small">Total Subjects</div>
                                 <div class="fs-4 fw-bold">{{ $totalSubjects ?? 0 }}</div>
                             </div>
                         </div>
@@ -102,6 +102,174 @@
             <div class="small text-muted mt-3">Last Updated: {{ $student->updated_at }}</div>
         </div>
     </div>
+
+    <!-- Strand-Specific Subjects -->
+    @if($strandSubjects->isNotEmpty())
+    <div class="card mt-4">
+        <div class="card-header bg-info text-white d-flex align-items-center justify-content-between">
+            <h5 class="mb-0 text-white">
+                <i class="ti ti-books me-2"></i>Strand Subjects ({{ $student->program }})
+            </h5>
+            <span class="badge bg-white text-info">{{ $strandSubjects->count() }} Subject(s)</span>
+        </div>
+        <div class="card-body">
+            <div class="alert alert-info mb-3">
+                <i class="ti ti-info-circle me-2"></i>
+                These are all the subjects available for the <strong>{{ $student->program }}</strong> strand.
+            </div>
+            <div class="subjects-list" style="max-height: 400px; overflow-y: auto;">
+                <div class="row g-2">
+                    @foreach($strandSubjects as $subject)
+                        <div class="col-12">
+                            <div class="border rounded p-3" style="background-color: #f8f9fa;">
+                                <div class="d-flex align-items-start justify-content-between">
+                                    <div class="flex-grow-1">
+                                        <h6 class="mb-1">
+                                            <i class="ti ti-book me-1 text-primary"></i>
+                                            <strong>{{ $subject['name'] }}</strong>
+                                        </h6>
+                                        <div class="d-flex flex-wrap gap-2 align-items-center">
+                                            @if($subject['code'])
+                                                <span class="badge bg-secondary">{{ $subject['code'] }}</span>
+                                            @endif
+                                            @if($subject['hours'])
+                                                <span class="badge bg-light text-dark">
+                                                    <i class="ti ti-clock me-1"></i>{{ $subject['hours'] }} hrs
+                                                </span>
+                                            @endif
+                                            @if($subject['units'])
+                                                <span class="badge bg-light text-dark">
+                                                    <i class="ti ti-medal me-1"></i>{{ $subject['units'] }} units
+                                                </span>
+                                            @endif
+                                            @if($subject['type'])
+                                                <span class="badge bg-primary">{{ ucfirst($subject['type']) }}</span>
+                                            @endif
+                                            @if($subject['semester'])
+                                                <span class="badge bg-success">{{ ucfirst($subject['semester']) }}</span>
+                                            @endif
+                                        </div>
+                                    </div>
+                                    <div class="ms-3">
+                                        <form action="{{ route('admin.subjects.destroy', $subject['id']) }}" method="POST" class="d-inline" onsubmit="return confirm('Are you sure you want to delete this subject?');">
+                                            @csrf
+                                            @method('DELETE')
+                                            <button type="submit" class="btn btn-sm btn-danger" title="Delete Subject">
+                                                <i class="ti ti-trash"></i>
+                                            </button>
+                                        </form>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    @endforeach
+                </div>
+            </div>
+        </div>
+    </div>
+    @endif
+
+    <!-- Current Active Subjects -->
+    @php
+        $activeEnrollment = null;
+        $activeSubjects = collect();
+        foreach($academicYears as $year) {
+            if($year->is_active && isset($enrollments[$year->id])) {
+                $yearEnrollments = $enrollments[$year->id];
+                foreach($yearEnrollments as $enrollment) {
+                    if($enrollment->status === 'enrolled') {
+                        $activeEnrollment = $enrollment;
+                        $activeSubjects = $activeEnrollment->subjectEnrollments ?? collect();
+                        break 2;
+                    }
+                }
+            }
+        }
+    @endphp
+
+    @if($activeEnrollment)
+    <div class="card mt-4">
+        <div class="card-header bg-primary text-white d-flex align-items-center justify-content-between">
+            <h5 class="mb-0 text-white">Current Subjects ({{ $activeEnrollment->academicYear->display_name ?? $activeEnrollment->academicYear->name }})</h5>
+            <span class="badge bg-success">Active Enrollment</span>
+        </div>
+        <div class="card-body">
+            <div class="row mb-3">
+                <div class="col-md-4">
+                    <div class="d-flex align-items-center gap-2">
+                        <span class="text-muted small">Strand:</span>
+                        <span class="fw-semibold text-primary">{{ data_get($activeEnrollment, 'strand.name', 'N/A') }}</span>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="d-flex align-items-center gap-2">
+                        <span class="text-muted small">Grade Level:</span>
+                        <span class="fw-semibold">{{ $student->grade_level ?? 'N/A' }}</span>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="d-flex align-items-center gap-2">
+                        <span class="text-muted small">Section:</span>
+                        <span class="fw-semibold">{{ data_get($activeEnrollment, 'academicYearStrandSection.section.name', 'N/A') }}</span>
+                    </div>
+                </div>
+            </div>
+            
+            @if($activeSubjects->isNotEmpty())
+                <div class="alert alert-info mb-3">
+                    <i class="ti ti-info-circle me-2"></i>
+                    <strong>{{ $activeSubjects->count() }}</strong> subject(s) enrolled for this semester
+                </div>
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle">
+                        <thead class="table-light">
+                            <tr>
+                                <th style="width:40px">#</th>
+                                <th>Subject</th>
+                                <th>Subject Code</th>
+                                <th>Teacher</th>
+                                <th class="text-center">Records</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach($activeSubjects as $idx => $se)
+                            <tr>
+                                <td>{{ $idx + 1 }}</td>
+                                <td>
+                                    <div class="fw-semibold">{{ data_get($se, 'academicYearStrandSubject.subject.name', 'N/A') }}</div>
+                                </td>
+                                <td>
+                                    <code class="text-muted">{{ data_get($se, 'academicYearStrandSubject.subject.code', 'N/A') }}</code>
+                                </td>
+                                <td>
+                                    @if(data_get($se, 'academicYearStrandSubject.teacher'))
+                                        {{ data_get($se, 'academicYearStrandSubject.teacher.last_name') }}, {{ data_get($se, 'academicYearStrandSubject.teacher.first_name') }}
+                                    @else
+                                        <span class="text-muted">Not Assigned</span>
+                                    @endif
+                                </td>
+                                <td class="text-center">
+                                    @php $recordCount = ($se->subjectRecords ?? collect())->count(); @endphp
+                                    @if($recordCount > 0)
+                                        <span class="badge bg-info">{{ $recordCount }} record{{ $recordCount > 1 ? 's' : '' }}</span>
+                                    @else
+                                        <span class="badge bg-light text-muted">No records</span>
+                                    @endif
+                                </td>
+                            </tr>
+                            @endforeach
+                        </tbody>
+                    </table>
+                </div>
+            @else
+                <div class="alert alert-warning">
+                    <i class="ti ti-alert-triangle me-2"></i>
+                    No subjects are currently enrolled for this student. Subjects may need to be assigned to this section.
+                </div>
+            @endif
+        </div>
+    </div>
+    @endif
 
     <!-- Enrollments and Subjects by Academic Year -->
     <div class="card mt-4">

@@ -211,22 +211,37 @@
                 <div class="modal-body">
                     <div class="mb-3">
                         <label class="form-label">Current Password</label>
-                        <input type="password" class="form-control @error('current_password') is-invalid @enderror" name="current_password" required>
+                        <div class="position-relative">
+                            <input type="password" class="form-control @error('current_password') is-invalid @enderror" name="current_password" id="guardian_current_password" required>
+                            <button type="button" class="btn btn-sm position-absolute end-0 top-50 translate-middle-y" onclick="togglePasswordVisibility('guardian_current_password', this)" style="border: none; background: transparent; z-index: 10;">
+                                <i class="fa fa-eye"></i>
+                            </button>
+                        </div>
                         @error('current_password')
-                            <div class="invalid-feedback">{{ $message }}</div>
+                            <div class="invalid-feedback d-block">{{ $message }}</div>
                         @enderror
                     </div>
                     <div class="mb-3">
                         <label class="form-label">New Password</label>
-                        <input type="password" class="form-control @error('new_password') is-invalid @enderror" name="new_password" required minlength="12">
+                        <div class="position-relative">
+                            <input type="password" class="form-control @error('new_password') is-invalid @enderror" name="new_password" id="guardian_new_password" required minlength="12">
+                            <button type="button" class="btn btn-sm position-absolute end-0 top-50 translate-middle-y" onclick="togglePasswordVisibility('guardian_new_password', this)" style="border: none; background: transparent; z-index: 10;">
+                                <i class="fa fa-eye"></i>
+                            </button>
+                        </div>
                         @error('new_password')
-                            <div class="invalid-feedback">{{ $message }}</div>
+                            <div class="invalid-feedback d-block">{{ $message }}</div>
                         @enderror
                         <small class="form-text text-muted">Minimum 12 characters (14+ recommended)</small>
                     </div>
                     <div class="mb-3">
                         <label class="form-label">Confirm New Password</label>
-                        <input type="password" class="form-control" name="new_password_confirmation" required minlength="12">
+                        <div class="position-relative">
+                            <input type="password" class="form-control" name="new_password_confirmation" id="guardian_new_password_confirmation" required minlength="12">
+                            <button type="button" class="btn btn-sm position-absolute end-0 top-50 translate-middle-y" onclick="togglePasswordVisibility('guardian_new_password_confirmation', this)" style="border: none; background: transparent; z-index: 10;">
+                                <i class="fa fa-eye"></i>
+                            </button>
+                        </div>
                     </div>
                     <div class="alert alert-info mb-0">
                         <i class="ti ti-info-circle me-1"></i>
@@ -266,4 +281,23 @@
     font-size: 14px;
 }
 </style>
+
+@push('scripts')
+<script>
+function togglePasswordVisibility(inputId, button) {
+    const input = document.getElementById(inputId);
+    const icon = button.querySelector('i');
+    
+    if (input.type === 'password') {
+        input.type = 'text';
+        icon.classList.remove('fa-eye');
+        icon.classList.add('fa-eye-slash');
+    } else {
+        input.type = 'password';
+        icon.classList.remove('fa-eye-slash');
+        icon.classList.add('fa-eye');
+    }
+}
+</script>
+@endpush
 @endsection

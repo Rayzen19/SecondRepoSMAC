@@ -51,6 +51,12 @@
                                         <i class="ti ti-user"></i><span>My Profile</span>
                                     </a>
                                 </li>
+                                @php
+                                    $teacherUser = auth('teacher')->user();
+                                    $teacherModel = $teacherUser ? \App\Models\Teacher::find($teacherUser->user_pk_id) : null;
+                                    $isActive = $teacherModel && $teacherModel->status === 'active';
+                                @endphp
+                                @if($isActive)
                                 <li class="{{ $routeIs('teacher.dashboard') ? 'active' : '' }}">
                                     <a class="{{ $routeIs('teacher.dashboard') ? 'active' : '' }}" href="{{ route('teacher.dashboard') }}">
                                         <i class="ti ti-layout-navbar"></i><span>Dashboard</span>
@@ -67,14 +73,19 @@
                                     </a>
                                 </li>
 
-                                <li class="submenu {{ $routeIs('teacher.students.*') ? 'active subdrop' : '' }}">
-                                    <a href="javascript:void(0);" class="{{ $routeIs('teacher.students.*') ? 'active subdrop' : '' }}">
+                                <li class="submenu {{ $routeIs('teacher.students.*') || $routeIs('teacher.scores.index') ? 'active subdrop' : '' }}">
+                                    <a href="javascript:void(0);" class="{{ $routeIs('teacher.students.*') || $routeIs('teacher.scores.index') ? 'active subdrop' : '' }}">
                                         <i class="ti ti-users"></i><span>Student Lists</span><span class="menu-arrow"></span>
                                     </a>
-                                    <ul style="{{ $routeIs('teacher.students.*') ? 'display: block;' : 'display: none;' }}">
+                                    <ul style="{{ $routeIs('teacher.students.*') || $routeIs('teacher.scores.index') ? 'display: block;' : 'display: none;' }}">
                                         <li>
-                                            <a href="{{ route('teacher.students.all-sections') }}" class="{{ $routeIs('teacher.students.all-sections') ? 'active' : '' }}">
-                                                <i class="ti ti-building"></i><span>All Sections</span>
+                                            <a href="{{ route('teacher.students.index') }}" class="{{ $routeIs('teacher.students.index') ? 'active' : '' }}">
+                                                <i class="ti ti-list"></i><span>My Students</span>
+                                            </a>
+                                        </li>
+                                        <li class="{{ $routeIs('teacher.scores.index') ? 'active' : '' }}" style="margin-top: 8px;">
+                                            <a class="{{ $routeIs('teacher.scores.index') ? 'active' : '' }}" href="{{ route('teacher.scores.index') }}">
+                                                <i class="ti ti-list-numbers"></i><span>Student Scores</span>
                                             </a>
                                         </li>
                                         <li class="menu-title" style="margin-top: 10px; padding-left: 15px; font-size: 11px; color: #999;">
@@ -111,6 +122,15 @@
                                         <i class="ti ti-mail"></i><span>Messages</span>
                                     </a>
                                 </li>
+                                @else
+                                <li>
+                                    <div class="alert alert-warning mx-3 my-2" style="font-size: 0.85rem; padding: 0.75rem;">
+                                        <i class="ti ti-lock me-1"></i>
+                                        <strong>Account {{ $teacherModel ? ucfirst($teacherModel->status) : 'Inactive' }}</strong><br>
+                                        <small>Limited access - Profile only</small>
+                                    </div>
+                                </li>
+                                @endif
 
                                 <li>
                                     <form action="{{ route('teacher.auth.logout') }}" method="POST" class="d-inline">

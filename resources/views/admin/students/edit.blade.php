@@ -141,9 +141,9 @@
                             <div class="mb-3">
                                 <label class="form-label">Grade Level <span class="text-danger">*</span></label>
                                 <select name="grade_level" class="form-select" required>
-                                    <option value="" disabled {{ old('grade_level', $student->academic_year) ? '' : 'selected' }}>Select grade level</option>
-                                    <option value="Grade 11" {{ old('grade_level', $student->academic_year) == 'Grade 11' ? 'selected' : '' }}>Grade 11</option>
-                                    <option value="Grade 12" {{ old('grade_level', $student->academic_year) == 'Grade 12' ? 'selected' : '' }}>Grade 12</option>
+                                    <option value="" disabled {{ old('grade_level', $student->grade_level) ? '' : 'selected' }}>Select grade level</option>
+                                    <option value="Grade 11" {{ old('grade_level', $student->grade_level) == 'Grade 11' ? 'selected' : '' }}>Grade 11</option>
+                                    <option value="Grade 12" {{ old('grade_level', $student->grade_level) == 'Grade 12' ? 'selected' : '' }}>Grade 12</option>
                                 </select>
                                 @error('grade_level')<div class="text-danger small">{{ $message }}</div>@enderror
                             </div>
@@ -188,7 +188,7 @@
                             </div>
                         </div>
                     </div>
-                    <a href="{{ route('admin.students.show', $student) }}" class="btn btn-outline-light border me-2">Cancel</a>
+                    <a href="{{ route('admin.students.index') }}" class="btn btn-outline-light border me-2">Cancel</a>
                     <button type="submit" class="btn btn-primary">Update</button>
                 </div>
             </form>

@@ -64,12 +64,7 @@
                                     <a href="{{ route('admin.teachers.show', $teacher) }}" class="me-2" title="View"><i class="ti ti-eye"></i></a>
                                     <a href="{{ route('admin.teachers.edit', $teacher) }}" class="me-2" title="Edit"><i class="ti ti-edit"></i></a>
                                     <a href="{{ route('admin.teachers.assignments', $teacher) }}" class="me-2" title="Assignment"><i class="ti ti-clipboard-text"></i></a>
-
-                                    <form method="POST" action="{{ route('admin.teachers.destroy', $teacher) }}" onsubmit="return confirm('Are you sure you want to delete this teacher? This will also remove their login account.');">
-                                        @csrf
-                                        @method('DELETE')
-                                        <button type="submit" class="btn btn-sm btn-link text-danger p-0" title="Delete"><i class="ti ti-trash"></i></button>
-                                    </form>
+                                    <a href="javascript:void(0);" class="text-danger" title="Delete" onclick="openDeleteModal('{{ route('admin.teachers.destroy', $teacher) }}', '{{ $teacher->first_name }} {{ $teacher->last_name }}')"><i class="ti ti-trash"></i></a>
                                 </div>
                             </td>
                         </tr>
@@ -80,4 +75,38 @@
         </div>
     </div>
 </div>
+
+<!-- Delete Confirmation Modal -->
+<div class="modal fade" id="deleteModal" tabindex="-1" aria-labelledby="deleteModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header border-0">
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body text-center pb-4">
+                <h5 class="mb-3" id="deleteModalLabel">Are you sure you want to delete this teacher? This will also remove their login account.</h5>
+                <form id="deleteForm" method="POST" action="">
+                    @csrf
+                    @method('DELETE')
+                    <div class="d-flex justify-content-center gap-2">
+                        <button type="submit" class="btn btn-warning px-4">OK</button>
+                        <button type="button" class="btn btn-secondary px-4" data-bs-dismiss="modal">Cancel</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
 @endsection
+
+@push('scripts')
+<script>
+function openDeleteModal(deleteUrl, teacherName) {
+    const deleteForm = document.getElementById('deleteForm');
+    deleteForm.action = deleteUrl;
+    
+    const modal = new bootstrap.Modal(document.getElementById('deleteModal'));
+    modal.show();
+}
+</script>
+@endpush

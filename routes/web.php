@@ -4,21 +4,38 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Admin\AuthController;
 use App\Models\Announcement;
 
+// Emergency session fix route - use this if you get 419 errors
+Route::get('/fix-session', function () {
+    session()->invalidate();
+    session()->regenerateToken();
+    session()->put('_token', csrf_token());
+    
+    // Determine where to redirect based on referrer or default to admin login
+    $redirect = request()->query('redirect', 'admin');
+    $routes = [
+        'admin' => '/admin/login',
+        'teacher' => '/teacher/login',
+        'student' => '/student/login',
+        'guardian' => '/guardian/login',
+    ];
+    
+    $destination = $routes[$redirect] ?? '/admin/login';
+    return redirect($destination)->with('status', 'Session refreshed! You can now login.');
+});
+
+// CSRF token refresh route for AJAX requests
+Route::get('/csrf-token', function () {
+    return response()->json(['token' => csrf_token()]);
+})->middleware('web');
+
 Route::get('/', function () {
     $announcements = Announcement::active()->latest()->take(3)->get();
     return view('welcome', compact('announcements'));
 });
 
-// Login selection page - shows Student, Guardian, and Admin options
-Route::get('/login-select', function () {
-    return view('login-select');
-})->name('login.select');
-
-// Provide a generic 'login' route name used by the framework's guest redirect
-// This redirects to the login selection page
-Route::get('/login', function () {
-    return redirect()->route('login.select');
-})->name('login');
+// Unified login page - automatically detects user role
+Route::get('/login', [App\Http\Controllers\UnifiedLoginController::class, 'showLoginForm'])->name('login');
+Route::post('/login', [App\Http\Controllers\UnifiedLoginController::class, 'login'])->name('login.submit');
 
 Route::group(['prefix' => 'admin'], function () {
     // Login routes - accessible to everyone except already logged-in admins
@@ -31,7 +48,7 @@ Route::group(['prefix' => 'admin'], function () {
     Route::get('reset-password', [AuthController::class, 'showResetPassword'])->name('admin.auth.resetForm');
     Route::post('reset-password', [AuthController::class, 'resetWithOtp'])->name('admin.auth.resetProcess');
 
-    Route::middleware(['auth:admin'])->group(function () {
+    Route::middleware(['auth:admin,co-admin'])->group(function () {
     // Logout (only when authenticated) - use POST to match the sidebar form
     Route::post('/logout', [App\Http\Controllers\Admin\LoginController::class, 'logout'])->name('admin.auth.logout');
 
@@ -51,6 +68,7 @@ Route::group(['prefix' => 'admin'], function () {
         Route::get('/students/create', [App\Http\Controllers\Admin\StudentController::class, 'create'])->name('admin.students.create');
         Route::post('/students/store', [App\Http\Controllers\Admin\StudentController::class, 'store'])->name('admin.students.store');
     Route::post('/students/{student}/generate-password', [App\Http\Controllers\Admin\StudentController::class, 'generatePassword'])->name('admin.students.generate-password');
+        Route::post('/students/{student}/add-subject', [App\Http\Controllers\Admin\StudentController::class, 'addSubject'])->name('admin.students.add-subject');
         Route::get('/students/{student}', [App\Http\Controllers\Admin\StudentController::class, 'show'])->name('admin.students.show');
         Route::get('/students/{student}/enrollments/{studentEnrollment}/records/{subjectRecord}/export', [App\Http\Controllers\Admin\StudentController::class, 'exportSubjectResults'])->name('admin.students.export-subject-results');
         Route::get('/students/{student}/edit', [App\Http\Controllers\Admin\StudentController::class, 'edit'])->name('admin.students.edit');
@@ -128,6 +146,24 @@ Route::group(['prefix' => 'admin'], function () {
         Route::get('/teachers/{teacher}/years/{academicYear}/sections/{sectionAssignment}/students', [App\Http\Controllers\Admin\TeacherController::class, 'sectionStudents'])->name('admin.teachers.section-students');
         Route::get('/teachers/{teacher}/years/{academicYear}/sections/{sectionAssignment}/students/export', [App\Http\Controllers\Admin\TeacherController::class, 'exportSectionStudents'])->name('admin.teachers.section-students.export');
 
+        // Co-Admins (only accessible by main admin)
+        Route::middleware(['auth:admin'])->group(function () {
+            Route::get('/co-admins', [App\Http\Controllers\Admin\CoAdminController::class, 'index'])->name('admin.co-admins.index');
+            Route::get('/co-admins/create', [App\Http\Controllers\Admin\CoAdminController::class, 'create'])->name('admin.co-admins.create');
+            Route::post('/co-admins', [App\Http\Controllers\Admin\CoAdminController::class, 'store'])->name('admin.co-admins.store');
+            Route::get('/co-admins/{coAdmin}', [App\Http\Controllers\Admin\CoAdminController::class, 'show'])->name('admin.co-admins.show');
+            Route::get('/co-admins/{coAdmin}/edit', [App\Http\Controllers\Admin\CoAdminController::class, 'edit'])->name('admin.co-admins.edit');
+            Route::put('/co-admins/{coAdmin}', [App\Http\Controllers\Admin\CoAdminController::class, 'update'])->name('admin.co-admins.update');
+            Route::delete('/co-admins/{coAdmin}', [App\Http\Controllers\Admin\CoAdminController::class, 'destroy'])->name('admin.co-admins.destroy');
+        });
+
+        // Archive
+        Route::get('/archive', [App\Http\Controllers\Admin\ArchiveController::class, 'index'])->name('admin.archive.index');
+        Route::post('/archive/teachers/{teacher}/restore', [App\Http\Controllers\Admin\ArchiveController::class, 'restoreTeacher'])->name('admin.archive.teachers.restore');
+        Route::post('/archive/students/{student}/restore', [App\Http\Controllers\Admin\ArchiveController::class, 'restoreStudent'])->name('admin.archive.students.restore');
+        Route::delete('/archive/teachers/{teacher}', [App\Http\Controllers\Admin\ArchiveController::class, 'deleteTeacher'])->name('admin.archive.teachers.delete');
+        Route::delete('/archive/students/{student}', [App\Http\Controllers\Admin\ArchiveController::class, 'deleteStudent'])->name('admin.archive.students.delete');
+
         // Guardians
         Route::get('/guardians', [App\Http\Controllers\Admin\GuardianController::class, 'index'])->name('admin.guardians.index');
         Route::get('/guardians/create', [App\Http\Controllers\Admin\GuardianController::class, 'create'])->name('admin.guardians.create');
@@ -143,6 +179,7 @@ Route::group(['prefix' => 'admin'], function () {
         Route::post('/sections', [App\Http\Controllers\Admin\SectionController::class, 'store'])->name('admin.sections.store');
         Route::get('/sections/{section}/edit', [App\Http\Controllers\Admin\SectionController::class, 'edit'])->name('admin.sections.edit');
         Route::put('/sections/{section}', [App\Http\Controllers\Admin\SectionController::class, 'update'])->name('admin.sections.update');
+        Route::delete('/sections/{section}', [App\Http\Controllers\Admin\SectionController::class, 'destroy'])->name('admin.sections.destroy');
 
         // Assessment Types
         Route::get('/assessment-types', [App\Http\Controllers\Admin\AssessmentTypeController::class, 'index'])->name('admin.assessment-types.index');
@@ -202,6 +239,15 @@ Route::group(['prefix' => 'admin'], function () {
         Route::get('/messages/{message}/download', [App\Http\Controllers\Admin\MessageController::class, 'downloadAttachment'])->name('admin.messages.download');
         Route::delete('/messages/{message}/unsend', [App\Http\Controllers\Admin\MessageController::class, 'unsendMessage'])->name('admin.messages.unsend');
         Route::get('/api/all-users', [App\Http\Controllers\Admin\MessageController::class, 'getAllUsers'])->name('admin.api.all-users');
+        Route::get('/api/unread-count', [App\Http\Controllers\Admin\MessageController::class, 'getUnreadCount'])->name('admin.api.unread-count');
+        Route::get('/api/unread-counts-by-partner', [App\Http\Controllers\Admin\MessageController::class, 'getUnreadCountsByPartner'])->name('admin.api.unread-counts-by-partner');
+
+        // Message Reports Management
+        Route::get('/message-reports', [App\Http\Controllers\Admin\MessageReportController::class, 'index'])->name('admin.message-reports.index');
+        Route::get('/message-reports/{report}', [App\Http\Controllers\Admin\MessageReportController::class, 'show'])->name('admin.message-reports.show');
+        Route::post('/message-reports/{report}/status', [App\Http\Controllers\Admin\MessageReportController::class, 'updateStatus'])->name('admin.message-reports.update-status');
+        Route::delete('/message-reports/{report}/delete-message', [App\Http\Controllers\Admin\MessageReportController::class, 'deleteMessage'])->name('admin.message-reports.delete-message');
+        Route::post('/message-reports/{report}/dismiss', [App\Http\Controllers\Admin\MessageReportController::class, 'dismiss'])->name('admin.message-reports.dismiss');
 
         // Assigning List
         Route::get('/assigning-list', [App\Http\Controllers\Admin\AssigningListController::class, 'index'])->name('admin.assigning-list.index');
@@ -219,6 +265,8 @@ Route::group(['prefix' => 'admin'], function () {
         Route::post('/section-advisers/get-subjects', [App\Http\Controllers\Admin\SectionAdviserController::class, 'getSubjects'])->name('admin.section-advisers.get-subjects');
         Route::post('/section-advisers/subject-teachers', [App\Http\Controllers\Admin\SectionAdviserController::class, 'subjectTeachers'])->name('admin.section-advisers.subject-teachers');
         Route::post('/section-advisers/save-subject-teacher', [App\Http\Controllers\Admin\SectionAdviserController::class, 'saveSubjectTeacher'])->name('admin.section-advisers.save-subject-teacher');
+        Route::post('/section-advisers/disable-pre-enrollment', [App\Http\Controllers\Admin\SectionAdviserController::class, 'disablePreEnrollment'])->name('admin.section-advisers.disable-pre-enrollment');
+        Route::post('/section-advisers/end-of-school-year', [App\Http\Controllers\Admin\SectionAdviserController::class, 'endOfSchoolYear'])->name('admin.section-advisers.end-of-school-year');
 
         // Student Enrollments
         Route::get('/student-enrollments', [App\Http\Controllers\Admin\StudentEnrollmentController::class, 'index'])->name('admin.student-enrollments.index');
@@ -230,6 +278,14 @@ Route::group(['prefix' => 'admin'], function () {
         Route::delete('/student-enrollments/{studentEnrollment}', [App\Http\Controllers\Admin\StudentEnrollmentController::class, 'destroy'])->name('admin.student-enrollments.destroy');
         Route::get('/student-enrollments/sections/options', [App\Http\Controllers\Admin\StudentEnrollmentController::class, 'sectionsOptions'])->name('admin.student-enrollments.sections.options');
         Route::get('/student-enrollments/strands/options', [App\Http\Controllers\Admin\StudentEnrollmentController::class, 'strandsOptions'])->name('admin.student-enrollments.strands.options');
+        
+        // Pre-Enrollment Submissions
+        Route::get('/pre-enrollments', [App\Http\Controllers\Admin\PreEnrollmentController::class, 'index'])->name('admin.pre-enrollments.index');
+        Route::get('/pre-enrollments/{preEnrollment}', [App\Http\Controllers\Admin\PreEnrollmentController::class, 'show'])->name('admin.pre-enrollments.show');
+        Route::post('/pre-enrollments/{preEnrollment}/approve', [App\Http\Controllers\Admin\PreEnrollmentController::class, 'approve'])->name('admin.pre-enrollments.approve');
+        Route::post('/pre-enrollments/{preEnrollment}/reject', [App\Http\Controllers\Admin\PreEnrollmentController::class, 'reject'])->name('admin.pre-enrollments.reject');
+        Route::post('/pre-enrollments/{preEnrollment}/process', [App\Http\Controllers\Admin\PreEnrollmentController::class, 'process'])->name('admin.pre-enrollments.process');
+        Route::post('/pre-enrollments/bulk-approve', [App\Http\Controllers\Admin\PreEnrollmentController::class, 'bulkApprove'])->name('admin.pre-enrollments.bulk-approve');
         
     // Messaging (simple inbox/compose)
     Route::get('/messages', [App\Http\Controllers\Admin\MessageController::class, 'inbox'])->name('admin.messages.inbox');
@@ -275,55 +331,75 @@ Route::group(['prefix' => 'teacher'], function () {
     Route::middleware('auth:teacher')->group(function () {
         Route::post('/logout', [App\Http\Controllers\Teacher\LoginController::class, 'logout'])->name('teacher.auth.logout');
         Route::get('/', fn() => redirect()->route('teacher.dashboard'));
-        Route::get('/dashboard', [App\Http\Controllers\Teacher\DashboardController::class, 'index'])->name('teacher.dashboard');
-        Route::get('/subjects', [App\Http\Controllers\Teacher\SubjectController::class, 'index'])->name('teacher.subjects.index');
-    Route::get('/class-records', [App\Http\Controllers\Teacher\ClassRecordController::class, 'index'])->name('teacher.class-records.index');
         
-        // Profile routes
+        // Apply teacher status check middleware to all routes except profile viewing
+        Route::middleware(\App\Http\Middleware\CheckTeacherStatus::class)->group(function () {
+            Route::get('/dashboard', [App\Http\Controllers\Teacher\DashboardController::class, 'index'])->name('teacher.dashboard');
+            Route::get('/subjects', [App\Http\Controllers\Teacher\SubjectController::class, 'index'])->name('teacher.subjects.index');
+            Route::get('/class-records', [App\Http\Controllers\Teacher\ClassRecordController::class, 'index'])->name('teacher.class-records.index');
+            
+            // Student Scores Overview
+            Route::get('/scores', [App\Http\Controllers\Teacher\ScoresController::class, 'index'])->name('teacher.scores.index');
+            Route::post('/scores', [App\Http\Controllers\Teacher\ScoresController::class, 'store'])->name('teacher.scores.store');
+            
+            // Messaging
+            Route::get('/messages', [App\Http\Controllers\Teacher\MessageController::class, 'inbox'])->name('teacher.messages.inbox');
+            Route::get('/messages/compose', [App\Http\Controllers\Teacher\MessageController::class, 'compose'])->name('teacher.messages.compose');
+            Route::post('/messages/send', [App\Http\Controllers\Teacher\MessageController::class, 'send'])->name('teacher.messages.send');
+            Route::get('/messages/{recipient}', [App\Http\Controllers\Teacher\MessageController::class, 'show'])->name('teacher.messages.show');
+            Route::get('/messenger', [App\Http\Controllers\Teacher\MessageController::class, 'messenger'])->name('teacher.messages.messenger');
+            Route::get('/messenger/conversation/{user}', [App\Http\Controllers\Teacher\MessageController::class, 'conversation'])->name('teacher.messages.conversation');
+            Route::post('/messenger/send', [App\Http\Controllers\Teacher\MessageController::class, 'sendConversation'])->name('teacher.messages.sendConversation');
+            Route::post('/messenger/typing', [App\Http\Controllers\Teacher\MessageController::class, 'broadcastTyping'])->name('teacher.messages.typing');
+            Route::get('/messages/{message}/download', [App\Http\Controllers\Teacher\MessageController::class, 'downloadAttachment'])->name('teacher.messages.download');
+            Route::delete('/messages/{message}/unsend', [App\Http\Controllers\Teacher\MessageController::class, 'unsendMessage'])->name('teacher.messages.unsend');
+            Route::post('/messages/{message}/report', [App\Http\Controllers\Teacher\MessageController::class, 'reportMessage'])->name('teacher.messages.report');
+            Route::get('/api/unread-counts', [App\Http\Controllers\Teacher\MessageController::class, 'getUnreadCounts'])->name('teacher.api.unreadCounts');
+            Route::get('/api/unread-count', [App\Http\Controllers\Teacher\MessageController::class, 'getUnreadCount'])->name('teacher.api.unread-count');
+            Route::get('/api/unread-counts-by-partner', [App\Http\Controllers\Teacher\MessageController::class, 'getUnreadCountsByPartner'])->name('teacher.api.unread-counts-by-partner');
+            
+            // API endpoint for user selection
+            Route::get('/api/all-users', [App\Http\Controllers\Teacher\MessageController::class, 'getAllUsers'])->name('teacher.api.allUsers');
+            
+            Route::get('/class-records/{assignment}', [App\Http\Controllers\Teacher\ClassRecordController::class, 'show'])->name('teacher.class-records.show');
+            Route::get('/class-records/{assignment}/students/{student}', [App\Http\Controllers\Teacher\ClassRecordController::class, 'studentShow'])->name('teacher.class-records.students.show');
+            // Create placeholders for a specific student's additional term (invoked from New Entry modal)
+            Route::post('/class-records/{assignment}/students/{student}/add-term', [App\Http\Controllers\Teacher\ClassRecordController::class, 'addStudentTerm'])->name('teacher.class-records.students.add-term');
+            Route::get('/class-records/{assignment}/view/{term}', [App\Http\Controllers\Teacher\ClassRecordController::class, 'termShow'])->name('teacher.class-records.term.show');
+            Route::post('/class-records/{assignment}/assessments', [App\Http\Controllers\Teacher\ClassRecordController::class, 'storeAssessment'])->name('teacher.class-records.assessments.store');
+            // Teacher-scoped update for assessments
+            Route::post('/class-records/{assignment}/assessments/{subjectRecord}/update', [App\Http\Controllers\Teacher\ClassRecordController::class, 'updateAssessment'])->name('teacher.class-records.assessments.update');
+            // Teacher-scoped delete for assessments
+            Route::delete('/class-records/{assignment}/assessments/{subjectRecord}', [App\Http\Controllers\Teacher\ClassRecordController::class, 'destroyAssessment'])->name('teacher.class-records.assessments.destroy');
+            Route::post('/class-records/{assignment}/scores', [App\Http\Controllers\Teacher\ClassRecordController::class, 'storeScores'])->name('teacher.class-records.scores.store');
+            Route::post('/class-records/{assignment}/final-grades/submit', [App\Http\Controllers\Teacher\ClassRecordController::class, 'submitFinalGrades'])->name('teacher.class-records.final-grades.submit');
+            // Publish/unpublish grades for students
+            Route::post('/class-records/{assignment}/toggle-publication', [App\Http\Controllers\Teacher\ClassRecordController::class, 'toggleGradesPublication'])->name('teacher.class-records.toggle-publication');
+            // End of school year
+            Route::post('/class-records/{assignment}/end-of-school-year', [App\Http\Controllers\Teacher\ClassRecordController::class, 'endOfSchoolYear'])->name('teacher.class-records.end-of-school-year');
+                
+            // Students routes
+            Route::get('/students', [App\Http\Controllers\Teacher\StudentController::class, 'index'])->name('teacher.students.index');
+            Route::get('/students/{student}/grades', [App\Http\Controllers\Teacher\StudentController::class, 'showGrades'])->name('teacher.students.grades');
+            Route::post('/students/assessments', [App\Http\Controllers\Teacher\StudentController::class, 'storeAssessment'])->name('teacher.assessments.store');
+            Route::get('/students/sections/all', [App\Http\Controllers\Teacher\StudentController::class, 'allSections'])->name('teacher.students.all-sections');
+            Route::get('/students/sections/{sectionAssignment}', [App\Http\Controllers\Teacher\StudentController::class, 'section'])->name('teacher.students.section');
+            
+            // Profile update routes (require active status)
+            Route::put('/profile', [App\Http\Controllers\Teacher\ProfileController::class, 'update'])->name('teacher.profile.update');
+            Route::post('/profile/picture', [App\Http\Controllers\Teacher\ProfileController::class, 'updateProfilePicture'])->name('teacher.profile.picture.update');
+            Route::delete('/profile/picture', [App\Http\Controllers\Teacher\ProfileController::class, 'deleteProfilePicture'])->name('teacher.profile.picture.delete');
+            Route::put('/profile/password', [App\Http\Controllers\Teacher\ProfileController::class, 'updatePassword'])->name('teacher.profile.password.update');
+            Route::get('/profile/subjects', [App\Http\Controllers\Teacher\ProfileController::class, 'allSubjects'])->name('teacher.profile.subjects.all');
+        });
+        
+        // Profile viewing routes (accessible even when inactive)
         Route::get('/profile', [App\Http\Controllers\Teacher\ProfileController::class, 'show'])->name('teacher.profile.show');
         Route::get('/profile/edit', [App\Http\Controllers\Teacher\ProfileController::class, 'edit'])->name('teacher.profile.edit');
-        Route::put('/profile', [App\Http\Controllers\Teacher\ProfileController::class, 'update'])->name('teacher.profile.update');
-        Route::post('/profile/picture', [App\Http\Controllers\Teacher\ProfileController::class, 'updateProfilePicture'])->name('teacher.profile.picture.update');
-        Route::delete('/profile/picture', [App\Http\Controllers\Teacher\ProfileController::class, 'deleteProfilePicture'])->name('teacher.profile.picture.delete');
         Route::get('/profile/password/edit', [App\Http\Controllers\Teacher\ProfileController::class, 'editPassword'])->name('teacher.profile.password.edit');
-        Route::put('/profile/password', [App\Http\Controllers\Teacher\ProfileController::class, 'updatePassword'])->name('teacher.profile.password.update');
-        Route::get('/profile/subjects', [App\Http\Controllers\Teacher\ProfileController::class, 'allSubjects'])->name('teacher.profile.subjects.all');
         // Disabled: Teachers cannot remove their own assignments (managed by admin only)
         // Route::delete('/profile/adviser/{section}', [App\Http\Controllers\Teacher\ProfileController::class, 'removeAdviserAssignment'])->name('teacher.profile.adviser.remove');
         // Route::delete('/profile/teaching/{assignment}', [App\Http\Controllers\Teacher\ProfileController::class, 'removeTeachingAssignment'])->name('teacher.profile.teaching.remove');
-        
-        // Messaging
-        Route::get('/messages', [App\Http\Controllers\Teacher\MessageController::class, 'inbox'])->name('teacher.messages.inbox');
-        Route::get('/messages/compose', [App\Http\Controllers\Teacher\MessageController::class, 'compose'])->name('teacher.messages.compose');
-        Route::post('/messages/send', [App\Http\Controllers\Teacher\MessageController::class, 'send'])->name('teacher.messages.send');
-        Route::get('/messages/{recipient}', [App\Http\Controllers\Teacher\MessageController::class, 'show'])->name('teacher.messages.show');
-        Route::get('/messenger', [App\Http\Controllers\Teacher\MessageController::class, 'messenger'])->name('teacher.messages.messenger');
-        Route::get('/messenger/conversation/{user}', [App\Http\Controllers\Teacher\MessageController::class, 'conversation'])->name('teacher.messages.conversation');
-        Route::post('/messenger/send', [App\Http\Controllers\Teacher\MessageController::class, 'sendConversation'])->name('teacher.messages.sendConversation');
-        Route::get('/messages/{message}/download', [App\Http\Controllers\Teacher\MessageController::class, 'downloadAttachment'])->name('teacher.messages.download');
-        Route::delete('/messages/{message}/unsend', [App\Http\Controllers\Teacher\MessageController::class, 'unsendMessage'])->name('teacher.messages.unsend');
-        
-        // API endpoint for user selection
-        Route::get('/api/all-users', [App\Http\Controllers\Teacher\MessageController::class, 'getAllUsers'])->name('teacher.api.allUsers');
-        
-    Route::get('/class-records/{assignment}', [App\Http\Controllers\Teacher\ClassRecordController::class, 'show'])->name('teacher.class-records.show');
-    Route::get('/class-records/{assignment}/students/{student}', [App\Http\Controllers\Teacher\ClassRecordController::class, 'studentShow'])->name('teacher.class-records.students.show');
-    // Create placeholders for a specific student's additional term (invoked from New Entry modal)
-    Route::post('/class-records/{assignment}/students/{student}/add-term', [App\Http\Controllers\Teacher\ClassRecordController::class, 'addStudentTerm'])->name('teacher.class-records.students.add-term');
-    Route::get('/class-records/{assignment}/view/{term}', [App\Http\Controllers\Teacher\ClassRecordController::class, 'termShow'])->name('teacher.class-records.term.show');
-    Route::post('/class-records/{assignment}/assessments', [App\Http\Controllers\Teacher\ClassRecordController::class, 'storeAssessment'])->name('teacher.class-records.assessments.store');
-    // Teacher-scoped update for assessments
-    Route::post('/class-records/{assignment}/assessments/{subjectRecord}/update', [App\Http\Controllers\Teacher\ClassRecordController::class, 'updateAssessment'])->name('teacher.class-records.assessments.update');
-    // Teacher-scoped delete for assessments
-    Route::delete('/class-records/{assignment}/assessments/{subjectRecord}', [App\Http\Controllers\Teacher\ClassRecordController::class, 'destroyAssessment'])->name('teacher.class-records.assessments.destroy');
-    Route::post('/class-records/{assignment}/scores', [App\Http\Controllers\Teacher\ClassRecordController::class, 'storeScores'])->name('teacher.class-records.scores.store');
-    Route::post('/class-records/{assignment}/final-grades/submit', [App\Http\Controllers\Teacher\ClassRecordController::class, 'submitFinalGrades'])->name('teacher.class-records.final-grades.submit');
-    // Publish/unpublish grades for students
-    Route::post('/class-records/{assignment}/toggle-publication', [App\Http\Controllers\Teacher\ClassRecordController::class, 'toggleGradesPublication'])->name('teacher.class-records.toggle-publication');
-        
-        // Students routes
-        Route::get('/students/sections/all', [App\Http\Controllers\Teacher\StudentController::class, 'allSections'])->name('teacher.students.all-sections');
-        Route::get('/students/sections/{sectionAssignment}', [App\Http\Controllers\Teacher\StudentController::class, 'section'])->name('teacher.students.section');
     });
 });
 
@@ -348,11 +424,21 @@ Route::group(['prefix' => 'student'], function () {
         // Grades (includes Decision Support System)
         Route::get('/grades', [App\Http\Controllers\Student\GradeController::class, 'index'])->name('student.grades.index');
         
+        // Student Scores (detailed assessment scores)
+        Route::get('/scores', [App\Http\Controllers\Student\ScoresController::class, 'index'])->name('student.scores.index');
+        
         // Performance Analytics
         Route::get('/performance', [App\Http\Controllers\Student\PerformanceController::class, 'index'])->name('student.performance.index');
         
         // Enhancement (Decision Support System)
         Route::get('/enhancement', [App\Http\Controllers\Student\EnhancementController::class, 'index'])->name('student.enhancement.index');
+        
+        // Pre-Enrollment routes
+        Route::get('/pre-enrollment-test', fn() => view('student.test_pre_enrollment'))->name('student.pre-enrollment.test');
+        Route::get('/pre-enrollment', [App\Http\Controllers\Student\PreEnrollmentController::class, 'index'])->name('student.pre-enrollment.index');
+        Route::post('/pre-enrollment', [App\Http\Controllers\Student\PreEnrollmentController::class, 'store'])->name('student.pre-enrollment.store');
+        Route::post('/pre-enrollment/sections', [App\Http\Controllers\Student\PreEnrollmentController::class, 'getSections'])->name('student.pre-enrollment.sections');
+        Route::delete('/pre-enrollment/{id}', [App\Http\Controllers\Student\PreEnrollmentController::class, 'cancel'])->name('student.pre-enrollment.cancel');
         
         // Profile routes
         Route::get('/profile', [App\Http\Controllers\Student\ProfileController::class, 'show'])->name('student.profile.show');
@@ -373,9 +459,12 @@ Route::group(['prefix' => 'student'], function () {
         Route::get('/messenger', [App\Http\Controllers\Student\MessageController::class, 'messenger'])->name('student.messages.messenger');
         Route::get('/messenger/conversation/{user}', [App\Http\Controllers\Student\MessageController::class, 'conversation'])->name('student.messages.conversation');
         Route::post('/messenger/send', [App\Http\Controllers\Student\MessageController::class, 'sendConversation'])->name('student.messages.sendConversation');
+        Route::post('/messenger/typing', [App\Http\Controllers\Student\MessageController::class, 'broadcastTyping'])->name('student.messages.typing');
         
         // API endpoint for user selection
         Route::get('/api/all-users', [App\Http\Controllers\Student\MessageController::class, 'getAllUsers'])->name('student.api.allUsers');
+        Route::get('/api/unread-count', [App\Http\Controllers\Student\MessageController::class, 'getUnreadCount'])->name('student.api.unread-count');
+        Route::get('/api/unread-counts-by-partner', [App\Http\Controllers\Student\MessageController::class, 'getUnreadCountsByPartner'])->name('student.api.unread-counts-by-partner');
     });
 });
 
@@ -420,5 +509,7 @@ Route::group(['prefix' => 'guardian'], function () {
         Route::get('/messenger/users', [App\Http\Controllers\Guardian\MessageController::class, 'getAllUsers'])->name('guardian.messages.getAllUsers');
         Route::get('/messages/{message}/download', [App\Http\Controllers\Guardian\MessageController::class, 'downloadAttachment'])->name('guardian.messages.downloadAttachment');
         Route::delete('/messages/{message}/unsend', [App\Http\Controllers\Guardian\MessageController::class, 'unsendMessage'])->name('guardian.messages.unsend');
+        Route::get('/api/unread-count', [App\Http\Controllers\Guardian\MessageController::class, 'getUnreadCount'])->name('guardian.api.unread-count');
+        Route::get('/api/unread-counts-by-partner', [App\Http\Controllers\Guardian\MessageController::class, 'getUnreadCountsByPartner'])->name('guardian.api.unread-counts-by-partner');
     });
 });

@@ -11,11 +11,27 @@ use Illuminate\Validation\Rules\Password;
 class ProfileController extends Controller
 {
     /**
+     * Get the currently authenticated user (admin or co-admin).
+     */
+    private function getAuthenticatedUser()
+    {
+        if (Auth::guard('admin')->check()) {
+            return Auth::guard('admin')->user();
+        }
+        
+        if (Auth::guard('co-admin')->check()) {
+            return Auth::guard('co-admin')->user();
+        }
+        
+        abort(401);
+    }
+
+    /**
      * Display the admin's profile.
      */
     public function show()
     {
-        $admin = Auth::guard('admin')->user();
+        $admin = $this->getAuthenticatedUser();
         return view('admin.profile.show', compact('admin'));
     }
 
@@ -24,7 +40,7 @@ class ProfileController extends Controller
      */
     public function edit()
     {
-        $admin = Auth::guard('admin')->user();
+        $admin = $this->getAuthenticatedUser();
         return view('admin.profile.edit', compact('admin'));
     }
 
@@ -33,7 +49,7 @@ class ProfileController extends Controller
      */
     public function update(Request $request)
     {
-        $admin = Auth::guard('admin')->user();
+        $admin = $this->getAuthenticatedUser();
 
         $validated = $request->validate([
             'name' => ['required', 'string', 'max:255'],
@@ -53,7 +69,7 @@ class ProfileController extends Controller
      */
     public function editPassword()
     {
-        $admin = Auth::guard('admin')->user();
+        $admin = $this->getAuthenticatedUser();
         return view('admin.profile.password', compact('admin'));
     }
 
@@ -62,7 +78,7 @@ class ProfileController extends Controller
      */
     public function updatePassword(Request $request)
     {
-        $admin = Auth::guard('admin')->user();
+        $admin = $this->getAuthenticatedUser();
 
         $validated = $request->validate([
             'current_password' => ['required'],

@@ -80,6 +80,21 @@ class StudentEnrollmentController extends Controller
             'status' => ['required', Rule::in(['enrolled', 'dropped', 'completed'])],
         ]);
 
+        // Check section capacity (maximum 30 students per section)
+        $maxStudentsPerSection = 30;
+        $currentCount = StudentEnrollment::where('academic_year_strand_section_id', $data['academic_year_strand_section_id'])
+            ->where('academic_year_id', $data['academic_year_id'])
+            ->count();
+        
+        if ($currentCount >= $maxStudentsPerSection) {
+            $section = AcademicYearStrandSection::with('section')->find($data['academic_year_strand_section_id']);
+            $sectionName = $section && $section->section ? "{$section->section->grade} {$section->section->name}" : "this section";
+            
+            return redirect()->back()
+                ->withInput()
+                ->with('error', "Cannot enroll student: {$sectionName} is full (maximum {$maxStudentsPerSection} students). Current enrollment: {$currentCount}/{$maxStudentsPerSection}");
+        }
+
         // Generate registration number: YEAR-XXXX scoped by academic_year_id
         $year = AcademicYear::findOrFail($data['academic_year_id']);
         $prefix = $year->name; // assumes name like 2025-2026; use first part as YEAR if needed
@@ -149,8 +164,27 @@ class StudentEnrollmentController extends Controller
             'academic_year_strand_section_id' => ['required', 'exists:academic_year_strand_sections,id'],
             'status' => ['required', Rule::in(['enrolled', 'dropped', 'completed'])],
         ]);
-    // Do not allow editing registration_number; keep existing
-    $studentEnrollment->update($data);
+        
+        // Check section capacity if changing section (maximum 30 students per section)
+        if ($studentEnrollment->academic_year_strand_section_id !== $data['academic_year_strand_section_id']) {
+            $maxStudentsPerSection = 30;
+            $currentCount = StudentEnrollment::where('academic_year_strand_section_id', $data['academic_year_strand_section_id'])
+                ->where('academic_year_id', $data['academic_year_id'])
+                ->where('id', '!=', $studentEnrollment->id) // Don't count current student
+                ->count();
+            
+            if ($currentCount >= $maxStudentsPerSection) {
+                $section = AcademicYearStrandSection::with('section')->find($data['academic_year_strand_section_id']);
+                $sectionName = $section && $section->section ? "{$section->section->grade} {$section->section->name}" : "this section";
+                
+                return redirect()->back()
+                    ->withInput()
+                    ->with('error', "Cannot move student: {$sectionName} is full (maximum {$maxStudentsPerSection} students). Current enrollment: {$currentCount}/{$maxStudentsPerSection}");
+            }
+        }
+        
+        // Do not allow editing registration_number; keep existing
+        $studentEnrollment->update($data);
 
         // Ensure subject enrollments are in sync after update
         try {

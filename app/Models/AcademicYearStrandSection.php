@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class AcademicYearStrandSection extends Model
 {
@@ -40,5 +41,10 @@ class AcademicYearStrandSection extends Model
     public function adviserTeacher(): BelongsTo
     {
         return $this->belongsTo(Teacher::class, 'adviser_teacher_id');
+    }
+
+    public function studentEnrollments(): HasMany
+    {
+        return $this->hasMany(StudentEnrollment::class, 'academic_year_strand_section_id');
     }
 }

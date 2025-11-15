@@ -21,7 +21,11 @@ return new class extends Migration
             $table->enum('gender', ['male', 'female']);
             $table->string('email')->unique();
             $table->string('phone')->nullable();
-            $table->text('address')->nullable();
+            $table->text('address')->nullable(); // Legacy field - kept for backward compatibility
+            $table->string('region')->nullable();
+            $table->string('province')->nullable();
+            $table->string('municipality')->nullable();
+            $table->string('barangay')->nullable();
             $table->string('department'); // e.g., "Computer Science Dept"
             $table->string('specialization')->nullable(); // e.g., "Web Dev, Database"
             $table->string('term'); // e.g., "2025-2026 (1st Semester)"

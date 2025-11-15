@@ -5,6 +5,7 @@
     .conversation-item {
         cursor: pointer;
         transition: all 0.2s ease;
+        position: relative;
     }
     .conversation-item:hover {
         background-color: #f8f9fa;
@@ -12,6 +13,17 @@
     .conversation-item.active {
         background-color: #e7f3ff;
         border-left: 3px solid #007bff;
+    }
+    .conversation-item.has-unread {
+        font-weight: 600;
+        background-color: #fff8f0;
+    }
+    .unread-badge {
+        animation: pulse 2s infinite;
+    }
+    @keyframes pulse {
+        0%, 100% { opacity: 1; }
+        50% { opacity: 0.7; }
     }
     .user-select-item {
         padding: 10px 15px;
@@ -57,14 +69,18 @@
             <div class="card-body p-0">
                 <ul id="conversation-list" class="list-group list-group-flush">
                     @forelse($partners as $p)
-                    <li class="list-group-item conversation-item" data-user-id="{{ $p->id }}" data-user-name="{{ $p->name }}" data-user-email="{{ $p->email }}">
-                        <div class="d-flex justify-content-between">
+                    <li class="list-group-item conversation-item {{ $p->unread_count > 0 ? 'has-unread' : '' }}" data-user-id="{{ $p->id }}" data-user-name="{{ $p->name }}" data-user-email="{{ $p->email }}">
+                        <div class="d-flex justify-content-between align-items-center">
                             <div>
                                 <strong>{{ $p->name }}</strong>
                                 <div class="small text-muted">{{ $p->email }}</div>
                             </div>
                             <div class="text-end">
-                                <span class="badge bg-primary d-none" id="unread-{{ $p->id }}">0</span>
+                                @if($p->unread_count > 0)
+                                <span class="badge bg-danger unread-badge" id="unread-{{ $p->id }}">{{ $p->unread_count }}</span>
+                                @else
+                                <span class="badge bg-danger d-none" id="unread-{{ $p->id }}">0</span>
+                                @endif
                             </div>
                         </div>
                     </li>
@@ -201,6 +217,19 @@
                     toInput.value = userId;
                     threadHeader.textContent = data.conversation_with.name || '';
                     threadMessages.innerHTML = '';
+                    
+                    // Hide unread badge for this conversation
+                    const unreadBadge = document.getElementById('unread-' + userId);
+                    if (unreadBadge) {
+                        unreadBadge.classList.add('d-none');
+                        unreadBadge.textContent = '0';
+                    }
+                    
+                    // Remove has-unread class from conversation item
+                    const conversationItem = document.querySelector('.conversation-item[data-user-id="' + userId + '"]');
+                    if (conversationItem) {
+                        conversationItem.classList.remove('has-unread');
+                    }
                     
                     // Track the last message ID
                     lastMessageId = 0;
@@ -496,6 +525,58 @@
         // Stop auto-refresh when leaving the page
         window.addEventListener('beforeunload', stopAutoRefresh);
 
+        // Real-time unread count polling
+        let unreadCountInterval = null;
+
+        function updateUnreadCounts() {
+            fetch("{{ route('admin.api.unread-counts-by-partner') }}")
+                .then(r => r.json())
+                .then(data => {
+                    if (data.success && data.unread_counts) {
+                        // Update each conversation item
+                        document.querySelectorAll('.conversation-item').forEach(item => {
+                            const userId = item.dataset.userId;
+                            const unreadBadge = document.getElementById('unread-' + userId);
+                            const unreadCount = data.unread_counts[userId] || 0;
+                            
+                            if (unreadBadge) {
+                                if (unreadCount > 0 && userId !== String(currentUserId)) {
+                                    unreadBadge.textContent = unreadCount;
+                                    unreadBadge.classList.remove('d-none');
+                                    item.classList.add('has-unread');
+                                } else {
+                                    unreadBadge.classList.add('d-none');
+                                    item.classList.remove('has-unread');
+                                }
+                            }
+                        });
+                    }
+                })
+                .catch(err => console.error('Failed to fetch unread counts:', err));
+        }
+
+        // Start polling for unread counts every 5 seconds
+        function startUnreadCountPolling() {
+            if (unreadCountInterval) {
+                clearInterval(unreadCountInterval);
+            }
+            updateUnreadCounts(); // Initial update
+            unreadCountInterval = setInterval(updateUnreadCounts, 5000);
+        }
+
+        function stopUnreadCountPolling() {
+            if (unreadCountInterval) {
+                clearInterval(unreadCountInterval);
+                unreadCountInterval = null;
+            }
+        }
+
+        // Start polling when page loads
+        startUnreadCountPolling();
+
+        // Stop polling when leaving
+        window.addEventListener('beforeunload', stopUnreadCountPolling);
+
         // Load all users for new conversation modal
         let allUsers = [];
         let selectedUser = null;
@@ -708,84 +789,79 @@
             }
         });
 
-        // ===== REAL-TIME PUSHER INTEGRATION =====
-        // Initialize Pusher
-        try {
-            const pusher = new Pusher('{{ env('PUSHER_APP_KEY') }}', {
-                cluster: '{{ env('PUSHER_APP_CLUSTER') }}',
-                forceTLS: true
-            });
+        // ===== REAL-TIME LARAVEL ECHO INTEGRATION =====
+        if (typeof window.Echo !== 'undefined') {
+            try {
+                console.log('✓ Laravel Echo available, subscribing to channel...');
+                
+                // Subscribe to the current user's private channel
+                const channel = window.Echo.private('user.{{ auth()->id() }}');
 
-            // Subscribe to the current user's private channel
-            const channel = pusher.subscribe('private-user.{{ auth()->id() }}');
+                console.log('✓ Subscribed to private channel: user.{{ auth()->id() }}');
 
-            console.log('Pusher initialized for user {{ auth()->id() }}');
+                // Listen for new messages
+                channel.listen('.message.sent', function(data) {
+                    console.log('✓ Real-time message received:', data);
 
-            // Listen for new messages
-            channel.bind('message.sent', function(data) {
-                console.log('Real-time message received:', data);
+                    const senderId = parseInt(data.sender_id);
+                    const isCurrentConversation = currentUserId && senderId === parseInt(currentUserId);
 
-                // Only process if we're viewing the conversation with the sender
-                if (currentUserId && parseInt(data.sender_id) === parseInt(currentUserId)) {
-                    // Append the message to the conversation
-                    const messageDiv = document.createElement('div');
-                    messageDiv.className = 'd-flex justify-content-start mb-3';
-                    messageDiv.setAttribute('data-message-id', data.id);
-                    
-                    let attachmentHtml = '';
-                    if (data.attachment_path) {
-                        const fileIcon = getFileIcon(data.attachment_type);
-                        const fileSize = formatFileSize(data.attachment_size);
-                        attachmentHtml = `
-                            <div class="mt-2">
-                                <a href="/admin/messages/${data.id}/download" class="btn btn-sm btn-outline-primary">
-                                    <i class="ti ti-${fileIcon} me-1"></i>
-                                    ${escapeHtml(data.attachment_name)}
-                                    <span class="badge bg-secondary ms-2">${fileSize}</span>
-                                </a>
+                    // Only process if we're viewing the conversation with the sender
+                    if (isCurrentConversation) {
+                        // Append the message to the conversation
+                        const messageDiv = document.createElement('div');
+                        messageDiv.className = 'd-flex justify-content-start mb-3';
+                        messageDiv.setAttribute('data-message-id', data.id);
+                        
+                        let attachmentHtml = '';
+                        if (data.attachment_path && data.attachment_name) {
+                            const fileIcon = getFileIcon(data.attachment_type);
+                            const fileSize = formatFileSize(data.attachment_size);
+                            attachmentHtml = `
+                                <div class="mt-2">
+                                    <a href="/admin/messages/${data.id}/download" class="btn btn-sm btn-outline-primary">
+                                        <i class="ti ti-${fileIcon} me-1"></i>
+                                        ${escapeHtml(data.attachment_name)}
+                                        <span class="badge bg-secondary ms-2">${fileSize}</span>
+                                    </a>
+                                </div>
+                            `;
+                        }
+
+                        messageDiv.innerHTML = `
+                            <div class="message-bubble bg-light p-3 rounded shadow-sm" style="max-width:70%">
+                                <div class="mb-1"><strong>${escapeHtml(data.sender_name || 'User')}</strong></div>
+                                <div>${escapeHtml(data.body)}</div>
+                                ${attachmentHtml}
+                                <div class="small text-muted mt-2">${formatDate(data.created_at)}</div>
                             </div>
                         `;
-                    }
 
-                    messageDiv.innerHTML = `
-                        <div class="message-bubble bg-light p-3 rounded shadow-sm" style="max-width:70%">
-                            <div class="mb-1"><strong>${escapeHtml(data.sender_name || 'User')}</strong></div>
-                            <div>${escapeHtml(data.body)}</div>
-                            ${attachmentHtml}
-                            <div class="small text-muted mt-2">${formatDate(data.created_at)}</div>
-                        </div>
-                    `;
+                        threadMessages.appendChild(messageDiv);
+                        threadMessages.scrollTop = threadMessages.scrollHeight;
 
-                    threadMessages.appendChild(messageDiv);
-                    threadMessages.scrollTop = threadMessages.scrollHeight;
-
-                    // Update lastMessageId
-                    if (data.id > lastMessageId) {
-                        lastMessageId = data.id;
-                    }
-
-                    // Show notification if not in focus
-                    if (document.hidden) {
+                        // Update lastMessageId
+                        if (data.id > lastMessageId) {
+                            lastMessageId = data.id;
+                        }
+                    } else if (senderId !== {{ auth()->id() }}) {
+                        // Message from someone we're not currently chatting with - show notification
                         showNotification('New message from ' + (data.sender_name || 'User'));
                     }
-                }
 
-                // Update conversation list (add sender if not exists)
-                updateConversationList(data);
-            });
+                    // Update conversation list (add sender if not exists)
+                    updateConversationList(data);
+                });
 
-            // Handle connection state
-            pusher.connection.bind('connected', function() {
-                console.log('✓ Pusher connected successfully');
-            });
+                console.log('✓ Echo real-time messaging is active');
 
-            pusher.connection.bind('error', function(err) {
-                console.error('Pusher connection error:', err);
-            });
-
-        } catch (error) {
-            console.error('Failed to initialize Pusher:', error);
-            console.log('Real-time messaging will not work. Please check your Pusher credentials.');
+            } catch (error) {
+                console.error('❌ Failed to initialize Laravel Echo:', error);
+                console.log('⚠️ Falling back to polling...');
+            }
+        } else {
+                console.warn('⚠️ Laravel Echo not available. Make sure @@vite directive is added and assets are compiled.');
+            console.log('⚠️ Messages will use polling instead of real-time updates.');
         }
 
         // Helper function to update conversation list
@@ -849,7 +925,6 @@
     })();
 </script>
 
-<!-- Pusher JavaScript Library -->
-<script src="https://js.pusher.com/8.2.0/pusher.min.js"></script>
+@vite(['resources/js/app.js'])
 
 @endpush

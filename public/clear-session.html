@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Clearing Session...</title>
+    <meta http-equiv="refresh" content="0;url=http://127.0.0.1:8000/admin/login">
+    <script>
+        // Clear all cookies for this domain
+        document.cookie.split(";").forEach(function(c) { 
+            document.cookie = c.replace(/^ +/, "").replace(/=.*/, "=;expires=" + new Date().toUTCString() + ";path=/"); 
+        });
+        
+        // Clear localStorage and sessionStorage
+        if (window.localStorage) localStorage.clear();
+        if (window.sessionStorage) sessionStorage.clear();
+        
+        // Redirect to login
+        setTimeout(function() {
+            window.location.href = 'http://127.0.0.1:8000/admin/login';
+        }, 500);
+    </script>
+</head>
+<body style="background: #1e293b; color: white; font-family: Arial; text-align: center; padding-top: 100px;">
+    <h1>🔄 Clearing Session...</h1>
+    <p>Please wait while we clear your session cookies...</p>
+    <p>You will be redirected to the login page automatically.</p>
+</body>
+</html>

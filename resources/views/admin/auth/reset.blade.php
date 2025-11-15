@@ -54,7 +54,7 @@
                             @csrf
                             <div class="mb-3">
                                 <label for="email" class="form-label">Email address</label>
-                                <input type="email" name="email" id="email" value="{{ old('email') }}" class="form-control" required>
+                                <input type="email" name="email" id="email" value="{{ old('email', session('email', '')) }}" class="form-control" required>
                             </div>
                             <div class="mb-3">
                                 <label for="otp" class="form-label">One-Time Password (6 digits)</label>
@@ -62,16 +62,28 @@
                             </div>
                             <div class="mb-3">
                                 <label for="password" class="form-label">New Password</label>
-                                <input type="password" name="password" id="password" class="form-control" required>
+                                <div class="position-relative">
+                                    <input type="password" name="password" id="password" class="form-control" required>
+                                    <button type="button" class="btn btn-sm position-absolute end-0 top-50 translate-middle-y" onclick="togglePasswordVisibility('password', this)" style="border: none; background: transparent;">
+                                        <i class="fa fa-eye"></i>
+                                    </button>
+                                </div>
                             </div>
                             <div class="mb-4">
                                 <label for="password_confirmation" class="form-label">Confirm Password</label>
-                                <input type="password" name="password_confirmation" id="password_confirmation" class="form-control" required>
+                                <div class="position-relative">
+                                    <input type="password" name="password_confirmation" id="password_confirmation" class="form-control" required>
+                                    <button type="button" class="btn btn-sm position-absolute end-0 top-50 translate-middle-y" onclick="togglePasswordVisibility('password_confirmation', this)" style="border: none; background: transparent;">
+                                        <i class="fa fa-eye"></i>
+                                    </button>
+                                </div>
                             </div>
                             <button type="submit" class="btn btn-success w-100">Reset Password</button>
                         </form>
                         <div class="mt-3 text-center">
-                            <a class="text-primary" href="{{ route($guard . '.auth.forgotForm') }}">Resend OTP</a>
+                            <a class="text-primary" href="{{ route($guard . '.auth.forgotForm') }}{{ request('email') || session('email') ? '?email=' . urlencode(request('email') ?? session('email')) : '' }}">Resend OTP</a>
+                            <span class="mx-2">•</span>
+                            <a class="text-primary" href="{{ route($guard . '.auth.loginForm') }}">Back to Login</a>
                         </div>
                     </div>
                 </div>
@@ -86,6 +98,21 @@
     <script src="{{ asset('assets/js/feather.min.js') }}"></script>
     <script>
         feather.replace();
+        
+        function togglePasswordVisibility(inputId, button) {
+            const input = document.getElementById(inputId);
+            const icon = button.querySelector('i');
+            
+            if (input.type === 'password') {
+                input.type = 'text';
+                icon.classList.remove('fa-eye');
+                icon.classList.add('fa-eye-slash');
+            } else {
+                input.type = 'password';
+                icon.classList.remove('fa-eye-slash');
+                icon.classList.add('fa-eye');
+            }
+        }
     </script>
 </body>
 </html>

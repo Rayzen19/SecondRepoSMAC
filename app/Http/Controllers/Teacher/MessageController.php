@@ -82,12 +82,33 @@ class MessageController extends Controller
 
         $partners = \App\Models\User::whereIn('id', $partnerIds)->orderBy('name')->get();
 
+        // Calculate unread counts for each partner
+        $partners = $partners->map(function($partner) use ($userId) {
+            $unreadCount = MessageRecipient::where('recipient_id', $userId)
+                ->whereNull('read_at')
+                ->whereHas('message', function($q) use ($partner) {
+                    $q->where('sender_id', $partner->id);
+                })
+                ->count();
+            
+            $partner->unread_count = $unreadCount;
+            return $partner;
+        });
+
         return view('teacher.messages.messenger', compact('partners'));
     }
 
     public function conversation(\App\Models\User $user)
     {
         $me = Auth::user();
+
+        // Mark all unread messages from this user as read
+        MessageRecipient::where('recipient_id', $me->id)
+            ->whereNull('read_at')
+            ->whereHas('message', function ($q) use ($user) {
+                $q->where('sender_id', $user->id);
+            })
+            ->update(['read_at' => now()]);
 
         // Messages where I am the sender and they are a recipient
         $sent = Message::select('messages.*')
@@ -276,4 +297,143 @@ class MessageController extends Controller
             'message' => 'Message deleted successfully'
         ]);
     }
+
+    /**
+     * Report a message
+     */
+    public function reportMessage(Request $request, Message $message)
+    {
+        $userId = Auth::id();
+
+        // Check if user is part of this conversation
+        $hasAccess = $message->sender_id === $userId || 
+                     $message->recipients()->where('recipient_id', $userId)->exists();
+        
+        if (!$hasAccess) {
+            return response()->json([
+                'success' => false,
+                'error' => 'You do not have permission to report this message'
+            ], 403);
+        }
+
+        // Check if user already reported this message
+        if ($message->isReportedBy($userId)) {
+            return response()->json([
+                'success' => false,
+                'error' => 'You have already reported this message'
+            ], 422);
+        }
+
+        $validated = $request->validate([
+            'reason' => 'required|string|in:spam,harassment,inappropriate,offensive,other',
+            'details' => 'nullable|string|max:500',
+            'screenshot' => 'nullable|image|max:5120', // 5MB max
+        ]);
+
+        // Handle screenshot upload
+        $screenshotPath = null;
+        if ($request->hasFile('screenshot')) {
+            $screenshotPath = $request->file('screenshot')->store('message_reports', 'public');
+        }
+
+        $report = \App\Models\MessageReport::create([
+            'message_id' => $message->id,
+            'reported_by' => $userId,
+            'reason' => $validated['reason'],
+            'details' => $validated['details'] ?? null,
+            'screenshot_path' => $screenshotPath,
+            'status' => 'pending',
+        ]);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Message reported successfully. Administrators have been notified.',
+            'report' => $report
+        ]);
+    }
+
+    /**
+     * Get unread message counts per conversation
+     */
+    public function getUnreadCounts()
+    {
+        $userId = Auth::id();
+        
+        // Get all conversation partners
+        $sentPartnerIds = Message::where('sender_id', $userId)->with('recipients')->get()->pluck('recipients.*.recipient_id')->flatten()->unique();
+        $receivedPartnerIds = MessageRecipient::where('recipient_id', $userId)->with('message')->get()->pluck('message.sender_id')->flatten()->unique();
+        $partnerIds = $sentPartnerIds->merge($receivedPartnerIds)->filter()->unique()->values();
+        
+        $unreadCounts = [];
+        foreach ($partnerIds as $partnerId) {
+            $count = MessageRecipient::where('recipient_id', $userId)
+                ->whereNull('read_at')
+                ->whereHas('message', function($q) use ($partnerId) {
+                    $q->where('sender_id', $partnerId);
+                })
+                ->count();
+            
+            if ($count > 0) {
+                $unreadCounts[$partnerId] = $count;
+            }
+        }
+        
+        return response()->json([
+            'success' => true,
+            'unreadCounts' => $unreadCounts
+        ]);
+    }
+
+    // Broadcast typing status
+    public function broadcastTyping(Request $request)
+    {
+        $recipientId = $request->input('recipient_id');
+        $isTyping = $request->input('is_typing', true);
+        
+        $user = Auth::user();
+        
+        // Broadcast typing event
+        broadcast(new \App\Events\UserTyping(
+            $user->id,
+            $user->name,
+            $recipientId,
+            $isTyping
+        ))->toOthers();
+        
+        return response()->json(['success' => true]);
+    }
+
+    // Get unread message count
+    public function getUnreadCount()
+    {
+        $userId = Auth::id();
+        $unreadCount = MessageRecipient::where('recipient_id', $userId)
+            ->whereNull('read_at')
+            ->count();
+        
+        return response()->json([
+            'unread_count' => $unreadCount
+        ]);
+    }
+
+    // Get unread counts by conversation partner
+    public function getUnreadCountsByPartner()
+    {
+        $userId = Auth::id();
+        
+        // Get unread counts grouped by sender
+        $unreadCounts = MessageRecipient::where('recipient_id', $userId)
+            ->whereNull('read_at')
+            ->join('messages', 'message_recipients.message_id', '=', 'messages.id')
+            ->select('messages.sender_id', \DB::raw('count(*) as unread_count'))
+            ->groupBy('messages.sender_id')
+            ->pluck('unread_count', 'sender_id')
+            ->toArray();
+        
+        return response()->json([
+            'success' => true,
+            'unread_counts' => $unreadCounts
+        ]);
+    }
 }
+

@@ -136,8 +136,12 @@ class AssigningListController extends Controller
             ], 422);
         }
         
+        // Maximum students per section
+        $maxStudentsPerSection = 30;
+        
         $savedCount = 0;
         $errors = [];
+        $sectionCounts = []; // Track section counts during this operation
         
         foreach ($validated['assignments'] as $assignment) {
             try {
@@ -148,21 +152,55 @@ class AssigningListController extends Controller
                     continue;
                 }
                 
-                // Find the academic_year_strand_section record
-                $academicYearStrandSection = \App\Models\AcademicYearStrandSection::where('academic_year_id', $activeYear->id)
-                    ->where('strand_id', $strand->id)
-                    ->where('section_id', $assignment['section_id'])
-                    ->first();
-                
-                if (!$academicYearStrandSection) {
-                    $errors[] = "Section assignment not found for strand {$assignment['strand_code']} and section ID {$assignment['section_id']}";
-                    continue;
-                }
+                // Find or create the academic_year_strand_section record
+                $academicYearStrandSection = \App\Models\AcademicYearStrandSection::firstOrCreate(
+                    [
+                        'academic_year_id' => $activeYear->id,
+                        'strand_id' => $strand->id,
+                        'section_id' => $assignment['section_id'],
+                    ],
+                    [
+                        'is_active' => true,
+                    ]
+                );
                 
                 // Check if student is already enrolled
                 $existingEnrollment = \App\Models\StudentEnrollment::where('student_id', $assignment['student_id'])
                     ->where('academic_year_id', $activeYear->id)
                     ->first();
+                
+                // Initialize section count if not set
+                $sectionKey = $academicYearStrandSection->id;
+                if (!isset($sectionCounts[$sectionKey])) {
+                    // Get current student count in this section
+                    $sectionCounts[$sectionKey] = \App\Models\StudentEnrollment::where('academic_year_strand_section_id', $academicYearStrandSection->id)
+                        ->where('academic_year_id', $activeYear->id)
+                        ->count();
+                }
+                
+                // Check if this is a new enrollment or just moving sections
+                $isNewEnrollment = !$existingEnrollment || $existingEnrollment->academic_year_strand_section_id !== $academicYearStrandSection->id;
+                
+                // If it's a new enrollment to this section, check capacity
+                if ($isNewEnrollment) {
+                    if ($sectionCounts[$sectionKey] >= $maxStudentsPerSection) {
+                        $section = \App\Models\Section::find($assignment['section_id']);
+                        $sectionName = $section ? "{$section->grade} {$section->name}" : "Section ID {$assignment['section_id']}";
+                        $student = \App\Models\Student::find($assignment['student_id']);
+                        $studentName = $student ? "{$student->first_name} {$student->last_name}" : "Student ID {$assignment['student_id']}";
+                        $errors[] = "Cannot assign {$studentName} to {$sectionName}: Section is full (maximum {$maxStudentsPerSection} students)";
+                        continue;
+                    }
+                    // If moving from another section, decrement that section's count
+                    if ($existingEnrollment && $existingEnrollment->academic_year_strand_section_id) {
+                        $oldSectionKey = $existingEnrollment->academic_year_strand_section_id;
+                        if (isset($sectionCounts[$oldSectionKey])) {
+                            $sectionCounts[$oldSectionKey]--;
+                        }
+                    }
+                    // Increment the new section's count
+                    $sectionCounts[$sectionKey]++;
+                }
                 
                 if ($existingEnrollment) {
                     // Update existing enrollment

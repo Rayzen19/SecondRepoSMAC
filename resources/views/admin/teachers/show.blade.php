@@ -50,30 +50,18 @@
                         <div>
                             <h3 class="mb-1">{{ $teacher->last_name }}, {{ $teacher->first_name }} {{ $teacher->middle_name }} {{ $teacher->suffix }}</h3>
                             <div class="text-muted">Employee # {{ $teacher->employee_number }} • {{ ucfirst($teacher->gender) }} • {{ ucfirst($teacher->status) }}</div>
-                            <div class="mt-1"><i class="ti ti-mail"></i> {{ $teacher->email }} • <i class="ti ti-phone"></i> {{ $teacher->phone }}</div>
-                            <div class="small text-muted mt-1"><i class="ti ti-map-pin"></i> {{ $teacher->address }}</div>
-                        </div>
-                    </div>
-                </div>
-                <div class="col-12 col-md-4">
-                    <div class="row g-3">
-                        <div class="col-6">
-                            <div class="p-3 border rounded-3 text-center">
-                                <div class="text-muted small">Subjects</div>
-                                <div class="fs-4 fw-bold">{{ $totalSubjects ?? 0 }}</div>
+                            <div class="mt-1"><i class="ti ti-mail"></i> {{ $teacher->email }} @if($teacher->phone)• <i class="ti ti-phone"></i> {{ $teacher->phone }}@endif</div>
+                            @if($teacher->address || $teacher->barangay || $teacher->municipality || $teacher->province || $teacher->region)
+                            <div class="small text-muted mt-1">
+                                <i class="ti ti-map-pin"></i> 
+                                @if($teacher->address){{ $teacher->address }}, @endif
+                                @if($teacher->barangay){{ $teacher->barangay }}, @endif
+                                @if($teacher->municipality){{ $teacher->municipality }}, @endif
+                                @if($teacher->province){{ $teacher->province }}, @endif
+                                @if($teacher->region){{ $teacher->region }}@endif
+                                @if($teacher->postal_code) {{ $teacher->postal_code }}@endif
                             </div>
-                        </div>
-                        <div class="col-6">
-                            <div class="p-3 border rounded-3 text-center">
-                                <div class="text-muted small">Advised Sections</div>
-                                <div class="fs-4 fw-bold">{{ $totalAdvisedSections ?? 0 }}</div>
-                            </div>
-                        </div>
-                        <div class="col-12">
-                            <div class="p-3 border rounded-3 text-center">
-                                <div class="text-muted small">Students Taught</div>
-                                <div class="fs-4 fw-bold">{{ $totalStudentsTaught ?? 0 }}</div>
-                            </div>
+                            @endif
                         </div>
                     </div>
                 </div>

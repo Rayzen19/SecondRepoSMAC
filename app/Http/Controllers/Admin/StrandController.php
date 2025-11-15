@@ -22,7 +22,7 @@ class StrandController extends Controller
     public function store(Request $request)
     {
         $data = $request->validate([
-            'code' => 'required|string|max:50|unique:strands,code',
+            'code' => 'required|string|max:100|unique:strands,code',
             'name' => 'required|string|max:255',
             'is_active' => 'nullable|boolean',
         ]);
@@ -48,7 +48,7 @@ class StrandController extends Controller
     public function update(Request $request, Strand $strand)
     {
         $data = $request->validate([
-            'code' => 'required|string|max:50|unique:strands,code,' . $strand->id,
+            'code' => 'required|string|max:100|unique:strands,code,' . $strand->id,
             'name' => 'required|string|max:255',
             'is_active' => 'nullable|boolean',
         ]);

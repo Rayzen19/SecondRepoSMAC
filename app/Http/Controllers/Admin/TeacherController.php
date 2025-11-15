@@ -73,6 +73,7 @@ class TeacherController extends Controller
             'academic_year_id' => $data['academic_year_id'],
             'strand_id' => $data['strand_id'],
             'subject_id' => $data['subject_id'],
+            'academic_year_strand_adviser_id' => null, // Explicitly set to null for general assignments
             'written_works_percentage' => $data['written_works_percentage'] ?? 30,
             'performance_tasks_percentage' => $data['performance_tasks_percentage'] ?? 50,
             'quarterly_assessment_percentage' => $data['quarterly_assessment_percentage'] ?? 20,
@@ -109,7 +110,17 @@ class TeacherController extends Controller
     {
         // If a soft-deleted teacher exists with the same email, purge to avoid unique index conflicts
         if ($request->filled('email')) {
-            try { \App\Models\Teacher::onlyTrashed()->where('email', $request->input('email'))->forceDelete(); } catch (\Throwable $e) {}
+            try { 
+                \App\Models\Teacher::onlyTrashed()->where('email', $request->input('email'))->forceDelete();
+                // Also clean up any orphaned users with this email
+                \App\Models\User::where('email', $request->input('email'))
+                    ->whereNotExists(function($query) {
+                        $query->select(DB::raw(1))
+                            ->from('teachers')
+                            ->whereColumn('teachers.email', 'users.email');
+                    })
+                    ->delete();
+            } catch (\Throwable $e) {}
         }
 
         $data = $request->validate([
@@ -118,16 +129,14 @@ class TeacherController extends Controller
             'last_name' => 'required|string|max:255',
             'suffix' => 'nullable|string|max:50',
             'gender' => 'required|in:male,female,other',
-            // Email must be unique across both teachers and users
-            'email' => [
-                'required',
-                'email',
-                'max:255',
-                Rule::unique('teachers', 'email'),
-                Rule::unique('users', 'email'),
-            ],
+            'email' => 'required|email|max:255|unique:teachers,email',
             'phone' => 'nullable|string|max:50',
             'address' => 'nullable|string',
+            'region' => 'nullable|string|max:255',
+            'province' => 'nullable|string|max:255',
+            'municipality' => 'nullable|string|max:255',
+            'barangay' => 'nullable|string|max:255',
+            'postal_code' => 'required|string|max:4',
             'department' => 'required|string|max:255',
             'specialization' => 'nullable|string|max:255',
             'term' => 'required|string|max:255',
@@ -247,7 +256,21 @@ class TeacherController extends Controller
     {
         // If changing email, purge any soft-deleted teacher with the target email
         if ($request->filled('email') && $request->input('email') !== $teacher->email) {
-            try { \App\Models\Teacher::onlyTrashed()->where('email', $request->input('email'))->forceDelete(); } catch (\Throwable $e) {}
+            try { 
+                \App\Models\Teacher::onlyTrashed()->where('email', $request->input('email'))->forceDelete();
+                // Also clean up any orphaned users with this email
+                \App\Models\User::where('email', $request->input('email'))
+                    ->where(function($query) use ($teacher) {
+                        $query->where('type', '!=', 'teacher')
+                            ->orWhere('user_pk_id', '!=', $teacher->id);
+                    })
+                    ->whereNotExists(function($query) {
+                        $query->select(DB::raw(1))
+                            ->from('teachers')
+                            ->whereColumn('teachers.email', 'users.email');
+                    })
+                    ->delete();
+            } catch (\Throwable $e) {}
         }
 
         // Find ALL linked auth users for this teacher (there might be duplicates)
@@ -260,23 +283,14 @@ class TeacherController extends Controller
             'last_name' => 'required|string|max:255',
             'suffix' => 'nullable|string|max:50',
             'gender' => 'required|in:male,female,other',
-            // Email unique across teachers and users, ignoring current records
-            'email' => [
-                'required',
-                'email',
-                'max:255',
-                Rule::unique('teachers', 'email')->ignore($teacher->id),
-                function ($attribute, $value, $fail) use ($linkedUserIds) {
-                    $exists = \App\Models\User::where('email', $value)
-                        ->whereNotIn('id', $linkedUserIds)
-                        ->exists();
-                    if ($exists) {
-                        $fail('The email has already been taken.');
-                    }
-                },
-            ],
+            'email' => 'required|email|max:255|unique:teachers,email,'.$teacher->id,
             'phone' => 'nullable|string|max:50',
             'address' => 'nullable|string',
+            'region' => 'nullable|string|max:255',
+            'province' => 'nullable|string|max:255',
+            'municipality' => 'nullable|string|max:255',
+            'barangay' => 'nullable|string|max:255',
+            'postal_code' => 'required|string|max:4',
             'department' => 'required|string|max:255',
             'specialization' => 'nullable|string|max:255',
             'term' => 'required|string|max:255',
@@ -297,21 +311,40 @@ class TeacherController extends Controller
 
         // Update ALL linked auth users (in case there are duplicates)
         $users = User::where('type', 'teacher')->where('user_pk_id', $teacher->id)->get();
+        
+        // Clean up duplicate users first - keep only the first one
+        if ($users->count() > 1) {
+            $primaryUser = $users->first();
+            // Delete other duplicate users
+            $users->where('id', '!=', $primaryUser->id)->each(function($user) {
+                $user->delete();
+            });
+            $users = collect([$primaryUser]);
+        }
+        
+        // Before updating, check if email is taken by another teacher user
+        // (this shouldn't happen due to validation, but let's be safe)
+        $existingUser = User::where('email', $teacher->email)
+            ->where('type', 'teacher')
+            ->whereNotIn('id', $users->pluck('id')->toArray())
+            ->first();
+            
+        if ($existingUser) {
+            // If the existing user is orphaned (no linked teacher), delete it
+            $linkedTeacher = Teacher::find($existingUser->user_pk_id);
+            if (!$linkedTeacher) {
+                $existingUser->delete();
+            } else {
+                // Otherwise it's a genuine conflict - this should have been caught by validation
+                throw new \Exception('Email is already taken by another active teacher.');
+            }
+        }
+        
+        // Now update the remaining user(s)
         foreach ($users as $user) {
             $user->name = $teacher->name;
             $user->email = $teacher->email;
             $user->save();
-        }
-        
-        // Clean up duplicate users - keep only the one with matching email
-        if ($users->count() > 1) {
-            $correctUser = $users->firstWhere('email', $teacher->email);
-            if ($correctUser) {
-                // Delete other duplicate users
-                $users->where('id', '!=', $correctUser->id)->each(function($user) {
-                    $user->delete();
-                });
-            }
         }
 
         return redirect()->route('admin.teachers.show', $teacher)->with('success', 'Teacher updated successfully.');

@@ -13,6 +13,31 @@
         background-color: #e7f3ff;
         border-left: 3px solid #007bff;
     }
+    .conversation-item.has-unread {
+        background-color: #fff3cd;
+        border-left: 3px solid #ffc107;
+        font-weight: 600;
+    }
+    .conversation-item.has-unread:hover {
+        background-color: #fff0b3;
+    }
+    .conversation-item.has-unread .conversation-name {
+        color: #000;
+        font-weight: 700;
+    }
+    .unread-badge {
+        background-color: #dc3545;
+        color: white;
+        font-size: 11px;
+        min-width: 20px;
+        height: 20px;
+        border-radius: 10px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        padding: 0 6px;
+        font-weight: bold;
+    }
     .user-select-item {
         padding: 10px 15px;
         cursor: pointer;
@@ -39,6 +64,43 @@
         font-size: 14px;
         margin-right: 10px;
     }
+    
+    /* Typing Indicator Animation */
+    .typing-dots {
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+    }
+    .typing-dots span {
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        background-color: #6c757d;
+        animation: typing-bounce 1.4s infinite ease-in-out;
+    }
+    .typing-dots span:nth-child(1) {
+        animation-delay: 0s;
+    }
+    .typing-dots span:nth-child(2) {
+        animation-delay: 0.2s;
+    }
+    .typing-dots span:nth-child(3) {
+        animation-delay: 0.4s;
+    }
+    @keyframes typing-bounce {
+        0%, 60%, 100% {
+            transform: translateY(0);
+            opacity: 0.7;
+        }
+        30% {
+            transform: translateY(-10px);
+            opacity: 1;
+        }
+    }
+    #typing-indicator {
+        padding-left: 15px;
+        margin-top: 10px;
+    }
 </style>
 
 <div class="page-header">
@@ -57,14 +119,22 @@
             <div class="card-body p-0">
                 <ul id="conversation-list" class="list-group list-group-flush">
                     @forelse($partners as $p)
-                    <li class="list-group-item conversation-item" data-user-id="{{ $p->id }}" data-user-name="{{ $p->name }}" data-user-email="{{ $p->email }}">
-                        <div class="d-flex justify-content-between">
+                    <li class="list-group-item conversation-item {{ isset($unreadCounts[$p->id]) && $unreadCounts[$p->id] > 0 ? 'has-unread' : '' }}" 
+                        data-user-id="{{ $p->id }}" 
+                        data-user-name="{{ $p->name }}" 
+                        data-user-email="{{ $p->email }}"
+                        data-unread-count="{{ $unreadCounts[$p->id] ?? 0 }}">
+                        <div class="d-flex justify-content-between align-items-center">
                             <div>
-                                <strong>{{ $p->name }}</strong>
+                                <strong class="conversation-name">{{ $p->name }}</strong>
                                 <div class="small text-muted">{{ $p->email }}</div>
                             </div>
                             <div class="text-end">
-                                <span class="badge bg-primary d-none" id="unread-{{ $p->id }}">0</span>
+                                @if(isset($unreadCounts[$p->id]) && $unreadCounts[$p->id] > 0)
+                                    <span class="unread-badge" id="unread-{{ $p->id }}">{{ $unreadCounts[$p->id] }}</span>
+                                @else
+                                    <span class="unread-badge d-none" id="unread-{{ $p->id }}">0</span>
+                                @endif
                             </div>
                         </div>
                     </li>
@@ -85,6 +155,15 @@
             </div>
             <div class="card-body overflow-auto" id="thread-body" style="height:60vh">
                 <div id="thread-messages" class="d-flex flex-column gap-3"></div>
+                <!-- Typing Indicator -->
+                <div id="typing-indicator" class="d-flex align-items-center gap-2 p-2" style="display: none !important;">
+                    <div class="typing-dots">
+                        <span></span>
+                        <span></span>
+                        <span></span>
+                    </div>
+                    <small class="text-muted" id="typing-text">Someone is typing...</small>
+                </div>
             </div>
             <div class="card-footer">
                 <form id="send-form" enctype="multipart/form-data">
@@ -157,11 +236,71 @@
     </div>
 </div>
 
+<!-- Report Message Modal -->
+<div class="modal fade" id="reportMessageModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title"><i class="ti ti-flag me-2"></i>Report Message</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form id="reportMessageForm">
+                @csrf
+                <input type="hidden" id="report-message-id" name="message_id">
+                <div class="modal-body">
+                    <p class="text-muted">Please select a reason for reporting this message:</p>
+                    
+                    <div class="mb-3">
+                        <label class="form-label">Reason <span class="text-danger">*</span></label>
+                        <select class="form-select" name="reason" id="report-reason" required>
+                            <option value="">Select a reason...</option>
+                            <option value="spam">Spam</option>
+                            <option value="harassment">Harassment or bullying</option>
+                            <option value="inappropriate">Inappropriate content</option>
+                            <option value="offensive">Offensive language</option>
+                            <option value="other">Other</option>
+                        </select>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label class="form-label">Additional Details (Optional)</label>
+                        <textarea class="form-control" name="details" id="report-details" rows="3" maxlength="500" placeholder="Provide any additional information..."></textarea>
+                        <small class="text-muted">Maximum 500 characters</small>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label class="form-label">Attach Screenshot (Optional)</label>
+                        <input type="file" class="form-control" name="screenshot" id="report-screenshot" accept="image/*">
+                        <small class="text-muted">Upload a screenshot as evidence (Max 5MB, JPG/PNG/GIF)</small>
+                        <div id="screenshot-preview" class="mt-2" style="display: none;">
+                            <img id="screenshot-preview-img" src="" alt="Screenshot preview" class="img-fluid rounded border" style="max-height: 200px;">
+                            <button type="button" class="btn btn-sm btn-danger mt-2" id="remove-screenshot">
+                                <i class="ti ti-x"></i> Remove
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <div class="alert alert-warning">
+                        <i class="ti ti-alert-triangle me-2"></i>
+                        <small>This report will be reviewed by administrators. False reports may result in consequences.</small>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-warning">
+                        <i class="ti ti-flag"></i> Submit Report
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
 @endsection
 
 @push('scripts')
-<!-- Pusher JavaScript Library (Load first) -->
-<script src="https://js.pusher.com/8.2.0/pusher.min.js"></script>
+<!-- Load Laravel Echo via Vite for real-time messaging -->
+@vite(['resources/js/app.js'])
 
 <script>
     (function(){
@@ -181,7 +320,6 @@
         let currentUserId = null;
         const ME_ID = "{{ Auth::id() ?? '' }}";
         let lastMessageId = 0;
-        let autoRefreshInterval = null;
 
         function formatBytes(bytes) {
             if (!bytes) return '0 Bytes';
@@ -205,6 +343,19 @@
                     threadHeader.textContent = data.conversation_with.name || '';
                     threadMessages.innerHTML = '';
                     
+                    // Hide unread badge for this conversation
+                    const unreadBadge = document.getElementById('unread-' + userId);
+                    if (unreadBadge) {
+                        unreadBadge.classList.add('d-none');
+                        unreadBadge.textContent = '0';
+                    }
+                    
+                    // Remove has-unread class from conversation item
+                    const conversationItem = document.querySelector('.conversation-item[data-user-id="' + userId + '"]');
+                    if (conversationItem) {
+                        conversationItem.classList.remove('has-unread');
+                    }
+                    
                     // Track the last message ID
                     lastMessageId = 0;
                     if (data.messages.length > 0) {
@@ -224,17 +375,23 @@
                         
                         let messageHtml = '';
                         
-                        // Add 3-dot menu for own messages (upper right)
+                        // Add 3-dot menu (upper right)
+                        messageHtml += '<div class="dropdown position-absolute top-0 end-0" style="margin: 4px;">';
+                        messageHtml += '<button class="btn btn-link btn-sm p-0 ' + (String(m.from) === ME_ID ? 'text-white' : 'text-dark') + '" type="button" data-bs-toggle="dropdown" aria-expanded="false" style="line-height: 1; text-decoration: none;">';
+                        messageHtml += '<i class="ti ti-dots-vertical" style="font-size: 16px;"></i>';
+                        messageHtml += '</button>';
+                        messageHtml += '<ul class="dropdown-menu dropdown-menu-end">';
+                        
+                        // Own message: Delete option
                         if (String(m.from) === ME_ID) {
-                            messageHtml += '<div class="dropdown position-absolute top-0 end-0" style="margin: 4px;">';
-                            messageHtml += '<button class="btn btn-link btn-sm p-0 text-white" type="button" data-bs-toggle="dropdown" aria-expanded="false" style="line-height: 1; text-decoration: none;">';
-                            messageHtml += '<i class="ti ti-dots-vertical" style="font-size: 16px;"></i>';
-                            messageHtml += '</button>';
-                            messageHtml += '<ul class="dropdown-menu dropdown-menu-end">';
                             messageHtml += '<li><a class="dropdown-item text-danger unsend-btn" href="#" data-message-id="' + m.id + '"><i class="ti ti-trash me-2"></i>Delete</a></li>';
-                            messageHtml += '</ul>';
-                            messageHtml += '</div>';
+                        } else {
+                            // Other's message: Report option
+                            messageHtml += '<li><a class="dropdown-item text-warning report-btn" href="#" data-message-id="' + m.id + '"><i class="ti ti-flag me-2"></i>Report</a></li>';
                         }
+                        
+                        messageHtml += '</ul>';
+                        messageHtml += '</div>';
                         
                         messageHtml += '<div style="padding-right: 20px;">';
                         
@@ -265,9 +422,6 @@
                     if (scrollToBottom) {
                         threadMessages.scrollTop = threadMessages.scrollHeight;
                     }
-                    
-                    // Start auto-refresh for this conversation
-                    startAutoRefresh();
                 });
         }
 
@@ -284,105 +438,79 @@
                  .replace(/'/g, "&#039;");
         }
 
-        // Auto-refresh functions
-        function startAutoRefresh() {
-            // Clear existing interval if any
-            if (autoRefreshInterval) {
-                clearInterval(autoRefreshInterval);
-            }
-            
-            // Check for new messages every 3 seconds
-            autoRefreshInterval = setInterval(checkForNewMessages, 3000);
-        }
-
-        function stopAutoRefresh() {
-            if (autoRefreshInterval) {
-                clearInterval(autoRefreshInterval);
-                autoRefreshInterval = null;
-            }
-        }
-
-        function checkForNewMessages() {
-            if (!currentUserId) return;
-            
-            fetch("{{ url('/teacher/messenger/conversation/') }}/" + currentUserId)
-                .then(r => r.json())
-                .then(data => {
-                    // Check if there are new messages
-                    if (data.messages.length > 0) {
-                        const latestMessageId = data.messages[data.messages.length - 1].id;
-                        
-                        if (latestMessageId > lastMessageId) {
-                            // There are new messages, append them
-                            data.messages.forEach(m => {
-                                if (m.id > lastMessageId) {
-                                    const div = document.createElement('div');
-                                    div.className = 'p-2 rounded position-relative';
-                                    if (String(m.from) === ME_ID) {
-                                        div.classList.add('bg-primary', 'text-white', 'align-self-end');
-                                        div.style.maxWidth = '70%';
-                                    } else {
-                                        div.classList.add('bg-light', 'text-dark', 'align-self-start');
-                                        div.style.maxWidth = '70%';
-                                    }
-                                    
-                                    let msgHtml = '';
-                                    
-                                    // Add 3-dot menu for own messages (upper right)
-                                    if (String(m.from) === ME_ID) {
-                                        msgHtml += '<div class="dropdown position-absolute top-0 end-0" style="margin: 4px;">';
-                                        msgHtml += '<button class="btn btn-link btn-sm p-0 text-white" type="button" data-bs-toggle="dropdown" aria-expanded="false" style="line-height: 1; text-decoration: none;">';
-                                        msgHtml += '<i class="ti ti-dots-vertical" style="font-size: 16px;"></i>';
-                                        msgHtml += '</button>';
-                                        msgHtml += '<ul class="dropdown-menu dropdown-menu-end">';
-                                        msgHtml += '<li><a class="dropdown-item text-danger unsend-btn" href="#" data-message-id="' + m.id + '"><i class="ti ti-trash me-2"></i>Delete</a></li>';
-                                        msgHtml += '</ul>';
-                                        msgHtml += '</div>';
-                                    }
-                                    
-                                    msgHtml += '<div style="padding-right: 20px;">';
-                                    
-                                    // Only show body if it's not the default "(File attachment)" text
-                                    if (m.body && m.body !== '(File attachment)') {
-                                        msgHtml += (m.subject ? '<strong>' + escapeHtml(m.subject) + '</strong><br>' : '') + nl2br(escapeHtml(m.body));
-                                    }
-                                    
-                                    // Add attachment if exists
-                                    if (m.attachment_path && m.attachment_name) {
-                                        const btnClass = String(m.from) === ME_ID ? 'btn-light' : 'btn-outline-primary';
-                                        msgHtml += '<div class="mt-2"><a href="/teacher/messages/' + m.id + '/download" class="btn btn-sm ' + btnClass + '" target="_blank"><i class="ti ti-download"></i> ' + escapeHtml(m.attachment_name);
-                                        if (m.attachment_size) {
-                                            msgHtml += ' <small>(' + formatBytes(m.attachment_size) + ')</small>';
-                                        }
-                                        msgHtml += '</a></div>';
-                                    }
-                                    
-                                    msgHtml += '</div><div class="small mt-1" style="opacity: 0.8;">';
-                                    msgHtml += '<span>' + formatTime(m.created_at) + '</span>';
-                                    msgHtml += '</div>';
-                                    
-                                    div.innerHTML = msgHtml;
-                                    div.setAttribute('data-message-id', m.id);
-                                    threadMessages.appendChild(div);
-                                }
-                            });
-                            
-                            lastMessageId = latestMessageId;
-                            threadMessages.scrollTop = threadMessages.scrollHeight;
-                        }
-                    }
-                })
-                .catch(err => {
-                    console.error('Auto-refresh error:', err);
-                });
-        }
-
         list.addEventListener('click', function(e){
             const li = e.target.closest('.conversation-item');
             if (!li) return;
             const userId = li.dataset.userId;
+            
+            // Clear unread badge and styling when opening conversation
+            clearUnreadForConversation(userId);
+            
             loadConversation(userId);
         });
+
+        // Function to clear unread count for a conversation
+        function clearUnreadForConversation(userId) {
+            const convItem = document.querySelector(`.conversation-item[data-user-id="${userId}"]`);
+            if (convItem) {
+                convItem.classList.remove('has-unread');
+                convItem.dataset.unreadCount = '0';
+                
+                const badge = document.getElementById(`unread-${userId}`);
+                if (badge) {
+                    badge.classList.add('d-none');
+                    badge.textContent = '0';
+                }
+            }
+        }
+
+        // Function to update unread count for a conversation
+        function updateUnreadCount(userId, count) {
+            const convItem = document.querySelector(`.conversation-item[data-user-id="${userId}"]`);
+            if (!convItem) return;
+            
+            const badge = document.getElementById(`unread-${userId}`);
+            
+            if (count > 0) {
+                convItem.classList.add('has-unread');
+                convItem.dataset.unreadCount = count;
+                if (badge) {
+                    badge.textContent = count;
+                    badge.classList.remove('d-none');
+                }
+            } else {
+                convItem.classList.remove('has-unread');
+                convItem.dataset.unreadCount = '0';
+                if (badge) {
+                    badge.classList.add('d-none');
+                    badge.textContent = '0';
+                }
+            }
+        }
+
+        // Function to fetch and update all unread counts
+        function refreshUnreadCounts() {
+            fetch('/teacher/api/unread-counts', {
+                method: 'GET',
+                headers: {
+                    'Accept': 'application/json',
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.content
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success && data.unreadCounts) {
+                    Object.keys(data.unreadCounts).forEach(userId => {
+                        updateUnreadCount(userId, data.unreadCounts[userId]);
+                    });
+                }
+            })
+            .catch(err => console.error('Failed to fetch unread counts:', err));
+        }
+
+        // Refresh unread counts every 30 seconds
+        setInterval(refreshUnreadCounts, 30000);
+
 
         // File upload handlers
         attachBtn.addEventListener('click', function() {
@@ -410,7 +538,45 @@
             attachmentPreview.style.display = 'none';
         });
 
+        // Typing Indicator Logic
+        let typingTimeout = null;
+        
+        function sendTypingStatus(isTyping) {
+            if (!currentUserId) return;
+            
+            fetch('/teacher/messenger/typing', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+                },
+                body: JSON.stringify({
+                    recipient_id: currentUserId,
+                    is_typing: isTyping
+                })
+            }).catch(err => console.error('Error sending typing status:', err));
+        }
+        
+        // Listen for typing on message input
+        messageInput.addEventListener('input', function() {
+            if (!currentUserId) return;
+            
+            // Send typing = true
+            sendTypingStatus(true);
+            
+            // Clear previous timeout
+            if (typingTimeout) clearTimeout(typingTimeout);
+            
+            // Set new timeout to send typing = false after 2 seconds of no typing
+            typingTimeout = setTimeout(() => {
+                sendTypingStatus(false);
+            }, 2000);
+        });
+        
+        // When form is submitted, immediately send typing = false
         sendForm.addEventListener('submit', function(e){
+            sendTypingStatus(false);
+            if (typingTimeout) clearTimeout(typingTimeout);
             e.preventDefault();
             if (!currentUserId) return alert('Select a conversation first');
             
@@ -495,9 +661,6 @@
                 alert('Failed to send message. Please try again.'); 
             });
         });
-
-        // Stop auto-refresh when leaving the page
-        window.addEventListener('beforeunload', stopAutoRefresh);
 
         // Load all users for new conversation modal
         let allUsers = [];
@@ -711,108 +874,251 @@
             }
         });
 
-        // ===== REAL-TIME PUSHER INTEGRATION =====
-        // Initialize Pusher
-        try {
-            const pusher = new Pusher('{{ config('broadcasting.connections.pusher.key') }}', {
-                cluster: '{{ config('broadcasting.connections.pusher.options.cluster') }}',
-                forceTLS: true,
-                authEndpoint: '/broadcasting/auth',
-                auth: {
-                    headers: {
-                        'X-CSRF-TOKEN': document.querySelector('input[name="_token"]').value
-                    }
+        // Report message handler (event delegation)
+        threadMessages.addEventListener('click', function(e) {
+            const reportBtn = e.target.closest('.report-btn');
+            if (!reportBtn) return;
+            
+            e.preventDefault();
+            
+            const messageId = reportBtn.getAttribute('data-message-id');
+            document.getElementById('report-message-id').value = messageId;
+            
+            // Open report modal
+            const modal = new bootstrap.Modal(document.getElementById('reportMessageModal'));
+            modal.show();
+        });
+
+        // Screenshot preview handlers
+        const screenshotInput = document.getElementById('report-screenshot');
+        const screenshotPreview = document.getElementById('screenshot-preview');
+        const screenshotPreviewImg = document.getElementById('screenshot-preview-img');
+        const removeScreenshotBtn = document.getElementById('remove-screenshot');
+
+        screenshotInput.addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (file) {
+                // Check file size (5MB max)
+                if (file.size > 5 * 1024 * 1024) {
+                    alert('File size must be less than 5MB');
+                    screenshotInput.value = '';
+                    return;
                 }
+
+                // Check file type
+                if (!file.type.match('image.*')) {
+                    alert('Please upload an image file (JPG, PNG, GIF)');
+                    screenshotInput.value = '';
+                    return;
+                }
+
+                // Show preview
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    screenshotPreviewImg.src = e.target.result;
+                    screenshotPreview.style.display = 'block';
+                };
+                reader.readAsDataURL(file);
+            }
+        });
+
+        removeScreenshotBtn.addEventListener('click', function() {
+            screenshotInput.value = '';
+            screenshotPreview.style.display = 'none';
+            screenshotPreviewImg.src = '';
+        });
+
+        // Submit report form
+        document.getElementById('reportMessageForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const messageId = document.getElementById('report-message-id').value;
+            const formData = new FormData(this);
+            
+            fetch('/teacher/messages/' + messageId + '/report', {
+                method: 'POST',
+                headers: {
+                    'X-CSRF-TOKEN': document.querySelector('input[name="_token"]').value,
+                    'Accept': 'application/json'
+                },
+                body: formData
+            })
+            .then(response => response.json())
+            .then(res => {
+                if (res.success) {
+                    // Close modal
+                    const modal = bootstrap.Modal.getInstance(document.getElementById('reportMessageModal'));
+                    modal.hide();
+                    
+                    // Reset form and preview
+                    document.getElementById('reportMessageForm').reset();
+                    screenshotPreview.style.display = 'none';
+                    screenshotPreviewImg.src = '';
+                    
+                    // Show success message
+                    alert(res.message || 'Message reported successfully');
+                } else {
+                    alert(res.error || 'Failed to report message');
+                }
+            })
+            .catch(err => {
+                console.error('Report error:', err);
+                alert('Failed to report message. Please try again.');
             });
+        });
 
-            // Subscribe to the current user's private channel
-            const channel = pusher.subscribe('private-user.{{ auth()->id() }}');
+        // Real-time unread count polling
+        let unreadCountInterval = null;
 
-            console.log('Pusher initialized for user {{ auth()->id() }}');
-
-            // Listen for new messages
-            channel.bind('message.sent', function(data) {
-                console.log('Real-time message received:', data);
-
-                // Only process if we're viewing the conversation with the sender
-                if (currentUserId && parseInt(data.sender_id) === parseInt(currentUserId)) {
-                    // Append the message to the conversation
-                    const div = document.createElement('div');
-                    div.className = 'p-2 rounded position-relative bg-light text-dark align-self-start';
-                    div.style.maxWidth = '70%';
-                    div.setAttribute('data-message-id', data.id);
-                    
-                    let msgHtml = '<div style="padding-right: 20px;">';
-                    
-                    // Show message body
-                    if (data.body && data.body !== '(File attachment)') {
-                        msgHtml += (data.subject ? '<strong>' + escapeHtml(data.subject) + '</strong><br>' : '') + nl2br(escapeHtml(data.body));
+        function updateUnreadCounts() {
+            fetch("{{ route('teacher.api.unread-counts-by-partner') }}")
+                .then(r => r.json())
+                .then(data => {
+                    if (data.success && data.unread_counts) {
+                        // Update each conversation item
+                        document.querySelectorAll('.conversation-item').forEach(item => {
+                            const userId = item.dataset.userId;
+                            const unreadBadge = document.getElementById('unread-' + userId);
+                            const unreadCount = data.unread_counts[userId] || 0;
+                            
+                            if (unreadBadge) {
+                                if (unreadCount > 0 && userId !== String(currentUserId)) {
+                                    unreadBadge.textContent = unreadCount;
+                                    unreadBadge.classList.remove('d-none');
+                                    item.classList.add('has-unread');
+                                } else {
+                                    unreadBadge.classList.add('d-none');
+                                    item.classList.remove('has-unread');
+                                }
+                            }
+                        });
                     }
-                    
-                    // Add attachment if exists
-                    if (data.attachment_path && data.attachment_name) {
-                        msgHtml += '<div class="mt-2"><a href="/teacher/messages/' + data.id + '/download" class="btn btn-sm btn-outline-primary" target="_blank"><i class="ti ti-download"></i> ' + escapeHtml(data.attachment_name);
-                        if (data.attachment_size) {
-                            msgHtml += ' <small>(' + formatBytes(data.attachment_size) + ')</small>';
+                })
+                .catch(err => console.error('Failed to fetch unread counts:', err));
+        }
+
+        // Start polling for unread counts every 5 seconds
+        function startUnreadCountPolling() {
+            if (unreadCountInterval) {
+                clearInterval(unreadCountInterval);
+            }
+            updateUnreadCounts(); // Initial update
+            unreadCountInterval = setInterval(updateUnreadCounts, 5000);
+        }
+
+        function stopUnreadCountPolling() {
+            if (unreadCountInterval) {
+                clearInterval(unreadCountInterval);
+                unreadCountInterval = null;
+            }
+        }
+
+        // Start polling when page loads
+        startUnreadCountPolling();
+
+        // Stop polling when leaving
+        window.addEventListener('beforeunload', stopUnreadCountPolling);
+
+        // ===== REAL-TIME LARAVEL ECHO INTEGRATION =====
+        if (typeof window.Echo !== 'undefined') {
+            try {
+                console.log('✓ Laravel Echo available, subscribing to channel...');
+                
+                // Subscribe to the current user's private channel
+                const channel = window.Echo.private('user.{{ auth()->id() }}');
+
+                console.log('✓ Subscribed to private channel: user.{{ auth()->id() }}');
+
+                // Listen for new messages
+                channel.listen('.message.sent', function(data) {
+                    console.log('✓ Real-time message received:', data);
+
+                    const senderId = parseInt(data.sender_id);
+                    const isCurrentConversation = currentUserId && senderId === parseInt(currentUserId);
+
+                    // Only process if we're viewing the conversation with the sender
+                    if (isCurrentConversation) {
+                        // Append the message to the conversation
+                        const div = document.createElement('div');
+                        div.className = 'p-2 rounded position-relative bg-light text-dark align-self-start';
+                        div.style.maxWidth = '70%';
+                        div.setAttribute('data-message-id', data.id);
+                        
+                        let msgHtml = '<div style="padding-right: 20px;">';
+                        
+                        // Show message body
+                        if (data.body && data.body !== '(File attachment)') {
+                            msgHtml += (data.subject ? '<strong>' + escapeHtml(data.subject) + '</strong><br>' : '') + nl2br(escapeHtml(data.body));
                         }
-                        msgHtml += '</a></div>';
-                    }
-                    
-                    msgHtml += '</div><div class="small mt-1" style="opacity: 0.8;">';
-                    msgHtml += '<span>' + formatTime(data.created_at) + '</span>';
-                    msgHtml += '</div>';
-                    
-                    div.innerHTML = msgHtml;
-                    threadMessages.appendChild(div);
-                    threadMessages.scrollTop = threadMessages.scrollHeight;
+                        
+                        // Add attachment if exists
+                        if (data.attachment_path && data.attachment_name) {
+                            msgHtml += '<div class="mt-2"><a href="/teacher/messages/' + data.id + '/download" class="btn btn-sm btn-outline-primary" target="_blank"><i class="ti ti-download"></i> ' + escapeHtml(data.attachment_name);
+                            if (data.attachment_size) {
+                                msgHtml += ' <small>(' + formatBytes(data.attachment_size) + ')</small>';
+                            }
+                            msgHtml += '</a></div>';
+                        }
+                        
+                        msgHtml += '</div><div class="small mt-1" style="opacity: 0.8;">';
+                        msgHtml += '<span>' + formatTime(data.created_at) + '</span>';
+                        msgHtml += '</div>';
+                        
+                        div.innerHTML = msgHtml;
+                        threadMessages.appendChild(div);
+                        threadMessages.scrollTop = threadMessages.scrollHeight;
 
-                    // Update lastMessageId
-                    if (data.id > lastMessageId) {
-                        lastMessageId = data.id;
-                    }
-
-                    // Show notification if not in focus
-                    if (document.hidden) {
+                        // Update lastMessageId
+                        if (data.id > lastMessageId) {
+                            lastMessageId = data.id;
+                        }
+                    } else {
+                        // Message from someone we're not currently chatting with - increment unread
+                        const convItem = document.querySelector(`.conversation-item[data-user-id="${senderId}"]`);
+                        if (convItem) {
+                            const currentCount = parseInt(convItem.dataset.unreadCount || 0);
+                            updateUnreadCount(senderId, currentCount + 1);
+                        }
+                        
+                        // Show notification
                         showNotification('New message from ' + (data.sender_name || 'User'));
                     }
+
+                    // Update conversation list (add sender if not exists)
+                    updateConversationList(data);
+                });
+
+                // Listen for typing events
+                channel.listen('.user.typing', function(data) {
+                    console.log('✓ Typing event received:', data);
                     
-                    // Stop polling since we're getting real-time updates
-                    stopAutoRefresh();
-                }
+                    const typerId = parseInt(data.user_id);
+                    const isCurrentConversation = currentUserId && typerId === parseInt(currentUserId);
+                    
+                    // Only show typing indicator if this is from the user we're chatting with
+                    if (isCurrentConversation) {
+                        const typingIndicator = document.getElementById('typing-indicator');
+                        
+                        if (data.is_typing) {
+                            // Show typing indicator with user's name
+                            typingIndicator.innerHTML = '<small class="text-muted"><div class="typing-dots"><span></span><span></span><span></span></div> ' + escapeHtml(data.user_name) + ' is typing...</small>';
+                            typingIndicator.style.display = 'block';
+                        } else {
+                            // Hide typing indicator
+                            typingIndicator.style.display = 'none';
+                        }
+                    }
+                });
 
-                // Update conversation list (add sender if not exists)
-                updateConversationList(data);
-            });
+                console.log('✓ Echo real-time messaging is active');
 
-            // Handle connection state
-            pusher.connection.bind('connected', function() {
-                console.log('✓ Pusher connected successfully');
-                // Stop polling when Pusher connects
-                if (currentUserId) {
-                    stopAutoRefresh();
-                }
-            });
-
-            pusher.connection.bind('error', function(err) {
-                console.error('Pusher connection error:', err);
-                // Fall back to polling if Pusher fails
-                if (currentUserId && !autoRefreshInterval) {
-                    startAutoRefresh();
-                }
-            });
-
-            pusher.connection.bind('disconnected', function() {
-                console.warn('Pusher disconnected, falling back to polling');
-                // Fall back to polling when disconnected
-                if (currentUserId && !autoRefreshInterval) {
-                    startAutoRefresh();
-                }
-            });
-
-        } catch (error) {
-            console.error('Failed to initialize Pusher:', error);
-            console.log('Falling back to polling for messages');
-            // Keep polling as fallback
+            } catch (error) {
+                console.error('❌ Failed to initialize Laravel Echo:', error);
+                console.log('⚠️ Falling back to polling...');
+            }
+        } else {
+            console.warn('⚠️ Laravel Echo not available. Make sure @@vite directive is added and npm run dev is running.');
+            console.log('⚠️ Messages will use polling instead of real-time updates.');
         }
 
         // Helper function to update conversation list

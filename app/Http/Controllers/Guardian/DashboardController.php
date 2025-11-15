@@ -7,6 +7,7 @@ use Illuminate\Support\Facades\Auth;
 use App\Models\Guardian;
 use App\Models\Student;
 use App\Models\SubjectEnrollment;
+use App\Models\Message;
 use Illuminate\Support\Facades\DB;
 
 class DashboardController extends Controller
@@ -109,12 +110,13 @@ class DashboardController extends Controller
         }
         
         // Get recent activities (messages received)
-        $recentMessages = DB::table('message_recipients')
-            ->join('messages', 'message_recipients.message_id', '=', 'messages.id')
-            ->join('users', 'messages.sender_id', '=', 'users.id')
-            ->where('message_recipients.recipient_id', $user->id)
-            ->select('messages.*', 'users.name as sender_name', 'message_recipients.read_at')
-            ->orderBy('messages.created_at', 'desc')
+        $recentMessages = Message::whereHas('recipients', function($query) use ($user) {
+                $query->where('recipient_id', $user->id);
+            })
+            ->with(['sender', 'recipients' => function($query) use ($user) {
+                $query->where('recipient_id', $user->id);
+            }])
+            ->orderBy('created_at', 'desc')
             ->limit(5)
             ->get();
         

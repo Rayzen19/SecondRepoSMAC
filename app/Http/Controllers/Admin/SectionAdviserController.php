@@ -597,19 +597,16 @@ class SectionAdviserController extends Controller
             Log::info('Teacher is profiled for subject');
         }
 
-        // Require adviser to exist
+        // Optional: Find adviser if exists (not required for subject assignments)
         $adviser = \App\Models\AcademicYearStrandAdviser::where('academic_year_id', $activeYear->id)
             ->where('strand_id', $strand->id)
             ->first();
-        if (!$adviser) {
-            Log::warning('No adviser found for strand', [
-                'academic_year_id' => $activeYear->id,
-                'strand_id' => $strand->id
-            ]);
-            return response()->json(['success' => false, 'message' => 'Please assign an adviser first.'], 422);
+        
+        if ($adviser) {
+            Log::info('Found adviser', ['adviser_id' => $adviser->id]);
+        } else {
+            Log::info('No adviser assigned yet for this strand, proceeding with null adviser_id');
         }
-
-        Log::info('Found adviser', ['adviser_id' => $adviser->id]);
 
         // Resolve optional section assignment for this subject-teacher mapping
         $aysSectionId = null;
@@ -644,7 +641,7 @@ class SectionAdviserController extends Controller
                 'academic_year_strand_section_id' => $aysSectionId,
             ],
             [
-                'academic_year_strand_adviser_id' => $adviser->id,
+                'academic_year_strand_adviser_id' => $adviser?->id, // Null if no adviser assigned yet
                 'teacher_id' => $validated['teacher_id'],
             ]
         );
@@ -655,5 +652,52 @@ class SectionAdviserController extends Controller
         ]);
 
         return response()->json(['success' => true, 'message' => 'Teacher assigned successfully.']);
+    }
+
+    /**
+     * Disable pre-enrollment for the active academic year
+     */
+    public function disablePreEnrollment()
+    {
+        // Get the active academic year
+        $activeYear = \App\Models\AcademicYear::where('is_active', true)->first();
+        
+        if (!$activeYear) {
+            return back()->with('error', 'No active academic year found.');
+        }
+
+        // Disable pre-enrollment for the active academic year
+        $activeYear->update([
+            'pre_enrollment_enabled' => false,
+        ]);
+
+        return back()->with('success', 'Pre-enrollment has been successfully disabled. Students can no longer pre-enroll for the next school year.');
+    }
+
+    /**
+     * End of school year - finalize records for all classes
+     */
+    public function endOfSchoolYear()
+    {
+        // Get the active academic year
+        $activeYear = \App\Models\AcademicYear::where('is_active', true)->first();
+        
+        if (!$activeYear) {
+            return back()->with('error', 'No active academic year found.');
+        }
+
+        // Mark the school year as ended for all assignments in the active academic year
+        $updated = \App\Models\AcademicYearStrandSubject::where('academic_year_id', $activeYear->id)
+            ->update([
+                'school_year_ended' => true,
+                'school_year_ended_at' => now(),
+            ]);
+
+        // Enable pre-enrollment for the active academic year
+        $activeYear->update([
+            'pre_enrollment_enabled' => true,
+        ]);
+
+        return back()->with('success', "School year has been successfully ended for all classes. {$updated} assignment(s) finalized. All records are now locked and pre-enrollment has been enabled for all students.");
     }
 }

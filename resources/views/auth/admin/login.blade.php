@@ -9,7 +9,7 @@
 <body class="min-h-screen flex items-center justify-center bg-gray-100">
     <div class="w-full max-w-md p-8 bg-white rounded shadow">
         <h2 class="text-2xl font-bold mb-6 text-center">Admin Login</h2>
-        <form method="POST" action="{{ route('admin.login.submit') }}">
+        <form method="POST" action="{{ route('admin.auth.login') }}">
             @csrf
             <div class="mb-4">
                 <label for="email" class="block mb-1">Email</label>

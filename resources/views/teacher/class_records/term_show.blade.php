@@ -10,11 +10,19 @@
         <div>
             <a href="{{ route('teacher.class-records.show', $assignment) }}" class="btn btn-outline-secondary"><i class="ti ti-arrow-left me-1"></i> Back</a>
         </div>
+        <div class="d-flex gap-2">
+            <button type="button" class="btn btn-success" onclick="document.querySelector('form[action*=scores\\.store] button[type=submit]')?.click()">
+                <i class="ti ti-device-floppy me-1"></i> Save Score
+            </button>
+            <button type="button" class="btn btn-outline-primary" onclick="printTable()"><i class="ti ti-printer me-1"></i> Print</button>
+            <button type="button" class="btn btn-outline-success" onclick="exportToExcel()"><i class="ti ti-file-spreadsheet me-1"></i> Export to Excel</button>
+        </div>
         @php
             $defaultLevels = ['7','8','9','10','11','12'];
             $levels = $gradeLevels ?? $defaultLevels;
             $selectedGrade = request()->query('grade_level');
             $selectedTerm = request()->query('term');
+            $selectedSection = request()->query('section');
         @endphp
         <div class="d-flex align-items-center gap-2">
             <div style="min-width:120px;">
@@ -32,9 +40,26 @@
                     <option value="finals" {{ $selectedTerm == 'finals' ? 'selected' : '' }}>Finals</option>
                 </select>
             </div>
+            <div style="min-width:140px;">
+                <select id="filterSection" class="form-select form-select-sm">
+                    <option value="">All Sections</option>
+                    @foreach($sections ?? [] as $sec)
+                        <option value="{{ $sec['id'] }}" {{ $selectedSection == $sec['id'] ? 'selected' : '' }}>{{ $sec['name'] }}</option>
+                    @endforeach
+                </select>
+            </div>
         </div>
     </div>
 </div>
+
+<!-- School Year Ended Status Badge -->
+@if($assignment->school_year_ended)
+    <div class="alert alert-info alert-dismissible fade show" role="alert">
+        <i class="ti ti-calendar-check me-2"></i>
+        <strong>School Year Ended:</strong> This class has been finalized on {{ $assignment->school_year_ended_at ? $assignment->school_year_ended_at->format('F d, Y') : 'N/A' }}. Pre-enrollment is now disabled for students.
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    </div>
+@endif
 
 @if(session('success'))
 <div class="alert alert-success">{{ session('success') }}</div>
@@ -176,6 +201,47 @@
 </div>
 
 <style>
+    .print-header {
+        display: none;
+    }
+    
+    @media print {
+        body * {
+            visibility: hidden;
+        }
+        #printableArea, #printableArea * {
+            visibility: visible;
+        }
+        .print-header, .print-header * {
+            visibility: visible;
+        }
+        .print-header {
+            display: block !important;
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            padding: 10px;
+            margin-bottom: 20px;
+        }
+        #printableArea {
+            position: absolute;
+            left: 0;
+            top: 80px;
+            width: 100%;
+        }
+        .btn, .modal, .no-print {
+            display: none !important;
+        }
+        .table-border-black {
+            font-size: 9px;
+        }
+        @page {
+            size: landscape;
+            margin: 10mm;
+        }
+    }
+
     .table-border-black {
         border: 2px solid #000 !important;
         border-collapse: collapse !important;
@@ -199,9 +265,24 @@
         white-space: nowrap;
     }
 </style>
+
+<!-- Print Header (only visible when printing) -->
+<div class="print-header">
+    <h4 class="mb-1">Class Record — {{ $termLabel }}</h4>
+    <div class="row g-2" style="font-size: 11px;">
+        <div class="col-3"><strong>School Year:</strong> {{ $details['school_year'] ?? '—' }}</div>
+        <div class="col-3"><strong>Strand:</strong> {{ $details['strand'] ?? '—' }}</div>
+        <div class="col-3"><strong>Section:</strong> {{ $details['section'] ?? '—' }}</div>
+        <div class="col-3"><strong>Grade:</strong> {{ $details['grade'] ?? '—' }}</div>
+        <div class="col-6"><strong>Subject:</strong> {{ $details['subject'] ?? '—' }} {{ $details['subject_code'] ? '(' . $details['subject_code'] . ')' : '' }}</div>
+        <div class="col-3"><strong>Teacher:</strong> {{ $details['subject_teacher'] ?? '—' }}</div>
+        <div class="col-3"><strong>Semester:</strong> {{ $details['semester'] ?? '—' }}</div>
+    </div>
+</div>
+
 <div class="card">
-    <div class="card-body p-0">
-        <div class="d-flex justify-content-end p-2">
+    <div class="card-body p-0" id="printableArea">
+        <div class="d-flex justify-content-end p-2 no-print">
             <button type="button" class="btn btn-success btn-sm" data-bs-toggle="modal" data-bs-target="#modalSubmitFinalGrades">
                 <i class="ti ti-check me-1"></i> Submit Final Grades
             </button>
@@ -500,7 +581,7 @@
 
         @if($term === 'semester-final')
         <div class="table-responsive">
-            <table class="table table-sm align-middle mb-0 table-bordered table-border-black">
+            <table id="classRecordTable" class="table table-sm align-middle mb-0 table-bordered table-border-black">
                 <thead>
                     <tr>
                         <th colspan="6" class="text-center">Names</th>
@@ -900,8 +981,9 @@
     (function(){
         const gradeSel = document.getElementById('filterGradeLevelTerm');
         const termSel = document.getElementById('filterTermTerm');
+        const sectionSel = document.getElementById('filterSection');
         function applyFilters(){
-            if(!gradeSel && !termSel) return;
+            if(!gradeSel && !termSel && !sectionSel) return;
             const params = new URLSearchParams(window.location.search);
             if(gradeSel){
                 if(gradeSel.value) params.set('grade_level', gradeSel.value); else params.delete('grade_level');
@@ -909,11 +991,15 @@
             if(termSel){
                 if(termSel.value) params.set('term', termSel.value); else params.delete('term');
             }
+            if(sectionSel){
+                if(sectionSel.value) params.set('section', sectionSel.value); else params.delete('section');
+            }
             const target = window.location.pathname + (params.toString() ? ('?' + params.toString()) : '');
             window.location.href = target;
         }
         if(gradeSel) gradeSel.addEventListener('change', applyFilters);
         if(termSel) termSel.addEventListener('change', applyFilters);
+        if(sectionSel) sectionSel.addEventListener('change', applyFilters);
     })();
 </script>
 @endpush
@@ -939,5 +1025,76 @@
             alert('New entry created:\nGrade Level: ' + grade + '\nTerm: ' + term + '\n(Implement backend handling to persist.)');
         });
     })();
+</script>
+@endpush
+
+@push('scripts')
+<!-- SheetJS library for Excel export -->
+<script src="https://cdn.sheetjs.com/xlsx-0.20.1/package/dist/xlsx.full.min.js"></script>
+
+<script>
+function printTable() {
+    window.print();
+}
+
+function exportToExcel() {
+    // Get the table
+    const table = document.getElementById('classRecordTable');
+    if (!table) {
+        alert('Table not found!');
+        return;
+    }
+    
+    // Clone the table to process it
+    const clonedTable = table.cloneNode(true);
+    
+    // Remove input fields and replace with their values
+    const inputs = clonedTable.querySelectorAll('input.score-input');
+    inputs.forEach(input => {
+        const value = input.value || '0';
+        const td = input.closest('td');
+        if (td) {
+            td.innerHTML = value;
+        }
+    });
+    
+    // Remove button columns (Action column)
+    const actionHeaders = clonedTable.querySelectorAll('th:last-child');
+    actionHeaders.forEach(th => th.remove());
+    
+    const actionCells = clonedTable.querySelectorAll('tbody td:last-child');
+    actionCells.forEach(td => td.remove());
+    
+    // Remove clickable buttons in headers and keep only text
+    const headerButtons = clonedTable.querySelectorAll('th button');
+    headerButtons.forEach(btn => {
+        const text = btn.textContent;
+        btn.parentNode.textContent = text;
+    });
+    
+    // Remove divs and keep only text content in headers
+    const headerDivs = clonedTable.querySelectorAll('thead div');
+    headerDivs.forEach(div => {
+        const text = div.textContent;
+        div.parentNode.textContent = text;
+    });
+    
+    // Create workbook from table
+    const wb = XLSX.utils.book_new();
+    const ws = XLSX.utils.table_to_sheet(clonedTable);
+    
+    // Add the worksheet to workbook
+    XLSX.utils.book_append_sheet(wb, ws, 'Class Records');
+    
+    // Generate filename
+    const subject = '{{ $details["subject"] ?? "Class" }}';
+    const strand = '{{ $details["strand"] ?? "" }}';
+    const section = '{{ $details["section"] ?? "" }}';
+    const term = '{{ $termLabel ?? "" }}';
+    const filename = `${subject}_${strand}_${section}_${term}_${new Date().toISOString().split('T')[0]}.xlsx`;
+    
+    // Save the file
+    XLSX.writeFile(wb, filename);
+}
 </script>
 @endpush

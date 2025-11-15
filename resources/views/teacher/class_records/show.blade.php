@@ -24,6 +24,15 @@
     </div>
 </div>
 
+<!-- School Year Ended Status Badge -->
+@if($assignment->school_year_ended)
+    <div class="alert alert-info alert-dismissible fade show" role="alert">
+        <i class="ti ti-calendar-check me-2"></i>
+        <strong>School Year Ended:</strong> This class has been finalized on {{ $assignment->school_year_ended_at ? $assignment->school_year_ended_at->format('F d, Y') : 'N/A' }}. Pre-enrollment is now disabled for students.
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    </div>
+@endif
+
 <!-- Publication Status Badge -->
 @if($assignment->grades_published)
     <div class="alert alert-success alert-dismissible fade show" role="alert">

@@ -54,7 +54,7 @@
                             @csrf
                             <div class="mb-3">
                                 <label for="email" class="form-label">Email address</label>
-                                <input type="email" name="email" id="email" value="{{ old('email') }}" class="form-control" required autofocus>
+                                <input type="email" name="email" id="email" value="{{ old('email', request('email', '')) }}" class="form-control" required autofocus>
                             </div>
                             <button type="submit" class="btn btn-primary w-100">Send OTP</button>
                         </form>

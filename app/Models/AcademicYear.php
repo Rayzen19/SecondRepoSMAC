@@ -15,10 +15,12 @@ class AcademicYear extends Model
         'semester',
         'academic_status',
         'is_active',
+        'pre_enrollment_enabled',
     ];
 
     protected $casts = [
         'is_active' => 'boolean',
+        'pre_enrollment_enabled' => 'boolean',
     ];
 
     public function strandSubjects()

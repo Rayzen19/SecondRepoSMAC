@@ -10,6 +10,27 @@
     </div>
     @endif
 
+    <!-- Warning Alert for Inactive Status -->
+    @if(session('warning'))
+    <div class="alert alert-warning alert-dismissible fade show" role="alert">
+        <i class="ti ti-alert-triangle me-2"></i>{{ session('warning') }}
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    </div>
+    @endif
+
+    <!-- Inactive Status Notice -->
+    @if($teacher->status !== 'active')
+    <div class="alert alert-warning alert-dismissible fade show" role="alert">
+        <div class="d-flex align-items-start">
+            <i class="ti ti-alert-triangle me-2 fs-4"></i>
+            <div>
+                <h6 class="alert-heading mb-1">Account Status: {{ ucfirst($teacher->status) }}</h6>
+                <p class="mb-0">Your account is currently <strong>{{ $teacher->status }}</strong>. You have view-only access to your profile. All other features are restricted. Please contact the administrator for assistance.</p>
+            </div>
+        </div>
+    </div>
+    @endif
+
     <!-- Error Alert -->
     @if(session('error'))
     <div class="alert alert-danger alert-dismissible fade show" role="alert">
@@ -28,9 +49,15 @@
                             <h4 class="mb-1">My Profile</h4>
                             <p class="text-muted mb-0">View and manage your personal information</p>
                         </div>
+                        @if($teacher->status === 'active')
                         <a href="{{ route('teacher.profile.edit') }}" class="btn btn-primary">
                             <i class="ti ti-edit me-1"></i>Edit Profile
                         </a>
+                        @else
+                        <button class="btn btn-secondary" disabled title="Editing disabled for {{ $teacher->status }} accounts">
+                            <i class="ti ti-lock me-1"></i>Edit Profile (Disabled)
+                        </button>
+                        @endif
                     </div>
                 </div>
             </div>
@@ -238,12 +265,34 @@
                         </div>
                         <div class="col-md-12">
                             <label class="form-label fw-bold text-muted small">Phone</label>
-                            <p class="mb-0">{{ $teacher->phone }}</p>
+                            <p class="mb-0">{{ $teacher->phone ?? '-' }}</p>
                         </div>
                         <div class="col-12">
                             <label class="form-label fw-bold text-muted small">Address</label>
                             <p class="mb-0">{{ $teacher->address ?? '-' }}</p>
                         </div>
+                        @if($teacher->region || $teacher->province || $teacher->municipality || $teacher->barangay || $teacher->postal_code)
+                        <div class="col-md-3">
+                            <label class="form-label fw-bold text-muted small">Region</label>
+                            <p class="mb-0">{{ $teacher->region ?? '-' }}</p>
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label fw-bold text-muted small">Province</label>
+                            <p class="mb-0">{{ $teacher->province ?? '-' }}</p>
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label fw-bold text-muted small">Municipality</label>
+                            <p class="mb-0">{{ $teacher->municipality ?? '-' }}</p>
+                        </div>
+                        <div class="col-md-2">
+                            <label class="form-label fw-bold text-muted small">Barangay</label>
+                            <p class="mb-0">{{ $teacher->barangay ?? '-' }}</p>
+                        </div>
+                        <div class="col-md-1">
+                            <label class="form-label fw-bold text-muted small">Postal Code</label>
+                            <p class="mb-0">{{ $teacher->postal_code ?? '-' }}</p>
+                        </div>
+                        @endif
                     </div>
                 </div>
             </div>
@@ -349,10 +398,14 @@
 
                                         @if($section['subjects']->isNotEmpty())
                                             <div class="mt-2 pt-2 border-top">
-                                                <small class="text-muted d-block mb-1"><strong>Subjects Teaching:</strong></small>
-                                                <div class="d-flex flex-wrap gap-1">
+                                                <small class="text-muted d-block mb-2"><strong>Subjects Teaching:</strong></small>
+                                                <div class="subjects-list" style="max-height: 200px; overflow-y: auto;">
                                                     @foreach($section['subjects']->unique() as $subject)
-                                                        <span class="badge bg-info text-dark">{{ $subject }}</span>
+                                                        <div class="mb-1">
+                                                            <span class="badge bg-info text-dark w-100 text-start" style="white-space: normal; padding: 0.5rem;">
+                                                                <i class="ti ti-book me-1"></i>{{ $subject }}
+                                                            </span>
+                                                        </div>
                                                     @endforeach
                                                 </div>
                                             </div>

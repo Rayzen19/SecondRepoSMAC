@@ -128,13 +128,18 @@
             @endif
             
             <!-- Section Assignment Controls -->
-            <div class="d-flex gap-2 align-items-center flex-wrap">
+            <div class="d-flex gap-2 align-items-center flex-wrap mb-3">
                 <div class="btn-group" role="group">
                     <input type="checkbox" class="btn-check" id="selectAll" autocomplete="off">
                     <label class="btn btn-outline-primary btn-sm" for="selectAll">
                         <i class="ti ti-checkbox me-1"></i>Select All
                     </label>
                 </div>
+                <button type="button" class="btn btn-success btn-sm ms-auto" id="saveAssignmentsBtn" onclick="saveAllAssignments()">
+                    <i class="ti ti-device-floppy me-1"></i>Save Assignments
+                </button>
+            </div>
+            <div class="d-flex gap-2 align-items-center flex-wrap">
                 <div class="d-flex gap-2 align-items-center flex-wrap">
                     <label class="text-muted small mb-0">Assign to Section:</label>
                     @php
@@ -147,14 +152,40 @@
                             $colorIndex++;
                             $strandCode = $section->strand ? $section->strand->code : 'N/A';
                             $strandName = $section->strand ? $section->strand->name : 'No Strand';
+                            
+                            // Count current students in this section
+                            $activeYear = \App\Models\AcademicYear::where('is_active', true)->first();
+                            $studentCount = 0;
+                            if ($activeYear) {
+                                $sectionAssignment = \App\Models\AcademicYearStrandSection::where('academic_year_id', $activeYear->id)
+                                    ->where('section_id', $section->id)
+                                    ->first();
+                                if ($sectionAssignment) {
+                                    $studentCount = \App\Models\StudentEnrollment::where('academic_year_strand_section_id', $sectionAssignment->id)
+                                        ->where('academic_year_id', $activeYear->id)
+                                        ->count();
+                                }
+                            }
+                            $isFull = $studentCount >= 30;
                         @endphp
                         <button type="button" 
-                                class="btn btn-outline-{{ $color }} btn-sm" 
+                                class="btn btn-sm text-white section-btn" 
+                                style="background-color: #353535;"
+                                data-section-id="{{ $section->id }}"
+                                data-strand-code="{{ $strandCode }}"
+                                data-student-count="{{ $studentCount }}"
                                 onclick="assignToSection({{ $section->id }}, '{{ $section->grade }} {{ $section->name }}', '{{ $strandCode }}', '{{ $color }}')"
-                                title="{{ $strandName }} - Grade {{ $section->grade }}">
+                                title="{{ $strandName }} - Grade {{ $section->grade }} ({{ $studentCount }}/30 students)"
+                                @if($isFull) disabled @endif>
                             <i class="ti ti-users me-1"></i>G{{ $section->grade }} {{ $section->name }}
                             @if($strandCode !== 'N/A')
-                                <span class="badge bg-white text-{{ $color }} ms-1" style="font-size: 0.7rem;">{{ $strandCode }}</span>
+                                <span class="badge bg-light text-dark ms-1" style="font-size: 0.7rem;">{{ $strandCode }}</span>
+                            @endif
+                            <span class="badge ms-1 {{ $isFull ? 'bg-danger' : ($studentCount >= 24 ? 'bg-warning' : 'bg-success') }}" style="font-size: 0.7rem;">
+                                {{ $studentCount }}/30
+                            </span>
+                            @if($isFull)
+                                <span class="badge bg-danger ms-1" style="font-size: 0.7rem;">FULL</span>
                             @endif
                         </button>
                     @empty
@@ -167,10 +198,6 @@
                             @endif
                         </span>
                     @endforelse
-                    <div class="vr"></div>
-                    <button type="button" class="btn btn-primary btn-sm" id="saveAssignmentsBtn" onclick="saveAllAssignments()">
-                        <i class="ti ti-device-floppy me-1"></i>Save Assignments
-                    </button>
                 </div>
             </div>
         </div>
@@ -337,6 +364,53 @@
     </div>
 </div>
 
+<!-- Modal for Assignment Confirmation -->
+<div class="modal fade" id="assignmentConfirmModal" tabindex="-1" aria-labelledby="assignmentConfirmModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header bg-primary text-white">
+                <h5 class="modal-title" id="assignmentConfirmModalLabel">
+                    <i class="ti ti-device-floppy me-2"></i>
+                    Save Assignment
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="text-center mb-3">
+                    <i class="ti ti-alert-circle text-warning" style="font-size: 3rem;"></i>
+                </div>
+                <p class="text-center mb-3" id="confirmMessage"></p>
+                <div class="card bg-light border-0">
+                    <div class="card-body">
+                        <div class="row text-center">
+                            <div class="col-6">
+                                <div class="mb-2">
+                                    <small class="text-muted d-block">Current Capacity</small>
+                                    <h4 class="mb-0" id="currentCapacity">0/30</h4>
+                                </div>
+                            </div>
+                            <div class="col-6">
+                                <div class="mb-2">
+                                    <small class="text-muted d-block">After Assignment</small>
+                                    <h4 class="mb-0 text-primary" id="afterCapacity">0/30</h4>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary me-2" data-bs-dismiss="modal">
+                    <i class="ti ti-x me-1"></i>Cancel
+                </button>
+                <button type="button" class="btn btn-primary" id="confirmAssignmentBtn" data-bs-dismiss="modal">
+                    <i class="ti ti-device-floppy me-1"></i>Save Assignment
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
 <!-- Modal for Viewing Section Students -->
 <div class="modal fade" id="sectionStudentsModal" tabindex="-1" aria-labelledby="sectionStudentsModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-lg modal-dialog-scrollable">
@@ -362,6 +436,9 @@
     // Store section assignments in memory
     // Structure: { 'STRAND-SECTION': [{ id, name, studentNo, program }, ...] }
     const sectionAssignments = {};
+    
+    // Maximum students per section
+    const MAX_STUDENTS_PER_SECTION = 30;
 
     // Check/Uncheck all checkboxes
     document.getElementById('checkAll').addEventListener('change', function() {
@@ -389,6 +466,41 @@
             return;
         }
 
+        // Get current section count
+        const key = `${strandCode}-${sectionId}`;
+        const currentCount = sectionAssignments[key] ? sectionAssignments[key].length : 0;
+        
+        // Count how many students are not already in this section
+        let newStudentsCount = 0;
+        checkedBoxes.forEach(checkbox => {
+            const studentId = checkbox.dataset.studentId;
+            const studentStrand = checkbox.dataset.studentStrand;
+            if (!sectionAssignments[key] || !sectionAssignments[key].find(s => s.id === studentId)) {
+                newStudentsCount++;
+            }
+        });
+        
+        // Check if adding these students would exceed the limit
+        if (currentCount + newStudentsCount > MAX_STUDENTS_PER_SECTION) {
+            const remaining = MAX_STUDENTS_PER_SECTION - currentCount;
+            alert(`Cannot assign students: Section ${sectionName} is full or would exceed maximum capacity.\n\nCurrent: ${currentCount}/${MAX_STUDENTS_PER_SECTION} students\nTrying to add: ${newStudentsCount} students\nRemaining capacity: ${remaining} students`);
+            return;
+        }
+
+        // Perform assignment directly without confirmation
+        const assignmentData = {
+            sectionId,
+            sectionName,
+            strandCode,
+            badgeColor,
+            checkedBoxes: Array.from(checkedBoxes)
+        };
+        
+        performAssignment(assignmentData);
+    }
+
+    function performAssignment(data) {
+        const { sectionId, sectionName, strandCode, badgeColor, checkedBoxes } = data;
         const sectionBadgeClass = `bg-${badgeColor}`;
 
         checkedBoxes.forEach(checkbox => {
@@ -403,18 +515,18 @@
                 sectionDisplay.innerHTML = `<span class="badge ${sectionBadgeClass}">${sectionName}</span>`;
                 sectionDisplay.classList.remove('text-muted', 'small');
                 sectionDisplay.dataset.section = sectionId;
-                sectionDisplay.dataset.strand = studentStrand;
+                sectionDisplay.dataset.strand = strandCode;
             }
 
-            // Store in memory
-            const key = `${studentStrand}-${sectionId}`;
+            // Store in memory - USE SECTION'S STRAND CODE, NOT STUDENT'S PROGRAM
+            const key = `${strandCode}-${sectionId}`;
             if (!sectionAssignments[key]) {
                 sectionAssignments[key] = [];
             }
             
             // Remove student from other sections of same strand
             Object.keys(sectionAssignments).forEach(k => {
-                if (k.startsWith(studentStrand + '-') && k !== key) {
+                if (k.startsWith(strandCode + '-') && k !== key) {
                     sectionAssignments[k] = sectionAssignments[k].filter(s => s.id !== studentId);
                 }
             });
@@ -445,6 +557,8 @@
         // Show success message
         const successMsg = `Successfully assigned ${checkedBoxes.length} student(s) to ${sectionName}`;
         showAlert(successMsg, 'success');
+        
+        // Note: Use the "Save Assignments" button to save changes to the database
     }
 
     // View students in a specific section
@@ -455,8 +569,10 @@
         const modalTitle = document.getElementById('modalSectionTitle');
         const studentsList = document.getElementById('sectionStudentsList');
         
-        // Build modal title
-        modalTitle.innerHTML = `${sectionName} (${students.length} students)`;
+        // Build modal title with capacity indicator
+        const capacityColor = students.length >= MAX_STUDENTS_PER_SECTION ? 'danger' : (students.length >= MAX_STUDENTS_PER_SECTION * 0.8 ? 'warning' : 'success');
+        modalTitle.innerHTML = `${sectionName} 
+            <span class="badge bg-${capacityColor}">${students.length}/${MAX_STUDENTS_PER_SECTION} students</span>`;
         
         if (students.length === 0) {
             studentsList.innerHTML = `
@@ -519,9 +635,64 @@
 
     // Update section counts
     function updateSectionCounts() {
-        // This function can be extended later if you want to show counts on buttons
-        // For now, it's a placeholder for future enhancements
-        console.log('Section assignments updated:', Object.keys(sectionAssignments).length);
+        // Update the count badges on section buttons
+        document.querySelectorAll('.section-btn').forEach(button => {
+            const sectionId = button.dataset.sectionId;
+            const strandCode = button.dataset.strandCode;
+            const key = `${strandCode}-${sectionId}`;
+            
+            // Get current count from backend (database count)
+            let databaseCount = parseInt(button.dataset.studentCount) || 0;
+            
+            // Get the count from local assignments (unsaved changes)
+            const localCount = sectionAssignments[key] ? sectionAssignments[key].length : 0;
+            
+            // Use local count if it exists (user has made assignments), otherwise use database count
+            const displayCount = localCount > 0 ? localCount : databaseCount;
+            
+            // Find the count badge and update it
+            const countBadge = button.querySelector('.badge:not(.bg-light):not(.bg-danger)');
+            if (countBadge) {
+                countBadge.textContent = `${displayCount}/${MAX_STUDENTS_PER_SECTION}`;
+                
+                // Update badge color based on capacity
+                countBadge.classList.remove('bg-success', 'bg-warning', 'bg-danger');
+                if (displayCount >= MAX_STUDENTS_PER_SECTION) {
+                    countBadge.classList.add('bg-danger');
+                    button.disabled = true;
+                    
+                    // Show FULL badge if not exists
+                    let fullBadge = button.querySelector('.badge.bg-danger:last-child');
+                    if (!fullBadge || !fullBadge.textContent.includes('FULL')) {
+                        const newFullBadge = document.createElement('span');
+                        newFullBadge.className = 'badge bg-danger ms-1';
+                        newFullBadge.style.fontSize = '0.7rem';
+                        newFullBadge.textContent = 'FULL';
+                        button.appendChild(newFullBadge);
+                    }
+                } else if (displayCount >= MAX_STUDENTS_PER_SECTION * 0.8) {
+                    countBadge.classList.add('bg-warning');
+                    button.disabled = false;
+                    
+                    // Remove FULL badge if exists
+                    const fullBadge = button.querySelector('.badge.bg-danger:last-child');
+                    if (fullBadge && fullBadge.textContent.includes('FULL')) {
+                        fullBadge.remove();
+                    }
+                } else {
+                    countBadge.classList.add('bg-success');
+                    button.disabled = false;
+                    
+                    // Remove FULL badge if exists
+                    const fullBadge = button.querySelector('.badge.bg-danger:last-child');
+                    if (fullBadge && fullBadge.textContent.includes('FULL')) {
+                        fullBadge.remove();
+                    }
+                }
+            }
+        });
+        
+        console.log('Section assignments updated. Local changes:', Object.keys(sectionAssignments).length, 'sections');
     }
 
     // Show alert message
@@ -558,15 +729,23 @@
         }
         
         if (assignments.length === 0) {
-            showAlert('No student assignments to save. Please assign students first.', 'warning');
+            console.warn('No assignments to save');
+            showAlert('⚠️ No student assignments to save. Please select students and assign them to sections first.', 'warning');
             return;
         }
         
+        console.log('Saving assignments:', assignments);
+        console.log('Total assignments to save:', assignments.length);
+        
         // Show loading state
         const saveButton = document.getElementById('saveAssignmentsBtn');
-        const originalText = saveButton.innerHTML;
-        saveButton.disabled = true;
-        saveButton.innerHTML = '<i class="ti ti-loader ti-spin me-1"></i>Saving...';
+        let originalText = '<i class="ti ti-device-floppy me-1"></i>Save Assignments';
+        
+        if (saveButton) {
+            originalText = saveButton.innerHTML;
+            saveButton.disabled = true;
+            saveButton.innerHTML = '<i class="ti ti-loader ti-spin me-1"></i>Saving...';
+        }
         
         try {
             const response = await fetch('{{ route('admin.assigning-list.save-assignments') }}', {
@@ -579,19 +758,33 @@
             });
             
             const data = await response.json();
+            console.log('Save response:', data);
+            console.log('Response status:', response.status);
+            console.log('Response OK:', response.ok);
             
             if (response.ok && data.success) {
-                showAlert(`✅ Successfully saved ${data.count} student assignment(s)!`, 'success');
+                showAlert(`✅ Successfully saved ${data.count} student assignment(s) to database! The assignments will now appear in the Section & Advisers page.`, 'success');
+                // Clear the local assignments after successful save
+                Object.keys(sectionAssignments).forEach(key => delete sectionAssignments[key]);
+                // Reload page to show fresh data from database
+                setTimeout(() => window.location.reload(), 2000);
             } else {
-                showAlert('❌ Failed to save assignments. Please try again.', 'danger');
+                console.error('Save failed:', data);
+                console.error('Full response:', response);
+                const errorMsg = data.message || 'Failed to save assignments. Please try again.';
+                const errorDetails = data.errors ? '\nDetails: ' + JSON.stringify(data.errors) : '';
+                showAlert(`❌ ${errorMsg}${errorDetails}`, 'danger');
             }
         } catch (error) {
             console.error('Error saving assignments:', error);
-            showAlert('❌ An error occurred while saving. Please try again.', 'danger');
+            console.error('Error stack:', error.stack);
+            showAlert('❌ An error occurred while saving. Check the console for details.', 'danger');
         } finally {
             // Restore button state
-            saveButton.disabled = false;
-            saveButton.innerHTML = originalText;
+            if (saveButton) {
+                saveButton.disabled = false;
+                saveButton.innerHTML = originalText;
+            }
         }
     }
 

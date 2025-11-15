@@ -3,6 +3,7 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=0">
+    <meta name="csrf-token" content="{{ csrf_token() }}">
     <meta name="description" content="St. Matthew Senior High School">
     <meta name="robots" content="noindex, nofollow">
     <title>Login - St. Matthew Senior High School</title>
@@ -69,7 +70,12 @@
                             </div>
                             <div class="mb-3">
                                 <label for="password" class="form-label">Password</label>
-                                <input type="password" name="password" id="password" class="form-control" required>
+                                <div class="position-relative">
+                                    <input type="password" name="password" id="password" class="form-control" required>
+                                    <button type="button" class="btn btn-sm position-absolute end-0 top-50 translate-middle-y" onclick="togglePasswordVisibility('password', this)" style="border: none; background: transparent;">
+                                        <i class="fa fa-eye" id="password-icon"></i>
+                                    </button>
+                                </div>
                             </div>
                             <div class="d-flex justify-content-between align-items-center mb-4">
                                 <div class="form-check">
@@ -96,6 +102,71 @@
     <script src="{{ asset('assets/js/feather.min.js') }}"></script>
     <script>
         feather.replace();
+        
+        function togglePasswordVisibility(inputId, button) {
+            const input = document.getElementById(inputId);
+            const icon = button.querySelector('i');
+            
+            if (input.type === 'password') {
+                input.type = 'text';
+                icon.classList.remove('fa-eye');
+                icon.classList.add('fa-eye-slash');
+            } else {
+                input.type = 'password';
+                icon.classList.remove('fa-eye-slash');
+                icon.classList.add('fa-eye');
+            }
+        }
+
+        // Handle CSRF token refresh on page load
+        $(document).ready(function() {
+            // Refresh CSRF token when page loads (in case of back button or expired session)
+            $.get('/csrf-token', function(data) {
+                $('meta[name="csrf-token"]').attr('content', data.token);
+                $('input[name="_token"]').val(data.token);
+            }).fail(function() {
+                console.log('Could not refresh CSRF token on page load');
+            });
+
+            // Intercept form submission to ensure fresh CSRF token
+            $('form').on('submit', function(e) {
+                const form = $(this);
+                const submitBtn = form.find('button[type="submit"]');
+                const originalHtml = submitBtn.html();
+                
+                // Check if we already processed this submission
+                if (form.data('submitting')) {
+                    return true; // Allow the actual submission
+                }
+                
+                e.preventDefault();
+                
+                // Disable submit button
+                submitBtn.prop('disabled', true).html('<i class="fa fa-spinner fa-spin me-2"></i>Signing in...');
+                
+                // Get fresh CSRF token
+                $.get('/csrf-token', function(data) {
+                    // Update token in form
+                    let tokenInput = form.find('input[name="_token"]');
+                    if (tokenInput.length === 0) {
+                        form.prepend('<input type="hidden" name="_token" value="' + data.token + '">');
+                    } else {
+                        tokenInput.val(data.token);
+                    }
+                    
+                    // Mark as submitting and submit form
+                    form.data('submitting', true);
+                    form.off('submit').submit();
+                }).fail(function() {
+                    // If token refresh fails, try submitting anyway
+                    submitBtn.prop('disabled', false).html(originalHtml);
+                    form.data('submitting', true);
+                    form.off('submit').submit();
+                });
+                
+                return false;
+            });
+        });
     </script>
 </body>
 </html>

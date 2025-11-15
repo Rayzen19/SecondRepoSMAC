@@ -17,6 +17,11 @@ class LoginController extends Controller
             return redirect()->route('admin.dashboard');
         }
 
+        // If already authenticated as co-admin, send to admin dashboard
+        if (Auth::guard('co-admin')->check()) {
+            return redirect()->route('admin.dashboard');
+        }
+
         // If already authenticated as teacher, send to teacher dashboard
         if (Auth::guard('teacher')->check()) {
             return redirect()->route('teacher.dashboard');
@@ -30,7 +35,13 @@ class LoginController extends Controller
         // Try admin first
         if (Auth::guard('admin')->attempt($credentials, $request->filled('remember'))) {
             $request->session()->regenerate();
-            return redirect()->intended('/admin');
+            return redirect()->route('admin.dashboard');
+        }
+
+        // Try co-admin guard next
+        if (Auth::guard('co-admin')->attempt($credentials, $request->filled('remember'))) {
+            $request->session()->regenerate();
+            return redirect()->route('admin.dashboard');
         }
 
         // Try teacher guard next
@@ -62,7 +73,7 @@ class LoginController extends Controller
                     'profile_picture' => $teacher->profile_picture,
                 ]);
 
-                return redirect()->intended('/teacher');
+                return redirect()->route('teacher.dashboard');
             }
             // If teacher mapping missing, log out the guard and fall through to invalid
             Auth::guard('teacher')->logout();
@@ -103,7 +114,7 @@ class LoginController extends Controller
                     'academic_year_id' => $student->academic_year_id ?? null,
                 ]);
 
-                return redirect()->intended('/student');
+                return redirect()->route('student.dashboard');
             }
 
             Auth::guard('student')->logout();
@@ -113,7 +124,7 @@ class LoginController extends Controller
         if (Auth::guard('guardian')->attempt($credentials, $request->filled('remember'))) {
             // Guardian login doesn't cache a detailed session currently; just regenerate and redirect.
             $request->session()->regenerate();
-            return redirect()->intended('/guardian');
+            return redirect()->route('guardian.dashboard');
         }
 
         return back()->withErrors(['email' => 'Invalid credentials'])->withInput();
@@ -121,9 +132,13 @@ class LoginController extends Controller
 
     public function logout(Request $request)
     {
-        // Logout whichever guard is currently authenticated (admin or teacher)
+        // Logout whichever guard is currently authenticated (admin, co-admin, or teacher)
         if (Auth::guard('admin')->check()) {
             Auth::guard('admin')->logout();
+        }
+
+        if (Auth::guard('co-admin')->check()) {
+            Auth::guard('co-admin')->logout();
         }
 
         if (Auth::guard('teacher')->check()) {

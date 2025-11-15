@@ -25,6 +25,15 @@
         <div class="mb-2 ms-2">
             <a href="{{ route('admin.strand-subjects.create', ['subject' => $subject->id]) }}" class="btn btn-primary d-flex align-items-center"><i class="ti ti-circle-plus me-2"></i>Add to Strand</a>
         </div>
+        <div class="mb-2 ms-2">
+            <form action="{{ route('admin.subjects.destroy', $subject) }}" method="POST" class="d-inline" onsubmit="return confirm('Are you sure you want to delete this subject? This action cannot be undone.');">
+                @csrf
+                @method('DELETE')
+                <button type="submit" class="btn btn-danger d-flex align-items-center">
+                    <i class="ti ti-trash me-2"></i>Delete
+                </button>
+            </form>
+        </div>
     </div>
 </div>
 <!-- /Breadcrumb -->

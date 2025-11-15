@@ -86,20 +86,7 @@ class DashboardController extends Controller
             'fail_rate' => $totalResults > 0 ? round(($failedCount / $totalResults) * 100, 1) : 0,
         ];
 
-        // Attendance Overview (placeholder logic)
-        $attendance = [
-            'daily' => ['students' => 97, 'teachers' => 98],
-            'weekly' => ['students' => 95, 'teachers' => 97],
-            'monthly' => ['students' => 94, 'teachers' => 96],
-            'absentee' => [
-                ['section' => 'STEM 11-A', 'percent' => 3.2],
-                ['section' => 'ABM 12-B', 'percent' => 2.5],
-                ['section' => 'HUMSS 11-C', 'percent' => 4.1],
-                ['section' => 'TVL 12-D', 'percent' => 1.8],
-            ]
-        ];
-
-        // Academic Calendar (placeholder)
+        // Academic Calendar (placeholder - would need an events table)
         $calendar = [
             ['date' => 'Sep 2', 'event' => 'First Day of Classes'],
             ['date' => 'Oct 15', 'event' => 'Midterm Exams'],
@@ -119,7 +106,6 @@ class DashboardController extends Controller
             'performance',
             'topStudents',
             'passFailStats',
-            'attendance',
             'calendar'
         ));
     }

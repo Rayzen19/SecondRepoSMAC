@@ -82,12 +82,33 @@ class MessageController extends Controller
 
         $partners = \App\Models\User::whereIn('id', $partnerIds)->orderBy('name')->get();
 
+        // Calculate unread counts for each partner
+        $partners = $partners->map(function($partner) use ($userId) {
+            $unreadCount = MessageRecipient::where('recipient_id', $userId)
+                ->whereNull('read_at')
+                ->whereHas('message', function($q) use ($partner) {
+                    $q->where('sender_id', $partner->id);
+                })
+                ->count();
+            
+            $partner->unread_count = $unreadCount;
+            return $partner;
+        });
+
         return view('guardian.messages.messenger', compact('partners'));
     }
 
     public function conversation(\App\Models\User $user)
     {
         $me = Auth::user();
+
+        // Mark all unread messages from this user as read
+        MessageRecipient::where('recipient_id', $me->id)
+            ->whereNull('read_at')
+            ->whereHas('message', function ($q) use ($user) {
+                $q->where('sender_id', $user->id);
+            })
+            ->update(['read_at' => now()]);
 
         // Messages where I am the sender and they are a recipient
         $sent = Message::select('messages.*')
@@ -274,6 +295,39 @@ class MessageController extends Controller
         return response()->json([
             'success' => true,
             'message' => 'Message deleted successfully'
+        ]);
+    }
+
+    // Get unread message count
+    public function getUnreadCount()
+    {
+        $userId = Auth::id();
+        $unreadCount = MessageRecipient::where('recipient_id', $userId)
+            ->whereNull('read_at')
+            ->count();
+        
+        return response()->json([
+            'unread_count' => $unreadCount
+        ]);
+    }
+
+    // Get unread counts by conversation partner
+    public function getUnreadCountsByPartner()
+    {
+        $userId = Auth::id();
+        
+        // Get unread counts grouped by sender
+        $unreadCounts = MessageRecipient::where('recipient_id', $userId)
+            ->whereNull('read_at')
+            ->join('messages', 'message_recipients.message_id', '=', 'messages.id')
+            ->select('messages.sender_id', \DB::raw('count(*) as unread_count'))
+            ->groupBy('messages.sender_id')
+            ->pluck('unread_count', 'sender_id')
+            ->toArray();
+        
+        return response()->json([
+            'success' => true,
+            'unread_counts' => $unreadCounts
         ]);
     }
 }
