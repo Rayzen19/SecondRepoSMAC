@@ -64,12 +64,6 @@
                     </small>
                 </div>
                 <div class="d-flex gap-2">
-                    <button type="button" class="btn btn-warning" data-bs-toggle="modal" data-bs-target="#modalDisablePreEnrollment">
-                        <i class="ti ti-lock me-2"></i>Disable Pre-Enrollment
-                    </button>
-                    <button type="button" class="btn btn-danger" data-bs-toggle="modal" data-bs-target="#modalEndOfSchoolYear">
-                        <i class="ti ti-calendar-check me-2"></i>End of School Year
-                    </button>
                     <button type="button" class="btn btn-success" onclick="saveAllAdvisers()" id="saveAdvisersBtn">
                         <i class="ti ti-device-floppy me-2"></i>Save All Adviser Assignments
                     </button>
@@ -308,62 +302,6 @@
                     <div class="modal-footer">
                         <button type="button" class="btn-secondary" data-bs-dismiss="modal">Close</button>
                     </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Modal for Disable Pre-Enrollment -->
-        <div class="modal fade" id="modalDisablePreEnrollment" tabindex="-1" aria-hidden="true">
-            <div class="modal-dialog modal-dialog-centered">
-                <div class="modal-content">
-                    <div class="modal-header">
-                        <h5 class="modal-title">Disable Pre-Enrollment</h5>
-                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                    </div>
-                    <form method="post" action="{{ route('admin.section-advisers.disable-pre-enrollment') }}">
-                        @csrf
-                        <div class="modal-body">
-                            <p class="mb-3">This will <strong>disable the pre-enrollment system</strong> for all students.</p>
-                            <div class="alert alert-warning">
-                                <i class="ti ti-alert-triangle me-2"></i>
-                                <strong>Warning:</strong> Students will no longer be able to pre-enroll for the next school year. 
-                                This action is typically used after the pre-enrollment period has ended.
-                            </div>
-                            <p class="mb-0">Do you want to proceed with disabling pre-enrollment?</p>
-                        </div>
-                        <div class="modal-footer">
-                            <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
-                            <button type="submit" class="btn btn-warning">Yes, Disable Pre-Enrollment</button>
-                        </div>
-                    </form>
-                </div>
-            </div>
-        </div>
-
-        <!-- Modal for End of School Year -->
-        <div class="modal fade" id="modalEndOfSchoolYear" tabindex="-1" aria-hidden="true">
-            <div class="modal-dialog modal-dialog-centered">
-                <div class="modal-content">
-                    <div class="modal-header">
-                        <h5 class="modal-title">End of School Year</h5>
-                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                    </div>
-                    <form method="post" action="{{ route('admin.section-advisers.end-of-school-year') }}">
-                        @csrf
-                        <div class="modal-body">
-                            <p class="mb-3">This will finalize the school year records for <strong>all sections and classes</strong>.</p>
-                            <div class="alert alert-danger">
-                                <i class="ti ti-alert-triangle me-2"></i>
-                                <strong>Warning:</strong> This action will close the school year for ALL students across ALL sections. 
-                                Make sure all grades have been submitted and finalized before proceeding. This action cannot be undone.
-                            </div>
-                            <p class="mb-0">Do you want to proceed?</p>
-                        </div>
-                        <div class="modal-footer">
-                            <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
-                            <button type="submit" class="btn btn-danger">Yes, End School Year</button>
-                        </div>
-                    </form>
                 </div>
             </div>
         </div>

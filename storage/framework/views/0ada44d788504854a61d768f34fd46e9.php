@@ -1,6 +1,6 @@
-@extends('admin.components.template')
 
-@section('content')
+
+<?php $__env->startSection('content'); ?>
 <style>
     .conversation-item {
         cursor: pointer;
@@ -68,31 +68,31 @@
             </div>
             <div class="card-body p-0">
                 <ul id="conversation-list" class="list-group list-group-flush">
-                    @forelse($partners as $p)
-                    <li class="list-group-item conversation-item {{ $p->unread_count > 0 ? 'has-unread' : '' }}" data-user-id="{{ $p->id }}" data-user-name="{{ $p->name }}" data-user-email="{{ $p->email }}">
+                    <?php $__empty_1 = true; $__currentLoopData = $partners; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $p): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); $__empty_1 = false; ?>
+                    <li class="list-group-item conversation-item <?php echo e($p->unread_count > 0 ? 'has-unread' : ''); ?>" data-user-id="<?php echo e($p->id); ?>" data-user-name="<?php echo e($p->name); ?>" data-user-email="<?php echo e($p->email); ?>">
                         <div class="d-flex justify-content-between align-items-center">
-                            <div class="flex-grow-1" style="cursor: pointer;" onclick="document.querySelector('[data-user-id=&quot;{{ $p->id }}&quot;]').click()">
-                                <strong>{{ $p->name }}</strong>
-                                <div class="small text-muted">{{ $p->email }}</div>
+                            <div class="flex-grow-1" style="cursor: pointer;" onclick="document.querySelector('[data-user-id=&quot;<?php echo e($p->id); ?>&quot;]').click()">
+                                <strong><?php echo e($p->name); ?></strong>
+                                <div class="small text-muted"><?php echo e($p->email); ?></div>
                             </div>
                             <div class="text-end d-flex align-items-center gap-2">
-                                @if($p->unread_count > 0)
-                                <span class="badge bg-danger unread-badge" id="unread-{{ $p->id }}">{{ $p->unread_count }}</span>
-                                @else
-                                <span class="badge bg-danger d-none" id="unread-{{ $p->id }}">0</span>
-                                @endif
-                                <button class="btn btn-sm btn-outline-danger delete-conversation-btn" data-user-id="{{ $p->id }}" data-user-name="{{ $p->name }}" title="Delete conversation" onclick="event.stopPropagation();">
+                                <?php if($p->unread_count > 0): ?>
+                                <span class="badge bg-danger unread-badge" id="unread-<?php echo e($p->id); ?>"><?php echo e($p->unread_count); ?></span>
+                                <?php else: ?>
+                                <span class="badge bg-danger d-none" id="unread-<?php echo e($p->id); ?>">0</span>
+                                <?php endif; ?>
+                                <button class="btn btn-sm btn-outline-danger delete-conversation-btn" data-user-id="<?php echo e($p->id); ?>" data-user-name="<?php echo e($p->name); ?>" title="Delete conversation" onclick="event.stopPropagation();">
                                     <i class="ti ti-trash"></i>
                                 </button>
                             </div>
                         </div>
                     </li>
-                    @empty
+                    <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); if ($__empty_1): ?>
                     <li class="list-group-item text-center text-muted">
                         No conversations yet<br>
                         <small>Click "New" to start messaging</small>
                     </li>
-                    @endforelse
+                    <?php endif; ?>
                 </ul>
             </div>
         </div>
@@ -107,7 +107,7 @@
             </div>
             <div class="card-footer">
                 <form id="send-form" enctype="multipart/form-data">
-                    @csrf
+                    <?php echo csrf_field(); ?>
                     <input type="hidden" name="to" id="to-user-id">
                     <div id="attachment-preview" class="mb-2" style="display: none;">
                         <div class="alert alert-info py-2 px-3 d-flex align-items-center justify-content-between">
@@ -176,9 +176,9 @@
     </div>
 </div>
 
-@endsection
+<?php $__env->stopSection(); ?>
 
-@push('scripts')
+<?php $__env->startPush('scripts'); ?>
 <script>
     (function(){
         const list = document.getElementById('conversation-list');
@@ -195,7 +195,7 @@
         const removeAttachmentBtn = document.getElementById('remove-attachment');
 
         let currentUserId = null;
-        const ME_ID = "{{ Auth::id() ?? '' }}";
+        const ME_ID = "<?php echo e(Auth::id() ?? ''); ?>";
         let lastMessageId = 0;
         let autoRefreshInterval = null;
 
@@ -213,7 +213,7 @@
         }
 
         function loadConversation(userId, scrollToBottom = true) {
-            fetch("{{ url('/admin/messenger/conversation/') }}/" + userId)
+            fetch("<?php echo e(url('/admin/messenger/conversation/')); ?>/" + userId)
                 .then(r => r.json())
                 .then(data => {
                     currentUserId = userId;
@@ -334,7 +334,7 @@
         function checkForNewMessages() {
             if (!currentUserId) return;
             
-            fetch("{{ url('/admin/messenger/conversation/') }}/" + currentUserId)
+            fetch("<?php echo e(url('/admin/messenger/conversation/')); ?>/" + currentUserId)
                 .then(r => r.json())
                 .then(data => {
                     // Check if there are new messages
@@ -453,7 +453,7 @@
             
             const formData = new FormData(sendForm);
             
-            fetch("{{ route('admin.messages.sendConversation') }}", {
+            fetch("<?php echo e(route('admin.messages.sendConversation')); ?>", {
                 method: 'POST',
                 headers: {
                     'X-CSRF-TOKEN': document.querySelector('input[name="_token"]').value
@@ -532,7 +532,7 @@
         let unreadCountInterval = null;
 
         function updateUnreadCounts() {
-            fetch("{{ route('admin.api.unread-counts-by-partner') }}")
+            fetch("<?php echo e(route('admin.api.unread-counts-by-partner')); ?>")
                 .then(r => r.json())
                 .then(data => {
                     if (data.success && data.unread_counts) {
@@ -593,7 +593,7 @@
         const clearSelectionBtn = document.getElementById('clear-selection');
 
         function loadAllUsers() {
-            fetch("{{ url('/admin/api/all-users') }}")
+            fetch("<?php echo e(url('/admin/api/all-users')); ?>")
                 .then(r => r.json())
                 .then(users => {
                     allUsers = users;
@@ -798,9 +798,9 @@
                 console.log('✓ Laravel Echo available, subscribing to channel...');
                 
                 // Subscribe to the current user's private channel
-                const channel = window.Echo.private('user.{{ auth()->id() }}');
+                const channel = window.Echo.private('user.<?php echo e(auth()->id()); ?>');
 
-                console.log('✓ Subscribed to private channel: user.{{ auth()->id() }}');
+                console.log('✓ Subscribed to private channel: user.<?php echo e(auth()->id()); ?>');
 
                 // Listen for new messages
                 channel.listen('.message.sent', function(data) {
@@ -847,7 +847,7 @@
                         if (data.id > lastMessageId) {
                             lastMessageId = data.id;
                         }
-                    } else if (senderId !== {{ auth()->id() }}) {
+                    } else if (senderId !== <?php echo e(auth()->id()); ?>) {
                         // Message from someone we're not currently chatting with - show notification
                         showNotification('New message from ' + (data.sender_name || 'User'));
                     }
@@ -863,7 +863,7 @@
                 console.log('⚠️ Falling back to polling...');
             }
         } else {
-                console.warn('⚠️ Laravel Echo not available. Make sure @@vite directive is added and assets are compiled.');
+                console.warn('⚠️ Laravel Echo not available. Make sure @vite directive is added and assets are compiled.');
             console.log('⚠️ Messages will use polling instead of real-time updates.');
         }
 
@@ -872,7 +872,7 @@
             const senderId = messageData.sender_id;
             const existingConv = document.querySelector(`.conversation-item[data-user-id="${senderId}"]`);
             
-            if (!existingConv && senderId !== {{ auth()->id() }}) {
+            if (!existingConv && senderId !== <?php echo e(auth()->id()); ?>) {
                 // Add new conversation to the list
                 const conversationList = document.getElementById('conversation-list');
                 const newConv = document.createElement('li');
@@ -928,6 +928,8 @@
     })();
 </script>
 
-@vite(['resources/js/app.js'])
+<?php echo app('Illuminate\Foundation\Vite')(['resources/js/app.js']); ?>
 
-@endpush
+<?php $__env->stopPush(); ?>
+
+<?php echo $__env->make('admin.components.template', array_diff_key(get_defined_vars(), ['__data' => 1, '__path' => 1]))->render(); ?><?php /**PATH C:\xampp\htdocs\NEWSMAC\resources\views/admin/messages/messenger.blade.php ENDPATH**/ ?>

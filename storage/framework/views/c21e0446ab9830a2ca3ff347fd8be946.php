@@ -273,6 +273,12 @@
                                 </li>
                                 <?php endif; ?>
 
+                                <li class="<?php echo e(request()->routeIs('admin.sms.*') ? 'active' : ''); ?>">
+                                    <a class="<?php echo e(request()->routeIs('admin.sms.*') ? 'active' : ''); ?>" href="<?php echo e(route('admin.sms.index')); ?>">
+                                        <i class="ti ti-message-2"></i><span>SMS</span>
+                                    </a>
+                                </li>
+
                                 <li class="submenu <?php echo e($isManagement ? 'active' : ''); ?>">
                                     <a href="javascript:void(0);" class="<?php echo e($isManagement ? 'subdrop' : ''); ?>">
                                         <i class="ti ti-smart-home"></i><span>Management</span>

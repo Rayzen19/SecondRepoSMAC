@@ -285,6 +285,7 @@ Route::group(['prefix' => 'admin'], function () {
         Route::post('/pre-enrollments/{preEnrollment}/approve', [App\Http\Controllers\Admin\PreEnrollmentController::class, 'approve'])->name('admin.pre-enrollments.approve');
         Route::post('/pre-enrollments/{preEnrollment}/reject', [App\Http\Controllers\Admin\PreEnrollmentController::class, 'reject'])->name('admin.pre-enrollments.reject');
         Route::post('/pre-enrollments/{preEnrollment}/process', [App\Http\Controllers\Admin\PreEnrollmentController::class, 'process'])->name('admin.pre-enrollments.process');
+        Route::delete('/pre-enrollments/{preEnrollment}', [App\Http\Controllers\Admin\PreEnrollmentController::class, 'destroy'])->name('admin.pre-enrollments.destroy');
         Route::post('/pre-enrollments/bulk-approve', [App\Http\Controllers\Admin\PreEnrollmentController::class, 'bulkApprove'])->name('admin.pre-enrollments.bulk-approve');
         
     // Messaging (simple inbox/compose)
@@ -303,14 +304,12 @@ Route::group(['prefix' => 'admin'], function () {
         // API endpoint for user selection
         Route::get('/api/all-users', [App\Http\Controllers\Admin\MessageController::class, 'getAllUsers'])->name('admin.api.all-users');
 
-        // SMS Routes - Infobip Integration (Commented out - SmsController not yet implemented)
-        // Route::get('/sms', [App\Http\Controllers\Admin\SmsController::class, 'index'])->name('admin.sms.index');
-        // Route::post('/sms/send-single', [App\Http\Controllers\Admin\SmsController::class, 'sendSingle'])->name('admin.sms.send.single');
-        // Route::post('/sms/send-bulk', [App\Http\Controllers\Admin\SmsController::class, 'sendBulk'])->name('admin.sms.send.bulk');
-        // Route::post('/sms/send-notification', [App\Http\Controllers\Admin\SmsController::class, 'sendNotification'])->name('admin.sms.send.notification');
-        // Route::get('/sms/delivery-reports', [App\Http\Controllers\Admin\SmsController::class, 'getDeliveryReports'])->name('admin.sms.delivery.reports');
-        // Route::post('/sms/test', [App\Http\Controllers\Admin\SmsController::class, 'sendTest'])->name('admin.sms.test');
-        // Route::get('/sms/balance', [App\Http\Controllers\Admin\SmsController::class, 'getBalance'])->name('admin.sms.balance');
+        // SMS Routes - Semaphore SMS Integration
+        Route::get('/sms', [App\Http\Controllers\Admin\SmsController::class, 'index'])->name('admin.sms.index');
+        Route::post('/sms/send-single', [App\Http\Controllers\Admin\SmsController::class, 'sendSingle'])->name('admin.sms.send.single');
+        Route::post('/sms/send-bulk', [App\Http\Controllers\Admin\SmsController::class, 'sendBulk'])->name('admin.sms.send.bulk');
+        Route::get('/sms/balance', [App\Http\Controllers\Admin\SmsController::class, 'getBalance'])->name('admin.sms.balance');
+        Route::post('/sms/test', [App\Http\Controllers\Admin\SmsController::class, 'sendTest'])->name('admin.sms.test');
     });
 });
 

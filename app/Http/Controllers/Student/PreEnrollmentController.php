@@ -20,6 +20,11 @@ class PreEnrollmentController extends Controller
      */
     public function index()
     {
+        // Prevent browser caching of this page
+        header('Cache-Control: no-cache, no-store, must-revalidate');
+        header('Pragma: no-cache');
+        header('Expires: 0');
+        
         $authenticatedUser = Auth::guard('student')->user();
         
         \Log::info('Pre-enrollment accessed', [
@@ -71,6 +76,13 @@ class PreEnrollmentController extends Controller
                 ->with('error', 'Pre-enrollment is not currently available.');
         }
 
+        // Check if student has already submitted pre-enrollment (check this first!)
+        $existingPreEnrollment = PreEnrollment::with(['strand', 'section'])
+            ->where('student_id', $student->id)
+            ->where('current_academic_year_id', $currentAcademicYear->id)
+            ->whereIn('status', ['pending', 'approved', 'enrolled'])
+            ->first();
+
         // Get student's current enrollment
         $currentEnrollment = StudentEnrollment::with(['strand', 'academicYearStrandSection.section'])
             ->where('student_id', $student->id)
@@ -104,9 +116,6 @@ class PreEnrollmentController extends Controller
             // Get strands for the form
             $strands = \App\Models\Strand::where('is_active', true)->orderBy('name')->get();
             
-            // Set existingPreEnrollment to null since student is not properly enrolled
-            $existingPreEnrollment = null;
-            
             // Show the pre-enrollment form with an informational message instead of redirecting
             return view('student.pre_enrollment.index', compact(
                 'currentEnrollment',
@@ -117,12 +126,6 @@ class PreEnrollmentController extends Controller
         }
 
         \Log::info('Pre-enrollment: All checks passed, showing form');
-
-        // Check if student has already submitted pre-enrollment
-        $existingPreEnrollment = PreEnrollment::where('student_id', $student->id)
-            ->where('current_academic_year_id', $currentAcademicYear->id)
-            ->whereIn('status', ['pending', 'approved'])
-            ->first();
 
         // Get all active strands
         $strands = Strand::where('is_active', true)->orderBy('name')->get();

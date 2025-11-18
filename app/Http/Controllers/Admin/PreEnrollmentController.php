@@ -382,4 +382,24 @@ class PreEnrollmentController extends Controller
             return back()->with('error', 'Failed to approve pre-enrollments: ' . $e->getMessage());
         }
     }
+
+    /**
+     * Delete a pre-enrollment submission
+     */
+    public function destroy(PreEnrollment $preEnrollment)
+    {
+        DB::beginTransaction();
+        try {
+            $studentName = $preEnrollment->student->first_name . ' ' . $preEnrollment->student->last_name;
+            
+            $preEnrollment->delete();
+
+            DB::commit();
+
+            return back()->with('success', "Pre-enrollment for {$studentName} has been deleted successfully.");
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return back()->with('error', 'Failed to delete pre-enrollment: ' . $e->getMessage());
+        }
+    }
 }

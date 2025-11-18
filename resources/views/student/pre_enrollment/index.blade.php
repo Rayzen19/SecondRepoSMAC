@@ -2,6 +2,12 @@
 
 @section('title', 'Pre-Enrollment')
 
+@push('head')
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta http-equiv="Expires" content="0">
+@endpush
+
 @section('content')
 <div class="container-fluid p-0">
     <!-- Page Header -->
@@ -70,10 +76,60 @@
                         <h5 class="mb-0"><i class="ti ti-check-circle me-2"></i>Your Pre-Enrollment Submission</h5>
                     </div>
                     <div class="card-body">
-                        <div class="alert alert-info mb-4">
-                            <i class="ti ti-info-circle me-2"></i>
-                            You have already submitted your pre-enrollment. Below are the details:
-                        </div>
+                        @if($existingPreEnrollment->status === 'pending')
+                            <div class="alert alert-warning mb-4">
+                                <div class="d-flex align-items-center">
+                                    <div class="me-3">
+                                        <i class="ti ti-clock" style="font-size: 2.5rem;"></i>
+                                    </div>
+                                    <div>
+                                        <h4 class="mb-1"><strong>For Approval</strong></h4>
+                                        <p class="mb-0">Your pre-enrollment application has been submitted successfully and is currently awaiting administrator review. You will be notified once your application has been processed.</p>
+                                    </div>
+                                </div>
+                            </div>
+                        @elseif($existingPreEnrollment->status === 'approved')
+                            <div class="alert alert-success mb-4">
+                                <div class="d-flex align-items-center">
+                                    <div class="me-3">
+                                        <i class="ti ti-circle-check" style="font-size: 2.5rem;"></i>
+                                    </div>
+                                    <div>
+                                        <h4 class="mb-1"><strong>You Are Already Enrolled</strong></h4>
+                                        <p class="mb-0">Congratulations! Your pre-enrollment application has been approved. You are now enrolled for the next academic year.</p>
+                                    </div>
+                                </div>
+                            </div>
+                        @elseif($existingPreEnrollment->status === 'enrolled')
+                            <div class="alert alert-success mb-4">
+                                <div class="d-flex align-items-center">
+                                    <div class="me-3">
+                                        <i class="ti ti-circle-check" style="font-size: 2.5rem;"></i>
+                                    </div>
+                                    <div>
+                                        <h4 class="mb-1"><strong>You Are Already Enrolled</strong></h4>
+                                        <p class="mb-0">Congratulations! You have been successfully enrolled for the next academic year. Your enrollment has been processed and finalized.</p>
+                                    </div>
+                                </div>
+                            </div>
+                        @elseif($existingPreEnrollment->status === 'rejected')
+                            <div class="alert alert-danger mb-4">
+                                <div class="d-flex align-items-center">
+                                    <div class="me-3">
+                                        <i class="ti ti-circle-x" style="font-size: 2.5rem;"></i>
+                                    </div>
+                                    <div>
+                                        <h4 class="mb-1"><strong>Application Rejected</strong></h4>
+                                        <p class="mb-0">Unfortunately, your pre-enrollment application has been rejected. Please contact the administrator for more information.</p>
+                                    </div>
+                                </div>
+                            </div>
+                        @else
+                            <div class="alert alert-info mb-4">
+                                <i class="ti ti-info-circle me-2"></i>
+                                You have already submitted your pre-enrollment. Below are the details:
+                            </div>
+                        @endif
                         
                         <div class="row mb-3">
                             <div class="col-md-4">
@@ -121,6 +177,12 @@
                                 </div>
                             </div>
                         @endif
+
+                        <div class="d-flex justify-content-end mt-4">
+                            <a href="{{ route('student.dashboard') }}" class="btn btn-primary">
+                                <i class="ti ti-arrow-left me-1"></i>Back to Dashboard
+                            </a>
+                        </div>
 
                         {{-- Student cancel button removed because cancellation is no longer allowed from the UI --}}
                     </div>

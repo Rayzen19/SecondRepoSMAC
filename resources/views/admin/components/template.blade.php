@@ -273,6 +273,12 @@
                                 </li>
                                 @endauth
 
+                                <li class="{{ request()->routeIs('admin.sms.*') ? 'active' : '' }}">
+                                    <a class="{{ request()->routeIs('admin.sms.*') ? 'active' : '' }}" href="{{ route('admin.sms.index') }}">
+                                        <i class="ti ti-message-2"></i><span>SMS</span>
+                                    </a>
+                                </li>
+
                                 <li class="submenu {{ $isManagement ? 'active' : '' }}">
                                     <a href="javascript:void(0);" class="{{ $isManagement ? 'subdrop' : '' }}">
                                         <i class="ti ti-smart-home"></i><span>Management</span>

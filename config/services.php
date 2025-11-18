@@ -35,4 +35,8 @@ return [
         ],
     ],
 
+    'semaphore' => [
+        'api_key' => env('SEMAPHORE_API_KEY'),
+    ],
+
 ];
