@@ -81,9 +81,9 @@
                             <button type="submit" class="btn btn-success w-100">Reset Password</button>
                         </form>
                         <div class="mt-3 text-center">
-                            <a class="text-primary" href="{{ route($guard . '.auth.forgotForm') }}{{ request('email') || session('email') ? '?email=' . urlencode(request('email') ?? session('email')) : '' }}">Resend OTP</a>
+                            <a class="text-info" href="{{ route($guard . '.auth.forgotForm') }}{{ request('email') || session('email') ? '?email=' . urlencode(request('email') ?? session('email')) : '' }}">Resend OTP</a>
                             <span class="mx-2">•</span>
-                            <a class="text-primary" href="{{ route($guard . '.auth.loginForm') }}">Back to Login</a>
+                            <a class="text-info" href="{{ route($guard . '.auth.loginForm') }}">Back to Login</a>
                         </div>
                     </div>
                 </div>

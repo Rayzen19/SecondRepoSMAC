@@ -66,7 +66,7 @@
                             </div>
                             <div class="avatar avatar-md">
                                 <div class="avatar-title bg-primary-light rounded-circle">
-                                    <i class="ti ti-users text-primary fs-24"></i>
+                                    <i class="ti ti-users text-info fs-24"></i>
                                 </div>
                             </div>
                         </div>

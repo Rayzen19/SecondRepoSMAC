@@ -109,7 +109,7 @@
                                     <td class="font-monospace">{{ $row['student']->student_number }}</td>
                                     <td>
                                         <div class="d-flex align-items-center">
-                                            <div class="avatar avatar-sm bg-primary-subtle text-primary rounded-circle me-2">
+                                            <div class="avatar avatar-sm bg-primary-subtle text-info rounded-circle me-2">
                                                 {{ strtoupper(substr($row['student']->first_name, 0, 1)) }}
                                             </div>
                                             <div>

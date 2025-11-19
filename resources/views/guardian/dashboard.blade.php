@@ -150,7 +150,7 @@
                                             <strong class="
                                                 @if($student['average'] >= 90) text-success
                                                 @elseif($student['average'] >= 85) text-info
-                                                @elseif($student['average'] >= 75) text-primary
+                                                @elseif($student['average'] >= 75) text-info
                                                 @else text-danger
                                                 @endif
                                             ">{{ $student['average'] }}</strong>

@@ -106,7 +106,7 @@
                                     <i class="ti ti-school me-1"></i>Grade {{ $section['grade_level'] }}
                                 </p>
                                 <div class="mb-0">
-                                    <strong class="text-primary">Subjects ({{ $section['subject_count'] }}):</strong>
+                                    <strong class="text-info">Subjects ({{ $section['subject_count'] }}):</strong>
                                     <div class="mt-2">
                                         @foreach($section['subjects'] as $subject)
                                             <span class="badge bg-light text-dark me-1 mb-1">

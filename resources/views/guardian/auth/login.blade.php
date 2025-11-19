@@ -55,7 +55,7 @@
                                     <input class="form-check-input" type="checkbox" value="1" id="remember" name="remember">
                                     <label class="form-check-label" for="remember">Remember me</label>
                                 </div>
-                                <a href="{{ route('guardian.auth.forgotForm') }}" class="text-primary">Forgot password?</a>
+                                <a href="{{ route('guardian.auth.forgotForm') }}" class="text-info">Forgot password?</a>
                             </div>
                             <div class="d-flex gap-2">
                                 <a href="{{ route('login.select') }}" class="btn btn-outline-secondary">Back</a>

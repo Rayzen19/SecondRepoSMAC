@@ -413,7 +413,7 @@
 
                                         @if($section['student_count'] > 0)
                                             <div class="mt-2">
-                                                <small class="text-primary">
+                                                <small class="text-info">
                                                     <i class="ti ti-users me-1"></i>{{ $section['student_count'] }} student{{ $section['student_count'] > 1 ? 's' : '' }}
                                                 </small>
                                             </div>
@@ -435,7 +435,7 @@
                             <div class="row text-center">
                                 <div class="col-md-4">
                                     <div class="p-2">
-                                        <h4 class="mb-0 text-primary">{{ $sectionsHandled->count() }}</h4>
+                                        <h4 class="mb-0 text-info">{{ $sectionsHandled->count() }}</h4>
                                         <small class="text-muted">Total Sections</small>
                                     </div>
                                 </div>
@@ -478,7 +478,7 @@
     border-color: #0d6efd !important;
 }
 
-.section-card:hover .text-primary {
+.section-card:hover .text-info {
     font-weight: 600;
 }
 

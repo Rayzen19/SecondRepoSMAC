@@ -33,7 +33,7 @@
                                 <div class="fw-semibold text-uppercase text-muted small">{{ $s['subject_code'] ?? '—' }}</div>
                                 <h5 class="mb-2">{{ $s['subject_name'] }}</h5>
                             </div>
-                            <span class="badge bg-primary-subtle text-primary">{{ $activeYear?->name }}</span>
+                            <span class="badge bg-primary-subtle text-info">{{ $activeYear?->name }}</span>
                         </div>
                         <div class="mt-3 d-flex flex-column gap-2">
                             <div class="d-flex align-items-center gap-2 flex-wrap">
@@ -55,7 +55,7 @@
                             <div class="d-flex align-items-center gap-2 flex-wrap">
                                 <span class="badge rounded-pill bg-light text-muted border">Adviser</span>
                                 @if(!empty($s['adviser_name']))
-                                    <span class="badge rounded-pill bg-primary-subtle text-primary">{{ $s['adviser_name'] }}</span>
+                                    <span class="badge rounded-pill bg-primary-subtle text-info">{{ $s['adviser_name'] }}</span>
                                 @else
                                     <span class="badge rounded-pill bg-secondary-subtle text-secondary">N/A</span>
                                 @endif
@@ -68,8 +68,8 @@
                             </div>
                             <div class="d-flex align-items-center gap-2 flex-wrap">
                                 <span class="badge rounded-pill bg-light text-muted border">Status</span>
-                                <span class="badge rounded-pill bg-primary-subtle text-primary">Active: {{ $s['counts']['active'] ?? 0 }}</span>
-                                <span class="badge rounded-pill bg-primary-subtle text-primary">Graduated: {{ $s['counts']['graduated'] ?? 0 }}</span>
+                                <span class="badge rounded-pill bg-primary-subtle text-info">Active: {{ $s['counts']['active'] ?? 0 }}</span>
+                                <span class="badge rounded-pill bg-primary-subtle text-info">Graduated: {{ $s['counts']['graduated'] ?? 0 }}</span>
                                 <span class="badge rounded-pill bg-warning-subtle text-warning">Dropped: {{ $s['counts']['dropped'] ?? 0 }}</span>
                             </div>
                         </div>

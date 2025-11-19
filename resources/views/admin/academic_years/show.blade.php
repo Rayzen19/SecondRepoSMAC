@@ -8,7 +8,7 @@
                 <h2 class="mb-1 h4">
                     <i class="ti ti-calendar-event me-2"></i>
                     Academic Year |
-                    <span class="text-primary fw-semibold"> {{ $year->name ?? '—' }} </span>
+                    <span class="text-info fw-semibold"> {{ $year->name ?? '—' }} </span>
                     <small class="text-muted">/ {{ $year->semester ?? '—' }} Semester / </small>
                     <span class="{{ $year->academic_status ? (strtolower($year->academic_status) === 'ongoing enrollment' ? 'text-warning' : (strtolower($year->academic_status) === 'ongoing school year' ? 'text-success' : 'text-muted')) : 'text-muted' }}"> {{ $year->academic_status ? ucwords(strtolower($year->academic_status)) : '—' }}</span>
                 </h2>

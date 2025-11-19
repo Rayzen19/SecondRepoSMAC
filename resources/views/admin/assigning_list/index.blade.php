@@ -284,7 +284,7 @@
                                 </td>
                                 <td>
                                     @if($student->program)
-                                        <span class="badge bg-primary-subtle text-primary">{{ $student->program }}</span>
+                                        <span class="badge bg-primary-subtle text-info">{{ $student->program }}</span>
                                     @else
                                         <span class="text-muted">Not assigned</span>
                                     @endif
@@ -392,7 +392,7 @@
                             <div class="col-6">
                                 <div class="mb-2">
                                     <small class="text-muted d-block">After Assignment</small>
-                                    <h4 class="mb-0 text-primary" id="afterCapacity">0/30</h4>
+                                    <h4 class="mb-0 text-info" id="afterCapacity">0/30</h4>
                                 </div>
                             </div>
                         </div>
@@ -591,7 +591,7 @@
                                 <div class="fw-semibold">${index + 1}. ${student.name}</div>
                                 <small class="text-muted">
                                     <span class="badge bg-secondary">${student.studentNo}</span>
-                                    <span class="badge bg-primary-subtle text-primary ms-1">${student.program}</span>
+                                    <span class="badge bg-primary-subtle text-info ms-1">${student.program}</span>
                                 </small>
                             </div>
                             <button class="btn btn-sm btn-outline-danger" 

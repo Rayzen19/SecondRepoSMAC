@@ -81,7 +81,7 @@
 
 @if($selectedTerm)
 <div class="mb-3">
-    <h3 class="mb-0 text-primary">
+    <h3 class="mb-0 text-info">
         @if($selectedTerm == 'midterm')
             <i class="ti ti-calendar-event me-2"></i>Midterm
         @elseif($selectedTerm == 'finals')

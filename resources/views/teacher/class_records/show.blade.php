@@ -127,7 +127,7 @@
                                                 <span class="badge bg-success-subtle text-success">Active</span>
                                                 @break
                                             @case('graduated')
-                                                <span class="badge bg-primary-subtle text-primary">Graduated</span>
+                                                <span class="badge bg-primary-subtle text-info">Graduated</span>
                                                 @break
                                             @case('dropped')
                                                 <span class="badge bg-warning-subtle text-warning">Dropped</span>
@@ -171,7 +171,7 @@
                                                 <span class="badge bg-success-subtle text-success">Active</span>
                                                 @break
                                             @case('graduated')
-                                                <span class="badge bg-primary-subtle text-primary">Graduated</span>
+                                                <span class="badge bg-primary-subtle text-info">Graduated</span>
                                                 @break
                                             @case('dropped')
                                                 <span class="badge bg-warning-subtle text-warning">Dropped</span>

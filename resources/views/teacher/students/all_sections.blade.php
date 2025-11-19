@@ -47,7 +47,7 @@
                     @foreach($strandData['grades'] as $grade => $sections)
                         <div class="border-bottom">
                             <div class="p-3 bg-light">
-                                <h6 class="mb-0 text-primary">
+                                <h6 class="mb-0 text-info">
                                     <i class="ti ti-school me-2"></i>{{ $grade }}
                                 </h6>
                             </div>

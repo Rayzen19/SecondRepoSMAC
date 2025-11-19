@@ -46,7 +46,7 @@
                 {{-- Core Curriculum Subjects --}}
                 @if(count($coreSubjects) > 0)
                 <div class="px-4 py-3 bg-light border-bottom">
-                    <h5 class="mb-0 text-primary">
+                    <h5 class="mb-0 text-info">
                         <i class="ti ti-book me-2"></i>Senior High School Core Curriculum Subjects
                     </h5>
                     <small class="text-muted">{{ count($coreSubjects) }} subjects</small>

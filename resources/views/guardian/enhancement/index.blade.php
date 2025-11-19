@@ -289,7 +289,7 @@
         <div class="card border-primary text-center">
             <div class="card-body">
                 <h6 class="text-muted mb-2">Total Assessments</h6>
-                <h3 class="text-primary mb-0">{{ $performanceSummary['total_assessments'] }}</h3>
+                <h3 class="text-info mb-0">{{ $performanceSummary['total_assessments'] }}</h3>
             </div>
         </div>
     </div>
