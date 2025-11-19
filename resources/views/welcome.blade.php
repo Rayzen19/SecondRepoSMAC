@@ -7,7 +7,7 @@
     <title>St. Matthew Academy of Cavite</title>
 
     <!-- Favicon -->
-    <link rel="shortcut icon" type="image/x-icon" href="{{ asset('assets/images/image.png') }}">
+    <link rel="shortcut icon" type="image/x-icon" href="{{ asset('assets/images/Image.png') }}">
 
     <!-- Bootstrap CSS -->
     <link rel="stylesheet" href="{{ asset('assets/css/bootstrap.min.css') }}">
@@ -25,7 +25,7 @@
     <nav class="navbar navbar-expand-lg navbar-light bg-white shadow-sm sticky-top">
     <div class="container-fluid px-lg-5">
             <a class="navbar-brand d-flex align-items-center" href="#">
-                <img src="{{ asset('assets/images/image.png') }}" alt="Logo" height="25 " class="me-2">
+                <img src="{{ asset('assets/images/Image.png') }}" alt="Logo" height="25 " class="me-2">
                 <span class="fw-semibold">St. Matthew Academy of Cavite</span>
             </a>
             <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#mainNav" aria-controls="mainNav" aria-expanded="false" aria-label="Toggle navigation">
