@@ -1,3 +1,4 @@
+
 <?php
 
 use Illuminate\Database\Migrations\Migration;
@@ -12,10 +13,10 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('teachers', function (Blueprint $table) {
-            $table->string('region')->nullable()->after('address');
-            $table->string('province')->nullable()->after('region');
-            $table->string('municipality')->nullable()->after('province');
-            $table->string('barangay')->nullable()->after('municipality');
+            if (!Schema::hasColumn('teachers', 'region')) {
+                $table->string('region')->nullable()->after('address');
+            }
+            // repeat for other columns if needed
         });
     }
 
@@ -25,7 +26,11 @@ return new class extends Migration
     public function down(): void
     {
         Schema::table('teachers', function (Blueprint $table) {
-            $table->dropColumn(['region', 'province', 'municipality', 'barangay']);
+            if (Schema::hasColumn('teachers', 'region')) {
+                $table->dropColumn('region');
+            }
+            // repeat for other columns if needed
         });
     }
 };
+

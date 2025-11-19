@@ -15,32 +15,30 @@ class StudentFactory extends Factory
     public function definition(): array
     {
         $ay = AcademicYear::inRandomOrder()->first() ?? AcademicYear::factory()->create();
-        
         $year = substr($ay->name, 0, 4);
         $prefix = $year . '-';
-        // Use a static in-memory cache to keep per-year counters during a single process/batch run
+
+        // Static cache for student_number sequencing
         static $seqCache = [];
         if (!array_key_exists($year, $seqCache)) {
-            // Compute next sequential number based on existing student_number values with the same year prefix
             $existing = Student::withTrashed()->where('student_number', 'like', $prefix . '%')->pluck('student_number')->all();
             $maxSeq = 0;
             foreach ($existing as $sn) {
                 $num = (int) substr($sn, strlen($prefix));
-                if ($num > $maxSeq) {
-                    $maxSeq = $num;
-                }
+                if ($num > $maxSeq) $maxSeq = $num;
             }
-            $seqCache[$year] = $maxSeq; // start from current max
+            $seqCache[$year] = $maxSeq;
         }
-        // increment for this new record
+
         $seqCache[$year]++;
         $student_number = $prefix . str_pad($seqCache[$year], 5, '0', STR_PAD_LEFT);
-        // Fallback guard: if for any reason this candidate already exists (e.g., concurrent/separate processes), bump until free
+
         while (Student::withTrashed()->where('student_number', $student_number)->exists()) {
             $seqCache[$year]++;
             $student_number = $prefix . str_pad($seqCache[$year], 5, '0', STR_PAD_LEFT);
         }
 
+        // Names
         $gender = $this->faker->randomElement(['male', 'female']);
         $firstNames = [
             'male' => ['Juan', 'Jose', 'Carlos', 'Miguel', 'Rafael', 'Antonio', 'Francisco', 'Pedro', 'Luis', 'Gabriel', 'Daniel', 'Samuel', 'Mateo', 'Lucas', 'Diego'],
@@ -57,31 +55,38 @@ class StudentFactory extends Factory
             'Purok 3, Brgy. San Isidro, Dasmariñas, Cavite'
         ];
 
+        // Student names
+        $first_name = $firstNames[$gender][array_rand($firstNames[$gender])];
+        $middle_name = $firstNames[$gender][array_rand($firstNames[$gender])];
+        $last_name = $lastNames[array_rand($lastNames)];
+
+        // Guardian names
+        $guardianGender = $this->faker->randomElement(['male', 'female']);
+        $guardianFirstName = $firstNames[$guardianGender][array_rand($firstNames[$guardianGender])];
+        $guardianLastName = $lastNames[array_rand($lastNames)];
+
         return [
             'student_number' => strtoupper($student_number),
-            'first_name' => $firstNames[$gender][array_rand($firstNames[$gender])],
-            'middle_name' => $firstNames[$gender][array_rand($firstNames[$gender])],
-            'last_name' => $lastNames[array_rand($lastNames)],
+            'first_name' => $first_name,
+            'middle_name' => $middle_name,
+            'last_name' => $last_name,
             'suffix' => $this->faker->optional(0.1)->randomElement(['Jr.', 'Sr.', 'II', 'III']),
             'gender' => $gender,
             'birthdate' => $this->faker->date(),
             'email' => $this->faker->unique()->safeEmail(),
             'mobile_number' => '09' . $this->faker->numerify('#########'),
             'address' => $caviteAddresses[array_rand($caviteAddresses)],
-            'guardian_name' => $firstNames[array_rand(['male', 'female'])][0] . ' ' . $lastNames[array_rand($lastNames)],
+            'guardian_name' => $guardianFirstName . ' ' . $guardianLastName,
             'guardian_contact' => '09' . $this->faker->numerify('#########'),
             'guardian_email' => $this->faker->unique()->safeEmail(),
             'program' => $this->faker->randomElement(['BSCS', 'BSIT', 'BSEd']),
-            'academic_year' => function () {
-                $startYear = $this->faker->numberBetween(2000, date('Y'));
-                return $startYear . '-' . ($startYear + 1);
-            },
+            'academic_year' => $ay->name,
             'academic_year_id' => $ay->id,
             'status' => $this->faker->randomElement(['active', 'graduated', 'dropped']),
             'profile_picture' => null,
-            // Keep created_at within the computed year to maintain consistency
-            'created_at' => $this->faker->dateTimeBetween($year.'-01-01 00:00:00', $year.'-12-31 23:59:59'),
+            'created_at' => $this->faker->dateTimeBetween($year . '-01-01 00:00:00', $year . '-12-31 23:59:59'),
             'updated_at' => now(),
         ];
     }
 }
+
