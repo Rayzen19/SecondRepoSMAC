@@ -23,7 +23,7 @@
             <a href="{{ route('admin.subjects.edit', $subject) }}" class="btn btn-warning d-flex align-items-center"><i class="ti ti-edit me-2"></i>Edit</a>
         </div>
         <div class="mb-2 ms-2">
-            <a href="{{ route('admin.strand-subjects.create', ['subject' => $subject->id]) }}" class="btn btn-primary d-flex align-items-center"><i class="ti ti-circle-plus me-2"></i>Add to Strand</a>
+            <a href="{{ route('admin.strand-subjects.create', ['subject' => $subject->id]) }}" class="btn btn-info d-flex align-items-center"><i class="ti ti-circle-plus me-2"></i>Add to Strand</a>
         </div>
         <div class="mb-2 ms-2">
             <form action="{{ route('admin.subjects.destroy', $subject) }}" method="POST" class="d-inline" onsubmit="return confirm('Are you sure you want to delete this subject? This action cannot be undone.');">

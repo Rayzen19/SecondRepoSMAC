@@ -135,7 +135,7 @@
                 </div>
 
                 <a href="{{ route('admin.subjects.show', $pivot->subject_id) }}" class="btn btn-outline-light border me-2">Cancel</a>
-                <button type="submit" class="btn btn-primary">Save Changes</button>
+                <button type="submit" class="btn btn-info">Save Changes</button>
             </form>
         </div>
     </div>

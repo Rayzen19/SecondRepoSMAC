@@ -77,7 +77,7 @@
 
                 <div class="row mt-3">
                     <div class="col-12">
-                        <button type="submit" class="btn btn-primary me-2">
+                        <button type="submit" class="btn btn-info me-2">
                             <i class="ti ti-search me-1"></i>Apply Filters
                         </button>
                         <a href="{{ route('admin.assigning-list.index') }}" class="btn btn-outline-secondary">
@@ -403,7 +403,7 @@
                 <button type="button" class="btn btn-secondary me-2" data-bs-dismiss="modal">
                     <i class="ti ti-x me-1"></i>Cancel
                 </button>
-                <button type="button" class="btn btn-primary" id="confirmAssignmentBtn" data-bs-dismiss="modal">
+                <button type="button" class="btn btn-info" id="confirmAssignmentBtn" data-bs-dismiss="modal">
                     <i class="ti ti-device-floppy me-1"></i>Save Assignment
                 </button>
             </div>

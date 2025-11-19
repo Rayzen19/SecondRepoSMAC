@@ -47,7 +47,7 @@
                     </div>
                 </div>
                 <div class="mt-3 d-flex gap-2">
-                    <button class="btn btn-primary" type="submit">Update</button>
+                    <button class="btn btn-info" type="submit">Update</button>
                     <a href="{{ route('admin.assessment-types.show', $item) }}" class="btn btn-secondary">Cancel</a>
                 </div>
             </form>

@@ -179,7 +179,7 @@
                         @endif
 
                         <div class="d-flex justify-content-end mt-4">
-                            <a href="{{ route('student.dashboard') }}" class="btn btn-primary">
+                            <a href="{{ route('student.dashboard') }}" class="btn btn-info">
                                 <i class="ti ti-arrow-left me-1"></i>Back to Dashboard
                             </a>
                         </div>
@@ -264,7 +264,7 @@
                                 <a href="{{ route('student.dashboard') }}" class="btn btn-secondary">
                                     <i class="ti ti-arrow-left me-1"></i>Back to Dashboard
                                 </a>
-                                <button type="submit" class="btn btn-primary">
+                                <button type="submit" class="btn btn-info">
                                     <i class="ti ti-check me-1"></i>Submit Pre-Enrollment
                                 </button>
                             </div>

@@ -223,7 +223,7 @@
 						<i class="ti ti-speakerphone me-2" style="color:#10b981"></i>Recent Announcements
 					</h5>
 					<div class="d-flex gap-2">
-						<a href="{{ route('admin.announcements.create') }}" class="btn btn-sm btn-primary">
+						<a href="{{ route('admin.announcements.create') }}" class="btn btn-sm btn-info">
 							<i class="ti ti-plus me-1"></i>New
 						</a>
 						<a href="{{ route('admin.announcements.index') }}" class="btn btn-sm btn-outline-primary">
@@ -280,7 +280,7 @@
 						<div class="text-center py-4">
 							<i class="ti ti-speakerphone text-muted" style="font-size: 3rem;"></i>
 							<p class="text-muted mb-2">No announcements yet.</p>
-							<a href="{{ route('admin.announcements.create') }}" class="btn btn-sm btn-primary">
+							<a href="{{ route('admin.announcements.create') }}" class="btn btn-sm btn-info">
 								<i class="ti ti-plus me-1"></i>Create First Announcement
 							</a>
 						</div>

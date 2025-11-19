@@ -88,7 +88,7 @@
                     </div>
                 </div>
                 <div class="mt-4 d-flex justify-content-end">
-                    <button type="submit" class="btn btn-primary d-flex align-items-center"><i class="ti ti-device-floppy me-2"></i>Save</button>
+                    <button type="submit" class="btn btn-info d-flex align-items-center"><i class="ti ti-device-floppy me-2"></i>Save</button>
                 </div>
             </form>
         </div>

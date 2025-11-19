@@ -218,7 +218,7 @@
 
                 <!-- Action Buttons -->
                 <div class="d-flex gap-2">
-                    <button type="submit" class="btn btn-primary btn-send">
+                    <button type="submit" class="btn btn-info btn-send">
                         <i class="ti ti-send me-2"></i>Send Message
                     </button>
                     <a href="{{ route('admin.messages.messenger') }}" class="btn btn-outline-secondary btn-cancel">

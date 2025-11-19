@@ -89,7 +89,7 @@
                                                 </td>
                                                 <td>
                                                     @if($section['is_my_section'])
-                                                        <a href="{{ route('teacher.students.section', $section['assignment_id']) }}" class="btn btn-sm btn-primary">
+                                                        <a href="{{ route('teacher.students.section', $section['assignment_id']) }}" class="btn btn-sm btn-info">
                                                             <i class="ti ti-eye me-1"></i>View
                                                         </a>
                                                     @else

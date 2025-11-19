@@ -63,7 +63,7 @@
                     </div>
                 </div>
                 <div class="mt-4 d-flex gap-2">
-                    <button type="submit" class="btn btn-primary"><i class="ti ti-plus me-2"></i>Assign</button>
+                    <button type="submit" class="btn btn-info"><i class="ti ti-plus me-2"></i>Assign</button>
                     <a href="{{ url()->previous() }}" class="btn btn-secondary">Cancel</a>
                 </div>
             </form>

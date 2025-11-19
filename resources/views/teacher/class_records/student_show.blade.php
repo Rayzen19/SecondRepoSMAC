@@ -97,7 +97,7 @@
         <h5 class="mb-0">Grades</h5>
         <div class="d-flex align-items-center gap-2">
             @if(!empty($quartersData))
-                <button type="submit" form="formSaveScores" class="btn btn-primary btn-sm"><i class="ti ti-device-floppy me-1"></i> Save Scores</button>
+                <button type="submit" form="formSaveScores" class="btn btn-info btn-sm"><i class="ti ti-device-floppy me-1"></i> Save Scores</button>
             @endif
         </div>
     </div>
@@ -230,7 +230,7 @@
                 </div>
             @endforeach
             <div class="d-flex justify-content-end mt-3">
-                <button type="submit" class="btn btn-primary"><i class="ti ti-device-floppy me-1"></i> Save Scores</button>
+                <button type="submit" class="btn btn-info"><i class="ti ti-device-floppy me-1"></i> Save Scores</button>
             </div>
         @endif
         </form>
@@ -659,7 +659,7 @@ document.addEventListener('DOMContentLoaded', function(){
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
-                    <button type="submit" class="btn btn-primary">Submit</button>
+                    <button type="submit" class="btn btn-info">Submit</button>
                 </div>
             </form>
         </div>
@@ -699,7 +699,7 @@ document.addEventListener('DOMContentLoaded', function(){
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
-                    <button type="submit" class="btn btn-primary">Save changes</button>
+                    <button type="submit" class="btn btn-info">Save changes</button>
                 </div>
             </form>
         </div>
@@ -792,7 +792,7 @@ document.addEventListener('DOMContentLoaded', function(){
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
-                    <button type="submit" class="btn btn-primary">Create</button>
+                    <button type="submit" class="btn btn-info">Create</button>
                 </div>
             </form>
         </div>

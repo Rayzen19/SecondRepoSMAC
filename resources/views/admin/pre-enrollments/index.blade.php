@@ -172,7 +172,7 @@
                             </select>
                         </div>
                         <div class="col-md-2 d-flex align-items-end">
-                            <button type="submit" class="btn btn-primary me-2">
+                            <button type="submit" class="btn btn-info me-2">
                                 <i class="ti ti-filter me-1"></i> Filter
                             </button>
                             <a href="{{ route('admin.pre-enrollments.index') }}" class="btn btn-outline-secondary">

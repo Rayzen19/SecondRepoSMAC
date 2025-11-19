@@ -171,7 +171,7 @@
         <div class="card shadow-sm">
             <div class="card-header bg-white d-flex justify-content-between align-items-center py-3">
                 <h5 class="mb-0"><i class="ti ti-messages me-2"></i>Messages</h5>
-                <button class="btn btn-sm btn-primary new-conversation-btn" data-bs-toggle="modal" data-bs-target="#newConversationModal">
+                <button class="btn btn-sm btn-info new-conversation-btn" data-bs-toggle="modal" data-bs-target="#newConversationModal">
                     <i class="ti ti-plus"></i> New
                 </button>
             </div>
@@ -253,7 +253,7 @@
                             <i class="ti ti-paperclip fs-5"></i>
                         </button>
                         <input id="message-input" name="body" class="form-control" placeholder="Type your message..." autocomplete="off">
-                        <button class="btn btn-primary send-btn d-flex align-items-center" type="submit">
+                        <button class="btn btn-info send-btn d-flex align-items-center" type="submit">
                             <i class="ti ti-send me-1"></i> Send
                         </button>
                     </div>

@@ -409,11 +409,11 @@
     }
     
     /* Button hover effects */
-    .btn-primary {
+    .btn-info {
         transition: all 0.3s ease;
     }
     
-    .btn-primary:hover {
+    .btn-info:hover {
         transform: translateY(-2px);
         box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
     }
@@ -1272,7 +1272,7 @@
                                 <select id="${rowId}-teacher" class="form-select form-select-sm" style="flex: 1; min-width: 150px; font-size: 0.8rem; padding: 0.25rem 0.5rem;">
                                     <option value="">Loading teachers...</option>
                                 </select>
-                                <button class="btn btn-sm btn-primary px-2 py-1" id="${rowId}-btn" 
+                                <button class="btn btn-sm btn-info px-2 py-1" id="${rowId}-btn" 
                                         onclick="saveSubjectTeacher('${rowId}', '${strandCode}', '${gradeLevel}', ${sectionId}, ${subj.id})"
                                         style="white-space: nowrap; font-size: 0.75rem; font-weight: 500;">
                                     <i class="ti ti-device-floppy" style="font-size: 0.875rem;"></i> Save

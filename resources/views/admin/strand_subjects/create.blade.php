@@ -195,7 +195,7 @@
                 @endphp
 
                 <a href="{{ $cancelRoute }}" class="btn btn-outline-light border me-2">Cancel</a>
-                <button type="submit" class="btn btn-primary">Add</button>
+                <button type="submit" class="btn btn-info">Add</button>
             </form>
         </div>
     </div>

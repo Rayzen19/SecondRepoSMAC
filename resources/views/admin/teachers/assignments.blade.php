@@ -101,7 +101,7 @@
                     <div class="col-md-3">
                         <div class="mb-3">
                             <label class="form-label">&nbsp;</label>
-                            <button type="submit" class="btn btn-primary d-block w-100">
+                            <button type="submit" class="btn btn-info d-block w-100">
                                 <i class="ti ti-plus me-1"></i>Submit
                             </button>
                         </div>

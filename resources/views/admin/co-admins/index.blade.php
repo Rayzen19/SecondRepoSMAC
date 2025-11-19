@@ -16,7 +16,7 @@
     <div class="row">
         <div class="col-sm-12">
             <div class="d-flex justify-content-end">
-                <a href="{{ route('admin.co-admins.create') }}" class="btn btn-primary" style="background-color: #ff6b35; border-color: #ff6b35;">
+                <a href="{{ route('admin.co-admins.create') }}" class="btn btn-info" style="background-color: #ff6b35; border-color: #ff6b35;">
                     <i class="fas fa-plus-circle me-1"></i> Add Co-Admin
                 </a>
             </div>

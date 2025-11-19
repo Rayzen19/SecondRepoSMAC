@@ -16,6 +16,6 @@
         </div>
     </div>
     
-    <a href="{{ route('student.dashboard') }}" class="btn btn-primary mt-3">Back to Dashboard</a>
+    <a href="{{ route('student.dashboard') }}" class="btn btn-info mt-3">Back to Dashboard</a>
 </div>
 @endsection

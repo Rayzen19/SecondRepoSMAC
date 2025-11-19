@@ -86,7 +86,7 @@
                             </div>
                             <div class="d-flex gap-2">
                                 <a href="{{ url('/') }}" class="btn btn-outline-secondary">Back</a>
-                                <button type="submit" class="btn btn-primary w-100">Sign in</button>
+                                <button type="submit" class="btn btn-info w-100">Sign in</button>
                             </div>
                         </form>
                     </div>
