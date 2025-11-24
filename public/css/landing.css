@@ -1,0 +1,113 @@
+:root{
+    --primary:#0b5ed7; /* corporate blue */
+    --muted:#6c757d;
+    --bg:#f7f9fb;
+    --accent:#0b5ed71a; /* subtle */
+    --brand-accent: #f97316; /* orange CTA */
+    --brand-contrast:#0f1724;
+}
+/* Base */
+body.corporate-landing{
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial;
+    background: var(--bg);
+    color: var(--brand-contrast);
+}
+
+/* Navbar */
+.corporate-nav{ background: #fff !important; }
+.corporate-nav .logo-img{ border-radius:6px; object-fit:cover; }
+.brand-text{ line-height:1; }
+.brand-name{ font-weight:700; color:var(--brand-contrast); }
+.brand-sub{ font-size:0.85rem; color:var(--muted); margin-top:-2px }
+.corporate-nav .nav-link{ color:var(--muted) !important; margin-right:8px }
+.corporate-nav .btn-primary{ background:var(--primary); border-color:transparent }
+
+/* Hero */
+.hero-section{ background: linear-gradient(180deg, #eef6ff 0%, #ffffff 100%); padding-top:5.5rem; padding-bottom:5.5rem }
+.hero-title{ font-size:2.6rem; font-weight:800; color:var(--brand-contrast); margin-bottom:0.75rem; letter-spacing:-0.4px }
+.hero-lead{ color:#475569; font-size:1.05rem; max-width:640px }
+.hero-meta li{ color:var(--muted); margin-bottom:0.25rem }
+.hero-card{ background: #fff; border-radius:12px; box-shadow: 0 30px 60px rgba(2,6,23,0.06); display:flex; align-items:center; justify-content:center; min-width:360px }
+.hero-logo{ width:360px; height:auto; border-radius:8px; }
+
+/* Legacy hero visual (used in current markup) */
+.hero-visual{ width:100%; height:380px; background-image: url('/assets/images/smac_banner.jpg'); background-size:cover; background-position:center; border-radius:14px; box-shadow: 0 20px 40px rgba(2,6,23,0.06) }
+
+/* CTA Buttons for hero */
+.btn-cta{ background: var(--brand-accent); color: #fff; border: 1px solid var(--brand-accent); border-radius: 999px; padding: 0.6rem 1.25rem }
+.btn-cta:hover{ background: #ff7537 }
+.btn-outline-cta{ background:transparent; color: var(--brand-accent); border: 2px solid var(--brand-accent); border-radius: 999px; padding: 0.5rem 1.1rem }
+.btn-outline-cta:hover{ background: rgba(249,115,22,0.06) }
+
+/* subtle entrance animation */
+.fade-up{ transform: translateY(10px); opacity: 0; transition: all .6s cubic-bezier(.2,.9,.2,1) }
+.fade-up.visible{ transform: translateY(0); opacity: 1 }
+
+/* Features / cards */
+.card.border-info{ border-color:rgba(11,94,215,0.06) !important; background:#fff }
+.card .card-title{ color:var(--brand-contrast); font-weight:700 }
+.card .card-body{ padding:1.25rem }
+.avatar{ width:48px; height:48px; display:inline-flex; align-items:center; justify-content:center; font-size:1.25rem }
+
+/* feature cards grid */
+.features-grid{ display:grid; grid-template-columns: repeat(3,1fr); gap:1.25rem }
+@media (max-width: 991px){ .features-grid{ grid-template-columns: repeat(2,1fr) } }
+@media (max-width: 575px){ .features-grid{ grid-template-columns: 1fr } }
+
+/* Announcements grid tweaks */
+#school-news .card{ transition: transform .18s ease, box-shadow .18s ease }
+#school-news .card:hover{ transform: translateY(-6px); box-shadow:0 10px 30px rgba(11,94,215,0.08) }
+
+/* announcement image placeholder */
+#school-news .card-img-top{ border-top-left-radius:0.75rem; border-top-right-radius:0.75rem }
+
+/* Footer */
+footer{ background:#ffffff; border-top:1px solid rgba(15,23,36,0.04) }
+
+/* Utilities */
+.rounded-3{ border-radius:12px !important }
+
+/* Buttons */
+.btn-primary{ box-shadow: 0 6px 18px rgba(11,94,215,0.14); border-radius:999px }
+.btn-primary:active{ transform: translateY(1px) }
+
+/* Accessibility: focus states */
+.btn:focus, .nav-link:focus{ outline:3px solid rgba(11,94,215,0.12); outline-offset:2px }
+
+/* Responsive adjustments */
+@media (max-width: 991px){
+    .hero-card{ min-width:240px }
+    .hero-logo{ width:240px }
+    .hero-title{ font-size:1.8rem }
+    .hero-visual{ height:220px }
+}
+
+@media (max-width: 575px){
+    .brand-sub{ display:none }
+    .hero-section{ padding-top:3rem; padding-bottom:3rem }
+    .hero-card{ display:none }
+}
+
+/* Strands / big cards */
+.strands-list{ display:flex; flex-direction:column; gap:1rem }
+.strand-card{ background: linear-gradient(180deg, rgba(11,94,215,0.03), rgba(255,255,255,0.6)); border-radius:18px; padding:18px 24px; border:3px solid rgba(11,94,215,0.18); box-shadow: 0 30px 60px rgba(2,6,23,0.06); }
+.strand-card .strand-icon{ min-width:86px; display:flex; flex-direction:column; align-items:center }
+.strand-card .strand-icon .avatar{ width:56px; height:56px; font-size:1.25rem }
+.strand-card .strand-abbr{ font-weight:700; font-size:0.9rem }
+.strand-card h4{ font-size:1.5rem; color:var(--brand-contrast); margin:0 }
+.strand-card.alternate{ flex-direction:row-reverse }
+.strand-card.alternate .strand-content h4{ text-align:right }
+
+@media (max-width: 991px){
+    .strand-card{ padding:14px 18px }
+    .strand-card .strand-icon{ min-width:64px }
+    .strand-card h4{ font-size:1.2rem }
+}
+
+@media (max-width: 575px){
+    .strand-card{ padding:12px; border-width:2px }
+    .strand-card.alternate{ flex-direction:row }
+    .strand-card .strand-icon{ margin-bottom:8px }
+    .strand-card .strand-content{ width:100% }
+}
+
