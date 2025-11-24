@@ -49,7 +49,7 @@
         <div class="container">
             <div class="row align-items-center g-4">
                 <div class="col-lg-7">
-                    <h1 class="display-5 fw-bold mb-3" style="color:#313131">Inspiring Excellence, Nurturing Values</h1>
+                    <h1 class="display-5 fw-bold mb-3" style="color:#313131"> Excellence, Nurturing Values</h1>
                     <p class="lead text-black">Private, non-sectarian K-12 school in Bacoor, Cavite. Modern facilities, dedicated teachers, and an inclusive community.</p>
                     <div class="d-flex gap-2 mt-3">
                         <a href="{{ route('login') }}" class="btn btn-info btn-lg text-white fw-semibold shadow-sm rounded-pill px-4"><i class="ti ti-layout-navbar me-1"></i> Login</a>
