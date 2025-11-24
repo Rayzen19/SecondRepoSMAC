@@ -55,7 +55,7 @@
         <div class="container">
             <div class="row align-items-center">
                 <div class="col-lg-6">
-                    <h1 class="hero-title">Inspiring Excellence, Nurturing Values</h1>
+                    <h1 class="hero-title"> Excellence, Nurturing Values</h1>
                     <p class="hero-lead">A forward-looking K–12 school with modern facilities, expert faculty, and a supportive community in Bacoor, Cavite.</p>
                     <div class="d-flex gap-2 mt-4">
                         <a href="{{ route('login') }}" class="btn btn-primary btn-lg rounded-pill px-4">Get Started</a>
