@@ -67,7 +67,7 @@
                     </ul>
                 </div>
                 <div class="col-lg-6 text-center d-none d-lg-block">
-                    <div class="hero-visual shadow-lg rounded-3" role="img" aria-label="Campus image"></div>
+                    <div class="hero-visual shadow-lg rounded-3" role="img" aria-label="Campus image" style="background-image: url('{{ asset('images/hero.svg') }}');"></div>
                 </div>
             </div>
         </div>

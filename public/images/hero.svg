@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="1200" height="800" viewBox="0 0 1200 800" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMid slice">
+  <defs>
+    <linearGradient id="g1" x1="0" x2="1">
+      <stop offset="0%" stop-color="#b8d8ff" />
+      <stop offset="100%" stop-color="#e6f3ff" />
+    </linearGradient>
+  </defs>
+  <rect width="1200" height="800" fill="url(#g1)" />
+  <!-- simple school building icon -->
+  <g transform="translate(160,160) scale(1.2)" fill="#0b2540">
+    <rect x="200" y="160" width="420" height="260" rx="10" fill="#ffffff" opacity="0.95" />
+    <rect x="240" y="200" width="80" height="80" rx="6" fill="#bfe1ff" />
+    <rect x="340" y="200" width="80" height="80" rx="6" fill="#bfe1ff" />
+    <rect x="440" y="200" width="80" height="80" rx="6" fill="#bfe1ff" />
+    <rect x="540" y="200" width="80" height="80" rx="6" fill="#bfe1ff" />
+    <rect x="360" y="320" width="120" height="100" rx="8" fill="#0b2540" />
+    <rect x="350" y="300" width="140" height="20" rx="6" fill="#d6eeff" />
+    <polygon points="200,160 430,60 660,160" fill="#0b2540" opacity="0.9" />
+  </g>
+</svg>
