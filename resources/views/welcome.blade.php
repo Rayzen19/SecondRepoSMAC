@@ -18,61 +18,56 @@
     <link rel="stylesheet" href="{{ asset('assets/plugins/fontawesome/css/all.min.css') }}">
     <!-- Main CSS (from admin template) -->
     <link rel="stylesheet" href="{{ asset('assets/css/style.css') }}">
+    <!-- Landing overrides (corporate style) -->
+    <link rel="stylesheet" href="{{ asset('css/landing.css') }}">
 </head>
-<body class="bg-light">
+<body class="corporate-landing">
 
-    <!-- Top Navbar -->
-    <nav class="navbar navbar-expand-lg navbar-light bg-white shadow-sm sticky-top">
-    <div class="container-fluid px-lg-5">
-            <a class="navbar-brand d-flex align-items-center" href="#">
-                <img src="{{ asset('assets/images/image.png') }}" alt="Logo" height="25 " class="me-2">
-                <span class="fw-semibold">St. Matthew Academy of Cavite</span>
+    <!-- Top Navbar (Corporate) -->
+    <nav class="navbar navbar-expand-lg navbar-dark bg-white corporate-nav shadow-sm sticky-top">
+        <div class="container px-lg-5">
+            <a class="navbar-brand d-flex align-items-center text-dark" href="#">
+                <img src="{{ asset('assets/images/image.png') }}" alt="Logo" height="36" class="me-2 logo-img">
+                <div class="brand-text">
+                    <div class="brand-name">St. Matthew Academy</div>
+                    <div class="brand-sub">of Cavite</div>
+                </div>
             </a>
-            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#mainNav" aria-controls="mainNav" aria-expanded="false" aria-label="Toggle navigation">
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#mainNav" aria-controls="#mainNav" aria-expanded="false" aria-label="Toggle navigation">
                 <span class="navbar-toggler-icon"></span>
             </button>
             <div class="collapse navbar-collapse" id="mainNav">
-                <ul class="navbar-nav ms-auto mb-2 mb-lg-0">
-                    <li class="nav-item"><a class="nav-link" href="#about">About</a></li>
-                    <li class="nav-item"><a class="nav-link" href="#features">Features</a></li>
-                    <li class="nav-item"><a class="nav-link" href="#contact">Contact</a></li>
+                <ul class="navbar-nav ms-auto mb-2 mb-lg-0 align-items-lg-center">
+                    <li class="nav-item"><a class="nav-link text-muted" href="#about">About</a></li>
+                    <li class="nav-item"><a class="nav-link text-muted" href="#features">Programs</a></li>
+                    <li class="nav-item"><a class="nav-link text-muted" href="#school-news">Announcements</a></li>
+                    <li class="nav-item"><a class="nav-link text-muted" href="#contact">Contact</a></li>
                 </ul>
                 <div class="ms-lg-3 d-flex gap-2">
-                    <a href="{{ route('login') }}" class="btn btn-info text-white fw-semibold shadow-sm rounded-pill px-4"><i class="ti ti-lock me-1"></i> Login</a>
+                    <a href="{{ route('login') }}" class="btn btn-primary btn-sm fw-semibold rounded-pill px-4">Login</a>
                 </div>
             </div>
         </div>
     </nav>
 
-    <!-- Hero -->
-    <header class="py-5 py-lg-6 bg- bg-opacity-10 border-bottom border-info rounded-bottom-4">
+    <!-- Hero (Corporate) -->
+    <header class="hero-section py-6">
         <div class="container">
-            <div class="row align-items-center g-4">
-                <div class="col-lg-7">
-                    <h1 class="display-5 fw-bold mb-3" style="color:#313131">Inspriring Excellence, Nurturing Values</h1>
-                    <p class="lead text-black">Private, non-sectarian K-12 school in Bacoor, Cavite. Modern facilities, dedicated teachers, and an inclusive community.</p>
-                    <div class="d-flex gap-2 mt-3">
-                        <a href="{{ route('login') }}" class="btn btn-info btn-lg text-white fw-semibold shadow-sm rounded-pill px-4"><i class="ti ti-layout-navbar me-1"></i> Login</a>
-                        <a href="#contact" class="btn btn-outline-info btn-lg fw-semibold rounded-pill px-4"><i class="ti ti-mail me-1"></i> Contact Us</a>
+            <div class="row align-items-center">
+                <div class="col-lg-6">
+                    <h1 class="hero-title">Inspiring Excellence, Nurturing Values</h1>
+                    <p class="hero-lead">A forward-looking K–12 school with modern facilities, expert faculty, and a supportive community in Bacoor, Cavite.</p>
+                    <div class="d-flex gap-2 mt-4">
+                        <a href="{{ route('login') }}" class="btn btn-primary btn-lg rounded-pill px-4">Get Started</a>
+                        <a href="#contact" class="btn btn-outline-primary btn-lg rounded-pill px-4">Contact Us</a>
                     </div>
-                    <div class="mt-3">
-                        <span class="badge bg-info bg-opacity-25 text-info me-2"><i class="ti ti-map-pin me-1"></i> Little Pasay St., Brgy. Niog 1, Bacoor, Cavite</span>
-                        <span class="badge bg-info bg-opacity-25 text-info"><i class="ti ti-mail me-1"></i> <a href="mailto:stmatthew2015@yahoo.com" class="text-info">stmatthew2015@yahoo.com</a></span>
-                    </div>
+                    <ul class="hero-meta list-unstyled mt-4">
+                        <li><strong>Location:</strong> Little Pasay St., Brgy. Niog 1, Bacoor</li>
+                        <li><strong>Email:</strong> <a href="mailto:stmatthew2015@yahoo.com">stmatthew2015@yahoo.com</a></li>
+                    </ul>
                 </div>
-                <div class="col-lg-5">
-                    <div class="card border-info shadow-lg rounded-4">
-                        <img src="https://scontent.fmnl40-2.fna.fbcdn.net/v/t39.30808-6/506345504_1314140270713666_6764660474252277220_n.jpg?_nc_cat=106&ccb=1-7&_nc_sid=127cfc&_nc_eui2=AeF7EWPvW7h1B1iaXLx3QtAfWncKOGg8oBJadwo4aDygErvoPblQx2XoQCRfxZ32P2YZvfhqjSZLLdkcwau8p177&_nc_ohc=HfaTQaR2tOAQ7kNvwEjRHPr&_nc_oc=Admv-JK4W3A2qfrhtmXmvyz-1yiWYOMmfFZdjxZnUnkS7KJRBLpkF69uk5j9gAXedK0&_nc_zt=23&_nc_ht=scontent.fmnl40-2.fna&_nc_gid=saPqWWb9gwO8HhfHDS0iaQ&oh=00_AfZ8xa8oLl1NJcnfUIsmnOGMMlZx5qhg0b2eVpTbQ3noig&oe=68E2EDAC" alt="Campus">
-                        <div class="card-body bg-info bg-opacity-10 rounded-bottom-4">
-                            <div class="d-flex align-items-center">
-                                <i class="ti ti-building-community text-info fs-3 me-2"></i>
-                                <div>
-                                    <div class="fw-semibold text-info">St. Matthew Academy of Cavite</div>
-                                    <div class="text-info small">A community of learners and leaders</div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
+                <div class="col-lg-6 text-center d-none d-lg-block">
+                    <div class="hero-visual shadow-lg rounded-3" role="img" aria-label="Campus image"></div>
                 </div>
             </div>
         </div>
