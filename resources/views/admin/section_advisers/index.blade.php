@@ -102,7 +102,7 @@
                                 <!-- Grade 11 Sections -->
                                 @if($grade11Sections->isNotEmpty())
                                     <div class="list-group-item px-2 py-1 bg-light">
-                                        <small class="fw-bold text-primary">
+                                        <small class="fw-bold text-info">
                                             <i class="ti ti-school me-1"></i>Grade 11 Sections
                                         </small>
                                     </div>
@@ -365,7 +365,7 @@
                         <!-- Subject List -->
                         <div id="subjectTeacherList">
                             <div class="text-center text-muted py-5">
-                                <div class="spinner-border text-primary mb-3" role="status" style="width: 3rem; height: 3rem;">
+                                <div class="spinner-border text-info mb-3" role="status" style="width: 3rem; height: 3rem;">
                                     <span class="visually-hidden">Loading...</span>
                                 </div>
                                 <p class="fw-semibold">Loading subjects...</p>
@@ -409,11 +409,11 @@
     }
     
     /* Button hover effects */
-    .btn-primary {
+    .btn-info {
         transition: all 0.3s ease;
     }
     
-    .btn-primary:hover {
+    .btn-info:hover {
         transform: translateY(-2px);
         box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
     }
@@ -549,7 +549,7 @@
             } else {
                 // Filter sections based on grade level
                 const sections = card.querySelectorAll('.section-item');
-                const grade11Header = card.querySelector('.list-group-item.bg-light small.text-primary')?.closest('.list-group-item');
+                const grade11Header = card.querySelector('.list-group-item.bg-light small.text-info')?.closest('.list-group-item');
                 const grade12Header = card.querySelector('.list-group-item.bg-light small.text-success')?.closest('.list-group-item');
                 let hasVisibleSections = false;
                 
@@ -656,7 +656,7 @@
                                     <div class="fw-semibold">${index + 1}. ${student.first_name} ${student.last_name}</div>
                                     <small class="text-muted">
                                         <span class="badge bg-secondary">${student.student_number}</span>
-                                        <span class="badge bg-primary-subtle text-primary ms-1">${student.program}</span>
+                                        <span class="badge bg-primary-subtle text-info ms-1">${student.program}</span>
                                         <span class="badge bg-info-subtle text-info ms-1">${student.academic_year}</span>
                                         ${student.registration_number ? `<span class="badge bg-success-subtle text-success ms-1">REG: ${student.registration_number}</span>` : ''}
                                     </small>
@@ -850,7 +850,7 @@
                                     <div class="fw-semibold">${index + 1}. ${student.first_name} ${student.last_name}</div>
                                     <small class="text-muted">
                                         <span class="badge bg-secondary">${student.student_number}</span>
-                                        <span class="badge bg-primary-subtle text-primary ms-1">${student.program}</span>
+                                        <span class="badge bg-primary-subtle text-info ms-1">${student.program}</span>
                                         <span class="badge bg-info-subtle text-info ms-1">${student.academic_year}</span>
                                         ${student.registration_number ? `<span class="badge bg-success-subtle text-success ms-1">REG: ${student.registration_number}</span>` : ''}
                                     </small>
@@ -1146,7 +1146,7 @@
                             <div class="fw-semibold">${idx + 1}. ${s.name}</div>
                             <small class="text-muted">
                                 <span class="badge bg-secondary me-1">${s.code}</span>
-                                ${s.type ? `<span class="badge bg-primary-subtle text-primary me-1">${s.type}</span>` : ''}
+                                ${s.type ? `<span class="badge bg-primary-subtle text-info me-1">${s.type}</span>` : ''}
                                 ${s.semester ? `<span class="badge bg-info-subtle text-info">${s.semester}</span>` : ''}
                             </small>
                         </div>
@@ -1181,7 +1181,7 @@
         const listContainer = document.getElementById('subjectTeacherList');
         listContainer.innerHTML = `
             <div class="text-center py-5">
-                <div class="spinner-border text-primary mb-3" role="status" style="width: 3rem; height: 3rem;">
+                <div class="spinner-border text-info mb-3" role="status" style="width: 3rem; height: 3rem;">
                     <span class="visually-hidden">Loading...</span>
                 </div>
                 <p class="fw-semibold text-muted">Loading subjects...</p>
@@ -1272,7 +1272,7 @@
                                 <select id="${rowId}-teacher" class="form-select form-select-sm" style="flex: 1; min-width: 150px; font-size: 0.8rem; padding: 0.25rem 0.5rem;">
                                     <option value="">Loading teachers...</option>
                                 </select>
-                                <button class="btn btn-sm btn-primary px-2 py-1" id="${rowId}-btn" 
+                                <button class="btn btn-sm btn-info px-2 py-1" id="${rowId}-btn" 
                                         onclick="saveSubjectTeacher('${rowId}', '${strandCode}', '${gradeLevel}', ${sectionId}, ${subj.id})"
                                         style="white-space: nowrap; font-size: 0.75rem; font-weight: 500;">
                                     <i class="ti ti-device-floppy" style="font-size: 0.875rem;"></i> Save
@@ -1423,7 +1423,7 @@
         if (currentEl) {
             currentEl.innerHTML = `
                 <div class="d-flex align-items-center">
-                    <div class="spinner-border spinner-border-sm text-primary me-2" role="status">
+                    <div class="spinner-border spinner-border-sm text-info me-2" role="status">
                         <span class="visually-hidden">Loading...</span>
                     </div>
                     <span class="text-muted">Updating assignment...</span>
@@ -1653,7 +1653,7 @@
         if (currentEl) {
             currentEl.innerHTML = `
                 <div class="d-flex align-items-center">
-                    <div class="spinner-border spinner-border-sm text-primary me-2" role="status">
+                    <div class="spinner-border spinner-border-sm text-info me-2" role="status">
                         <span class="visually-hidden">Loading...</span>
                     </div>
                     <span class="text-muted">Removing assignment...</span>

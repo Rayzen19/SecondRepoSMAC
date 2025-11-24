@@ -98,7 +98,7 @@
         <div class="card shadow-sm">
             <div class="card-header bg-white d-flex justify-content-between align-items-center">
                 <h5 class="mb-0"><i class="ti ti-users me-2"></i>My Students Performance</h5>
-                <a href="{{ route('guardian.grades.index') }}" class="btn btn-sm btn-primary">
+                <a href="{{ route('guardian.grades.index') }}" class="btn btn-sm btn-info">
                     <i class="ti ti-eye me-1"></i>View All Grades
                 </a>
             </div>
@@ -150,7 +150,7 @@
                                             <strong class="
                                                 @if($student['average'] >= 90) text-success
                                                 @elseif($student['average'] >= 85) text-info
-                                                @elseif($student['average'] >= 75) text-primary
+                                                @elseif($student['average'] >= 75) text-info
                                                 @else text-danger
                                                 @endif
                                             ">{{ $student['average'] }}</strong>

@@ -81,7 +81,7 @@
                             <button type="submit" class="btn btn-success w-100">Reset Password</button>
                         </form>
                         <div class="mt-3 text-center">
-                            <a class="text-primary" href="{{ route($guard . '.auth.forgotForm') }}">Resend OTP</a>
+                            <a class="text-info" href="{{ route($guard . '.auth.forgotForm') }}">Resend OTP</a>
                         </div>
                     </div>
                 </div>

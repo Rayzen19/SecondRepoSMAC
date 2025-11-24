@@ -47,7 +47,7 @@
                     @foreach($strandData['grades'] as $grade => $sections)
                         <div class="border-bottom">
                             <div class="p-3 bg-light">
-                                <h6 class="mb-0 text-primary">
+                                <h6 class="mb-0 text-info">
                                     <i class="ti ti-school me-2"></i>{{ $grade }}
                                 </h6>
                             </div>
@@ -89,7 +89,7 @@
                                                 </td>
                                                 <td>
                                                     @if($section['is_my_section'])
-                                                        <a href="{{ route('teacher.students.section', $section['assignment_id']) }}" class="btn btn-sm btn-primary">
+                                                        <a href="{{ route('teacher.students.section', $section['assignment_id']) }}" class="btn btn-sm btn-info">
                                                             <i class="ti ti-eye me-1"></i>View
                                                         </a>
                                                     @else

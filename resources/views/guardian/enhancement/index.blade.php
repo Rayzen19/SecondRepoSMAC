@@ -53,7 +53,7 @@
             </div>
             <div class="col-md-2">
                 <label class="form-label d-block">&nbsp;</label>
-                <button type="submit" class="btn btn-primary w-100">
+                <button type="submit" class="btn btn-info w-100">
                     <i class="ti ti-filter me-1"></i> Apply
                 </button>
             </div>
@@ -289,7 +289,7 @@
         <div class="card border-primary text-center">
             <div class="card-body">
                 <h6 class="text-muted mb-2">Total Assessments</h6>
-                <h3 class="text-primary mb-0">{{ $performanceSummary['total_assessments'] }}</h3>
+                <h3 class="text-info mb-0">{{ $performanceSummary['total_assessments'] }}</h3>
             </div>
         </div>
     </div>

@@ -120,7 +120,7 @@
                     </div>
 
                     <a href="{{ route('admin.attendance.index') }}" class="btn btn-outline-light border me-2">Cancel</a>
-                    <button type="submit" class="btn btn-primary">Save Attendance</button>
+                    <button type="submit" class="btn btn-info">Save Attendance</button>
                 </div>
             </form>
         </div>

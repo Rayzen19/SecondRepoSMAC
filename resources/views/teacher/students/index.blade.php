@@ -82,7 +82,7 @@
                                                 <i class="ti ti-x"></i>
                                             </a>
                                         @else
-                                            <button type="submit" class="btn btn-sm btn-primary w-100" title="Search">
+                                            <button type="submit" class="btn btn-sm btn-info w-100" title="Search">
                                                 <i class="ti ti-search"></i>
                                             </button>
                                         @endif
@@ -243,7 +243,7 @@
                         <h4 class="mt-3 text-muted">No Students Found</h4>
                         @if($selectedYearLevel || $selectedStrand || $selectedSection || $selectedSubject || $search)
                             <p class="text-muted">No students match the selected filters.</p>
-                            <a href="{{ route('teacher.students.index') }}" class="btn btn-primary">
+                            <a href="{{ route('teacher.students.index') }}" class="btn btn-info">
                                 <i class="ti ti-refresh me-1"></i>Clear Filters
                             </a>
                         @else
@@ -324,7 +324,7 @@
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
-                <button type="button" class="btn btn-primary" onclick="submitAssessment()">Submit</button>
+                <button type="button" class="btn btn-info" onclick="submitAssessment()">Submit</button>
             </div>
         </div>
     </div>
@@ -563,7 +563,7 @@ function submitAssessment() {
     });
 
     // Show loading
-    const submitBtn = document.querySelector('#addAssessmentModal .btn-primary');
+    const submitBtn = document.querySelector('#addAssessmentModal .btn-info');
     const originalText = submitBtn.innerHTML;
     submitBtn.disabled = true;
     submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span>Creating...';

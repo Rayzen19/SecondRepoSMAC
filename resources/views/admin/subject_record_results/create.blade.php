@@ -73,7 +73,7 @@
                 </div>
 
                 <div class="mt-3 d-flex gap-2">
-                    <button class="btn btn-primary" type="submit">Save</button>
+                    <button class="btn btn-info" type="submit">Save</button>
                     <a href="{{ route('admin.subject-record-results.index') }}" class="btn btn-secondary">Cancel</a>
                 </div>
             </form>

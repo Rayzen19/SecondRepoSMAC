@@ -57,7 +57,7 @@
                 <div class="row">
                     <!-- Student Information -->
                     <div class="col-md-6">
-                        <h6 class="mb-3 text-primary">Student Information</h6>
+                        <h6 class="mb-3 text-info">Student Information</h6>
                         <div class="mb-3">
                             <label class="form-label fw-bold">Student Number:</label>
                             <p>{{ $preEnrollment->student->student_number }}</p>
@@ -78,7 +78,7 @@
 
                     <!-- Pre-Enrollment Details -->
                     <div class="col-md-6">
-                        <h6 class="mb-3 text-primary">Pre-Enrollment Details</h6>
+                        <h6 class="mb-3 text-info">Pre-Enrollment Details</h6>
                         <div class="mb-3">
                             <label class="form-label fw-bold">Target Grade Level:</label>
                             <p>Grade {{ $preEnrollment->grade_level }}</p>
@@ -103,14 +103,14 @@
                 <!-- Academic Year Information -->
                 <div class="row">
                     <div class="col-md-6">
-                        <h6 class="mb-3 text-primary">Current Academic Year</h6>
+                        <h6 class="mb-3 text-info">Current Academic Year</h6>
                         <div class="mb-3">
                             <label class="form-label fw-bold">Year:</label>
                             <p>{{ $preEnrollment->currentAcademicYear->year }}</p>
                         </div>
                     </div>
                     <div class="col-md-6">
-                        <h6 class="mb-3 text-primary">Target Academic Year</h6>
+                        <h6 class="mb-3 text-info">Target Academic Year</h6>
                         <div class="mb-3">
                             <label class="form-label fw-bold">Year:</label>
                             <p>{{ $preEnrollment->targetAcademicYear->year ?? 'Not Set' }}</p>
@@ -124,7 +124,7 @@
                     <!-- Processing Information -->
                     <div class="row">
                         <div class="col-md-12">
-                            <h6 class="mb-3 text-primary">Processing Information</h6>
+                            <h6 class="mb-3 text-info">Processing Information</h6>
                         </div>
                         @if($preEnrollment->processed_at)
                             <div class="col-md-6">

@@ -66,7 +66,7 @@
                     <div class="col-md-3">
                         <div class="card">
                             <div class="card-body text-center">
-                                <i class="ti ti-clipboard-list text-primary mb-2" style="font-size: 2rem;"></i>
+                                <i class="ti ti-clipboard-list text-info mb-2" style="font-size: 2rem;"></i>
                                 <h3 class="mb-0">{{ $summary['total_assessments'] }}</h3>
                                 <p class="text-muted mb-0">Total Assessments</p>
                             </div>
@@ -216,7 +216,7 @@
 
                     <!-- Print Button -->
                     <div class="text-center mt-4 mb-4">
-                        <button onclick="window.print()" class="btn btn-primary btn-lg">
+                        <button onclick="window.print()" class="btn btn-info btn-lg">
                             <i class="ti ti-printer me-2"></i> Print Scores
                         </button>
                     </div>

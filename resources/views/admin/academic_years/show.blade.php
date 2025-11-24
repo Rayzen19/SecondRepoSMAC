@@ -8,7 +8,7 @@
                 <h2 class="mb-1 h4">
                     <i class="ti ti-calendar-event me-2"></i>
                     Academic Year |
-                    <span class="text-primary fw-semibold"> {{ $year->name ?? '—' }} </span>
+                    <span class="text-info fw-semibold"> {{ $year->name ?? '—' }} </span>
                     <small class="text-muted">/ {{ $year->semester ?? '—' }} Semester / </small>
                     <span class="{{ $year->academic_status ? (strtolower($year->academic_status) === 'ongoing enrollment' ? 'text-warning' : (strtolower($year->academic_status) === 'ongoing school year' ? 'text-success' : 'text-muted')) : 'text-muted' }}"> {{ $year->academic_status ? ucwords(strtolower($year->academic_status)) : '—' }}</span>
                 </h2>
@@ -27,7 +27,7 @@
             <a href="{{ route('admin.academic-years.edit', $year) }}" class="btn btn-warning d-flex align-items-center"><i class="ti ti-edit me-2"></i>Edit</a>
         </div> -->
         <!-- <div class="mb-2 ms-2">
-            <a href="{{ route('admin.academic-year-strand-subjects.create', ['academic_year' => $year->id]) }}" class="btn btn-primary d-flex align-items-center"><i class="ti ti-book-plus me-2"></i>Add Subject</a>
+            <a href="{{ route('admin.academic-year-strand-subjects.create', ['academic_year' => $year->id]) }}" class="btn btn-info d-flex align-items-center"><i class="ti ti-book-plus me-2"></i>Add Subject</a>
         </div> -->
         <!-- <div class="mb-2 ms-2">
             <a href="{{ route('admin.academic-year-strand-advisers.create', ['academic_year' => $year->id]) }}" class="btn btn-outline-primary d-flex align-items-center"><i class="ti ti-user-plus me-2"></i>Register Strand</a>
@@ -130,7 +130,7 @@ document.addEventListener('DOMContentLoaded', function () {
                 <div class="tab-content pt-4" id="ayTabContent">
                     <div class="tab-pane fade show active" id="general" role="tabpanel" aria-labelledby="general-tab">
                          <div class="d-flex justify-content-end mb-2">
-                            <a href="{{ route('admin.academic-years.edit', $year) }}" class="btn btn-sm btn-primary"><i class="ti ti-edit me-2"></i>Edit</a>
+                            <a href="{{ route('admin.academic-years.edit', $year) }}" class="btn btn-sm btn-info"><i class="ti ti-edit me-2"></i>Edit</a>
                         </div>
                         <div class="row">
                             <div class="col-md-6">
@@ -164,7 +164,7 @@ document.addEventListener('DOMContentLoaded', function () {
                         <div class="tab-pane fade" id="students" role="tabpanel" aria-labelledby="students-tab">
                             <div class="d-flex flex-wrap align-items-center justify-content-end gap-2 mb-2">
                                 <a href="{{ route('admin.student-enrollments.index', ['academic_year_id' => $year->id]) }}" class="btn btn-sm btn-outline-primary"><i class="ti ti-list me-1"></i>View Enrollments</a>
-                                <a href="{{ route('admin.student-enrollments.create', ['academic_year_id' => $year->id]) }}" class="btn btn-sm btn-primary"><i class="ti ti-user-plus me-1"></i>New Enrollment</a>
+                                <a href="{{ route('admin.student-enrollments.create', ['academic_year_id' => $year->id]) }}" class="btn btn-sm btn-info"><i class="ti ti-user-plus me-1"></i>New Enrollment</a>
                                 <form method="POST" action="{{ route('admin.academic-years.sync-subject-enrollments', $year) }}" class="m-0">
                                     @csrf
                                     <button type="submit" class="btn btn-sm btn-outline-secondary" onclick="return confirm('Sync subject enrollments for all students in this Academic Year?')">
@@ -218,7 +218,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
                     <div class="tab-pane fade" id="advisers" role="tabpanel" aria-labelledby="advisers-tab">
                         <div class="d-flex justify-content-end mb-2">
-                            <a href="{{ route('admin.academic-year-strand-advisers.create', ['academic_year' => $year->id]) }}" class="btn btn-sm btn-primary"><i class="ti ti-plus me-2"></i>Assign Strand</a>
+                            <a href="{{ route('admin.academic-year-strand-advisers.create', ['academic_year' => $year->id]) }}" class="btn btn-sm btn-info"><i class="ti ti-plus me-2"></i>Assign Strand</a>
                         </div>
                         @php $advisers = $year->strandAdvisers ?? collect(); @endphp
                         @if($advisers->isNotEmpty())
@@ -252,7 +252,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
                     <div class="tab-pane fade" id="sections" role="tabpanel" aria-labelledby="sections-tab">
                         <div class="d-flex justify-content-end mb-2">
-                            <a href="{{ route('admin.academic-year-strand-sections.create', ['academic_year' => $year->id]) }}" class="btn btn-sm btn-primary"><i class="ti ti-plus me-2"></i>Assign Section</a>
+                            <a href="{{ route('admin.academic-year-strand-sections.create', ['academic_year' => $year->id]) }}" class="btn btn-sm btn-info"><i class="ti ti-plus me-2"></i>Assign Section</a>
                         </div>
                         @php $strandSections = $year->strandSections ?? collect(); @endphp
                         @if($strandSections->isNotEmpty())

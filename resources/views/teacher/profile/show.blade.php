@@ -50,7 +50,7 @@
                             <p class="text-muted mb-0">View and manage your personal information</p>
                         </div>
                         @if($teacher->status === 'active')
-                        <a href="{{ route('teacher.profile.edit') }}" class="btn btn-primary">
+                        <a href="{{ route('teacher.profile.edit') }}" class="btn btn-info">
                             <i class="ti ti-edit me-1"></i>Edit Profile
                         </a>
                         @else
@@ -90,7 +90,7 @@
                         @csrf
                         @method('POST')
                         <div class="mb-2">
-                            <label for="profile_picture" class="btn btn-primary btn-sm w-100 mb-2">
+                            <label for="profile_picture" class="btn btn-info btn-sm w-100 mb-2">
                                 <i class="ti ti-photo me-1"></i> Choose File
                             </label>
                             <input type="file" name="profile_picture" id="profile_picture" class="d-none" accept="image/*" onchange="previewImageTeacher(event)" required>
@@ -413,7 +413,7 @@
 
                                         @if($section['student_count'] > 0)
                                             <div class="mt-2">
-                                                <small class="text-primary">
+                                                <small class="text-info">
                                                     <i class="ti ti-users me-1"></i>{{ $section['student_count'] }} student{{ $section['student_count'] > 1 ? 's' : '' }}
                                                 </small>
                                             </div>
@@ -435,7 +435,7 @@
                             <div class="row text-center">
                                 <div class="col-md-4">
                                     <div class="p-2">
-                                        <h4 class="mb-0 text-primary">{{ $sectionsHandled->count() }}</h4>
+                                        <h4 class="mb-0 text-info">{{ $sectionsHandled->count() }}</h4>
                                         <small class="text-muted">Total Sections</small>
                                     </div>
                                 </div>
@@ -478,7 +478,7 @@
     border-color: #0d6efd !important;
 }
 
-.section-card:hover .text-primary {
+.section-card:hover .text-info {
     font-weight: 600;
 }
 

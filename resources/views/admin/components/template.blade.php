@@ -13,7 +13,7 @@
     <title>St. Matthew Senior High School</title>
 
     <!-- Favicon -->
-    <link rel="shortcut icon" type="image/x-icon" href="{{ asset('assets/images/image.png') }}">
+    <link rel="shortcut icon" type="image/x-icon" href="{{ asset('assets/images/Image.png') }}">
 
     <!-- Apple Touch Icon -->
     <link rel="apple-touch-icon" sizes="180x180" href="{{ asset('assets/img/apple-touch-icon.png') }}">

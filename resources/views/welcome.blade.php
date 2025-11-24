@@ -6,7 +6,10 @@
     <meta name="description" content="St. Matthew Academy of Cavite">
     <title>St. Matthew Academy of Cavite</title>
 
-    <link rel="shortcut icon" href="{{ asset('assets/images/image.png') }}">
+    <!-- Favicon -->
+    <link rel="shortcut icon" type="image/x-icon" href="{{ asset('assets/images/logo.png') }}">
+
+    <!-- Bootstrap CSS -->
     <link rel="stylesheet" href="{{ asset('assets/css/bootstrap.min.css') }}">
     <link rel="stylesheet" href="{{ asset('assets/plugins/tabler-icons/tabler-icons.min.css') }}">
     <link rel="stylesheet" href="{{ asset('assets/plugins/fontawesome/css/all.min.css') }}">
@@ -16,8 +19,8 @@
     <nav class="lm-navbar navbar navbar-expand-lg navbar-light">
         <div class="container">
             <a class="navbar-brand d-flex align-items-center" href="#">
-                <img src="{{ asset('assets/images/image.png') }}" alt="logo" height="36" class="me-2">
-                <span class="brand-text">St. Matthew Academy</span>
+                <img src="{{ asset('assets/images/image.png') }}" alt="Logo" height="25 " class="me-2">
+                <span class="fw-semibold">St. Matthew Academy of Cavite</span>
             </a>
             <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#mainNav">
                 <span class="navbar-toggler-icon"></span>
@@ -50,7 +53,7 @@
                 </div>
                 <div class="col-lg-6 d-none d-lg-block">
                     <div class="hero-visual">
-                        <img src="{{ asset('assets/images/image.png') }}" alt="campus" class="img-fluid rounded shadow-sm">
+                        <img src="{{ asset('assets/images/logo.png') }}" alt="campus" class="img-fluid rounded shadow-sm">
                     </div>
                 </div>
             </div>

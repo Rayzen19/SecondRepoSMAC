@@ -85,7 +85,7 @@
 
                         <div class="col-12">
                             <div class="student-submit">
-                                <button type="submit" class="btn btn-primary">Create Co-Admin</button>
+                                <button type="submit" class="btn btn-info">Create Co-Admin</button>
                                 <a href="{{ route('admin.co-admins.index') }}" class="btn btn-secondary">Cancel</a>
                             </div>
                         </div>

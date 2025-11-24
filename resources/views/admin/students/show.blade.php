@@ -125,7 +125,7 @@
                                 <div class="d-flex align-items-start justify-content-between">
                                     <div class="flex-grow-1">
                                         <h6 class="mb-1">
-                                            <i class="ti ti-book me-1 text-primary"></i>
+                                            <i class="ti ti-book me-1 text-info"></i>
                                             <strong>{{ $subject['name'] }}</strong>
                                         </h6>
                                         <div class="d-flex flex-wrap gap-2 align-items-center">
@@ -198,7 +198,7 @@
                 <div class="col-md-4">
                     <div class="d-flex align-items-center gap-2">
                         <span class="text-muted small">Strand:</span>
-                        <span class="fw-semibold text-primary">{{ data_get($activeEnrollment, 'strand.name', 'N/A') }}</span>
+                        <span class="fw-semibold text-info">{{ data_get($activeEnrollment, 'strand.name', 'N/A') }}</span>
                     </div>
                 </div>
                 <div class="col-md-4">

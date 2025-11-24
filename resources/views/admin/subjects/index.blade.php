@@ -17,7 +17,7 @@
     </div>
     <div class="d-flex my-xl-auto right-content align-items-center flex-wrap ">
         <div class="mb-2">
-            <a href="{{ route('admin.subjects.create') }}" class="btn btn-primary d-flex align-items-center"><i class="ti ti-circle-plus me-2"></i>Add Subject</a>
+            <a href="{{ route('admin.subjects.create') }}" class="btn btn-info d-flex align-items-center"><i class="ti ti-circle-plus me-2"></i>Add Subject</a>
         </div>
     </div>
 </div>
@@ -56,7 +56,7 @@
                 {{-- Core Curriculum Subjects --}}
                 @if($coreSubjects->count() > 0)
                 <div class="px-4 py-3 bg-light border-bottom">
-                    <h5 class="mb-0 text-primary">
+                    <h5 class="mb-0 text-info">
                         <i class="ti ti-book me-2"></i>Senior High School Core Curriculum Subjects
                     </h5>
                     <small class="text-muted">{{ $coreSubjects->count() }} subjects</small>

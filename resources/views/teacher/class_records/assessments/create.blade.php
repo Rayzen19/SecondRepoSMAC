@@ -68,7 +68,7 @@ n                    </ul>
                 </div>
 
                 <div class="mt-3 text-end">
-                    <button type="submit" class="btn btn-primary">Create</button>
+                    <button type="submit" class="btn btn-info">Create</button>
                 </div>
             </form>
         </div>

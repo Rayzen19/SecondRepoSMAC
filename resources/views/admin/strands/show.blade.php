@@ -23,7 +23,7 @@
             <a href="{{ route('admin.strands.edit', $strand) }}" class="btn btn-warning d-flex align-items-center"><i class="ti ti-edit me-2"></i>Edit</a>
         </div>
           <div class="mb-2 ms-2">
-            <a href="{{ route('admin.strand-subjects.create', ['strand' => $strand->id]) }}" class="btn btn-primary d-flex align-items-center"><i class="ti ti-circle-plus me-2"></i>Add to Subject</a>
+            <a href="{{ route('admin.strand-subjects.create', ['strand' => $strand->id]) }}" class="btn btn-info d-flex align-items-center"><i class="ti ti-circle-plus me-2"></i>Add to Subject</a>
         </div>
     </div>
 </div>

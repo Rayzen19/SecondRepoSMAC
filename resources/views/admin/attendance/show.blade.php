@@ -27,7 +27,7 @@
                                 <span>Attendance Log Information</span>
                             </h5>
                             <div>
-                                <a href="{{ route('admin.attendance.edit', $log) }}" class="btn btn-primary me-2">
+                                <a href="{{ route('admin.attendance.edit', $log) }}" class="btn btn-info me-2">
                                     <i class="fas fa-edit me-1"></i>Edit
                                 </a>
                                 <a href="{{ route('admin.attendance.index') }}" class="btn btn-outline-secondary">
@@ -137,7 +137,7 @@
                                     <div class="card-body">
                                         <h6 class="card-title mb-3">Actions</h6>
                                         <div class="d-flex gap-2">
-                                            <a href="{{ route('admin.attendance.edit', $log) }}" class="btn btn-primary">
+                                            <a href="{{ route('admin.attendance.edit', $log) }}" class="btn btn-info">
                                                 <i class="fas fa-edit me-1"></i>Edit
                                             </a>
                                             <form action="{{ route('admin.attendance.destroy', $log) }}" method="POST" onsubmit="return confirm('Are you sure you want to delete this attendance log?');">

@@ -167,7 +167,7 @@
                             <td>{{ $report->created_at->format('M d, Y h:i A') }}</td>
                             <td>
                                 <div class="btn-group" role="group">
-                                    <a href="{{ route('admin.message-reports.show', $report) }}" class="btn btn-sm btn-primary">
+                                    <a href="{{ route('admin.message-reports.show', $report) }}" class="btn btn-sm btn-info">
                                         <i class="ti ti-eye"></i> View
                                     </a>
                                     @if($report->isPending())

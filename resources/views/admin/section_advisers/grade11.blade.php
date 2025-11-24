@@ -169,11 +169,11 @@
     }
     
     /* Button hover effects */
-    .btn-primary {
+    .btn-info {
         transition: all 0.3s ease;
     }
     
-    .btn-primary:hover {
+    .btn-info:hover {
         transform: translateY(-2px);
         box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
     }

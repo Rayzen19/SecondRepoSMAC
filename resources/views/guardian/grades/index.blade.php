@@ -201,7 +201,7 @@
                     <div class="col-md-4">
                         <div class="text-center p-3 bg-light rounded">
                             <h6 class="text-muted mb-2">Overall Average</h6>
-                            <h2 class="mb-0 {{ $overallAverage >= 90 ? 'text-success' : ($overallAverage >= 80 ? 'text-primary' : ($overallAverage >= 75 ? 'text-warning' : 'text-danger')) }}">
+                            <h2 class="mb-0 {{ $overallAverage >= 90 ? 'text-success' : ($overallAverage >= 80 ? 'text-info' : ($overallAverage >= 75 ? 'text-warning' : 'text-danger')) }}">
                                 {{ $overallAverage }}
                             </h2>
                         </div>
@@ -209,7 +209,7 @@
                     <div class="col-md-4">
                         <div class="text-center p-3 bg-light rounded">
                             <h6 class="text-muted mb-2">Total Subjects</h6>
-                            <h2 class="mb-0 text-primary">{{ $totalSubjects }}</h2>
+                            <h2 class="mb-0 text-info">{{ $totalSubjects }}</h2>
                         </div>
                     </div>
                     <div class="col-md-4">
@@ -254,11 +254,11 @@
 
                 @if(count($recommendations) > 0)
                 <div>
-                    <h6 class="text-primary"><i class="ti ti-bulb me-2"></i>Recommendations</h6>
+                    <h6 class="text-info"><i class="ti ti-bulb me-2"></i>Recommendations</h6>
                     <ul class="list-unstyled">
                         @foreach($recommendations as $recommendation)
                             <li class="mb-2">
-                                <i class="ti ti-arrow-right text-primary me-2"></i>
+                                <i class="ti ti-arrow-right text-info me-2"></i>
                                 {{ $recommendation }}
                             </li>
                         @endforeach

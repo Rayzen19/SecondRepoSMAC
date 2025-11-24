@@ -69,7 +69,7 @@
                 <div class="card-header bg-primary text-white">
                     <h5 class="card-title mb-0">
                         <i class="ti ti-calendar me-2"></i>{{ $academicYear->name ?? 'Academic Year' }}
-                        <span class="badge bg-white text-primary ms-2">{{ $assignments->count() }} Subject{{ $assignments->count() > 1 ? 's' : '' }}</span>
+                        <span class="badge bg-white text-info ms-2">{{ $assignments->count() }} Subject{{ $assignments->count() > 1 ? 's' : '' }}</span>
                     </h5>
                 </div>
                 <div class="card-body p-0">
@@ -183,7 +183,7 @@
                                             <div class="d-flex gap-1 flex-wrap">
                                                 @if($studentCount > 0)
                                                     <a href="{{ route('teacher.class-records.show', $assignment->id) }}" 
-                                                       class="btn btn-sm btn-primary" 
+                                                       class="btn btn-sm btn-info" 
                                                        title="View Class Records"
                                                        data-bs-toggle="tooltip">
                                                         <i class="ti ti-list-details"></i>
@@ -224,7 +224,7 @@
                     <div class="row text-center">
                         <div class="col-md-4">
                             <div class="p-2">
-                                <h5 class="mb-0 text-primary">{{ $assignments->count() }}</h5>
+                                <h5 class="mb-0 text-info">{{ $assignments->count() }}</h5>
                                 <small class="text-muted">Total Subjects</small>
                             </div>
                         </div>
@@ -272,7 +272,7 @@
                             <div class="avatar avatar-lg bg-primary text-white mb-2 mx-auto">
                                 <i class="ti ti-calendar fs-4"></i>
                             </div>
-                            <h4 class="mb-0 text-primary">{{ $assignmentsByYear->count() }}</h4>
+                            <h4 class="mb-0 text-info">{{ $assignmentsByYear->count() }}</h4>
                             <small class="text-muted">Academic Year{{ $assignmentsByYear->count() > 1 ? 's' : '' }}</small>
                         </div>
                     </div>

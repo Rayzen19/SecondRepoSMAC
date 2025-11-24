@@ -50,7 +50,7 @@
                                 @endif
                             </div>
                             <div class="mb-3">
-                                <label for="profile_picture" class="btn btn-primary btn-sm mb-2">
+                                <label for="profile_picture" class="btn btn-info btn-sm mb-2">
                                     <i class="ti ti-upload me-1"></i> Choose File
                                 </label>
                                 <input type="file" class="d-none @error('profile_picture') is-invalid @enderror" id="profile_picture" name="profile_picture" accept="image/*" onchange="previewImage(event)">
@@ -150,7 +150,7 @@
                         <a href="{{ route('guardian.profile.show') }}" class="btn btn-secondary">
                             <i class="ti ti-arrow-left me-2"></i>Cancel
                         </a>
-                        <button type="submit" class="btn btn-primary">
+                        <button type="submit" class="btn btn-info">
                             <i class="ti ti-check me-2"></i>Save Changes
                         </button>
                     </div>

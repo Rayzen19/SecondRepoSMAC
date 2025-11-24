@@ -77,7 +77,7 @@
 
                 <div class="row mt-3">
                     <div class="col-12">
-                        <button type="submit" class="btn btn-primary me-2">
+                        <button type="submit" class="btn btn-info me-2">
                             <i class="ti ti-search me-1"></i>Apply Filters
                         </button>
                         <a href="{{ route('admin.assigning-list.index') }}" class="btn btn-outline-secondary">
@@ -284,7 +284,7 @@
                                 </td>
                                 <td>
                                     @if($student->program)
-                                        <span class="badge bg-primary-subtle text-primary">{{ $student->program }}</span>
+                                        <span class="badge bg-primary-subtle text-info">{{ $student->program }}</span>
                                     @else
                                         <span class="text-muted">Not assigned</span>
                                     @endif
@@ -392,7 +392,7 @@
                             <div class="col-6">
                                 <div class="mb-2">
                                     <small class="text-muted d-block">After Assignment</small>
-                                    <h4 class="mb-0 text-primary" id="afterCapacity">0/30</h4>
+                                    <h4 class="mb-0 text-info" id="afterCapacity">0/30</h4>
                                 </div>
                             </div>
                         </div>
@@ -403,7 +403,7 @@
                 <button type="button" class="btn btn-secondary me-2" data-bs-dismiss="modal">
                     <i class="ti ti-x me-1"></i>Cancel
                 </button>
-                <button type="button" class="btn btn-primary" id="confirmAssignmentBtn" data-bs-dismiss="modal">
+                <button type="button" class="btn btn-info" id="confirmAssignmentBtn" data-bs-dismiss="modal">
                     <i class="ti ti-device-floppy me-1"></i>Save Assignment
                 </button>
             </div>
@@ -591,7 +591,7 @@
                                 <div class="fw-semibold">${index + 1}. ${student.name}</div>
                                 <small class="text-muted">
                                     <span class="badge bg-secondary">${student.studentNo}</span>
-                                    <span class="badge bg-primary-subtle text-primary ms-1">${student.program}</span>
+                                    <span class="badge bg-primary-subtle text-info ms-1">${student.program}</span>
                                 </small>
                             </div>
                             <button class="btn btn-sm btn-outline-danger" 

@@ -198,7 +198,7 @@
                     <i class="ti ti-inbox-off"></i>
                     <h5>Your inbox is empty</h5>
                     <p>No messages yet. When you receive messages, they'll appear here.</p>
-                    <a href="{{ route('admin.messages.compose') }}" class="btn btn-primary">
+                    <a href="{{ route('admin.messages.compose') }}" class="btn btn-info">
                         <i class="ti ti-mail me-2"></i>Send Your First Message
                     </a>
                 </div>

@@ -9,7 +9,7 @@
     <title>Login - St. Matthew Academy of Cavite</title>
 
     <!-- Favicon -->
-    <link rel="shortcut icon" type="image/x-icon" href="{{ asset('assets/images/image.png') }}">
+    <link rel="shortcut icon" type="image/x-icon" href="{{ asset('assets/images/Image.png') }}">
     <link rel="apple-touch-icon" sizes="180x180" href="{{ asset('assets/img/apple-touch-icon.png') }}">
 
     <!-- Bootstrap CSS -->
@@ -27,7 +27,7 @@
         <div class="row justify-content-center">
             <div class="col-md-6 col-lg-5">
                 <div class="text-center mb-4">
-                    <img src="{{ asset('assets/images/image.png') }}" alt="SMAC Logo" height="100" class="mb-3">
+                    <img src="{{ asset('assets/images/Image.png') }}" alt="SMAC Logo" height="100" class="mb-3">
                     <h2 class="fw-bold mb-2">Sign in to Your Account</h2>
                     <p class="text-muted">Enter your credentials to continue</p>
                 </div>
@@ -70,12 +70,12 @@
                                     <input class="form-check-input" type="checkbox" value="1" id="remember" name="remember">
                                     <label class="form-check-label" for="remember">Remember me</label>
                                 </div>
-                                <a href="{{ route('admin.auth.forgotForm') }}" class="text-primary">Forgot password?</a>
+                                <a href="{{ route('admin.auth.forgotForm') }}" class="text-info">Forgot password?</a>
                             </div>
                             
                             <div class="d-flex gap-2">
                                 <a href="{{ url('/') }}" class="btn btn-outline-secondary">Back</a>
-                                <button type="submit" class="btn btn-primary w-100">Sign in</button>
+                                <button type="submit" class="btn btn-info w-100">Sign in</button>
                             </div>
                         </form>
                     </div>

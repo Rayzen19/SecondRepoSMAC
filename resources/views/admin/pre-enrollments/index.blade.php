@@ -66,7 +66,7 @@
                             </div>
                             <div class="avatar avatar-md">
                                 <div class="avatar-title bg-primary-light rounded-circle">
-                                    <i class="ti ti-users text-primary fs-24"></i>
+                                    <i class="ti ti-users text-info fs-24"></i>
                                 </div>
                             </div>
                         </div>
@@ -172,7 +172,7 @@
                             </select>
                         </div>
                         <div class="col-md-2 d-flex align-items-end">
-                            <button type="submit" class="btn btn-primary me-2">
+                            <button type="submit" class="btn btn-info me-2">
                                 <i class="ti ti-filter me-1"></i> Filter
                             </button>
                             <a href="{{ route('admin.pre-enrollments.index') }}" class="btn btn-outline-secondary">
