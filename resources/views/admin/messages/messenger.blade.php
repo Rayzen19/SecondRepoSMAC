@@ -264,6 +264,17 @@
                             messageHtml += '</ul>';
                             messageHtml += '</div>';
                         }
+                        else {
+                            // For received messages add a report option
+                            messageHtml += '<div class="dropdown position-absolute top-0 end-0" style="margin: 4px;">';
+                            messageHtml += '<button class="btn btn-link btn-sm p-0" type="button" data-bs-toggle="dropdown" aria-expanded="false" style="line-height: 1; text-decoration: none;">';
+                            messageHtml += '<i class="ti ti-dots-vertical" style="font-size: 16px;"></i>';
+                            messageHtml += '</button>';
+                            messageHtml += '<ul class="dropdown-menu dropdown-menu-end">';
+                            messageHtml += '<li><a class="dropdown-item text-warning report-btn" href="#" data-message-id="' + m.id + '"><i class="ti ti-flag me-2"></i>Report</a></li>';
+                            messageHtml += '</ul>';
+                            messageHtml += '</div>';
+                        }
                         
                         messageHtml += '<div style="padding-right: 20px;">';
                         
@@ -365,6 +376,16 @@
                                         msgHtml += '</button>';
                                         msgHtml += '<ul class="dropdown-menu dropdown-menu-end">';
                                         msgHtml += '<li><a class="dropdown-item text-danger unsend-btn" href="#" data-message-id="' + m.id + '"><i class="ti ti-trash me-2"></i>Delete</a></li>';
+                                        msgHtml += '</ul>';
+                                        msgHtml += '</div>';
+                                    }
+                                    else {
+                                        msgHtml += '<div class="dropdown position-absolute top-0 end-0" style="margin: 4px;">';
+                                        msgHtml += '<button class="btn btn-link btn-sm p-0" type="button" data-bs-toggle="dropdown" aria-expanded="false" style="line-height: 1; text-decoration: none;">';
+                                        msgHtml += '<i class="ti ti-dots-vertical" style="font-size: 16px;"></i>';
+                                        msgHtml += '</button>';
+                                        msgHtml += '<ul class="dropdown-menu dropdown-menu-end">';
+                                        msgHtml += '<li><a class="dropdown-item text-warning report-btn" href="#" data-message-id="' + m.id + '"><i class="ti ti-flag me-2"></i>Report</a></li>';
                                         msgHtml += '</ul>';
                                         msgHtml += '</div>';
                                     }
@@ -790,6 +811,49 @@
                     alert('Failed to delete message. Please try again.');
                 });
             }
+        });
+
+        // Report message handler (event delegation)
+        threadMessages.addEventListener('click', function(e) {
+            const reportBtn = e.target.closest('.report-btn');
+            if (!reportBtn) return;
+
+            e.preventDefault();
+
+            const messageId = reportBtn.getAttribute('data-message-id');
+            // Simple reporting flow: ask for reason and optional details
+            let reason = prompt('Reason for reporting (spam, harassment, inappropriate, offensive, other):');
+            if (!reason) return alert('Report cancelled');
+            reason = reason.trim().toLowerCase();
+            const allowed = ['spam','harassment','inappropriate','offensive','other'];
+            if (!allowed.includes(reason)) return alert('Invalid reason. Allowed: ' + allowed.join(', '));
+
+            const details = prompt('Optional details (max 500 chars):') || '';
+
+            const fd = new FormData();
+            fd.append('_token', document.querySelector('input[name="_token"]').value);
+            fd.append('reason', reason);
+            fd.append('details', details);
+
+            fetch('/admin/messages/' + messageId + '/report', {
+                method: 'POST',
+                body: fd
+            })
+            .then(r => r.json())
+            .then(res => {
+                if (res.success) {
+                    alert(res.message || 'Reported. Thank you.');
+                    // disable the report button to prevent duplicate reports
+                    reportBtn.classList.add('disabled');
+                    reportBtn.textContent = 'Reported';
+                } else {
+                    alert(res.error || 'Failed to report message');
+                }
+            })
+            .catch(err => {
+                console.error('Report error:', err);
+                alert('Failed to report message. Please try again.');
+            });
         });
 
         // ===== REAL-TIME LARAVEL ECHO INTEGRATION =====

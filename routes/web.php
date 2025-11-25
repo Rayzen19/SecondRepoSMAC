@@ -238,6 +238,8 @@ Route::group(['prefix' => 'admin'], function () {
         Route::post('/messenger/send', [App\Http\Controllers\Admin\MessageController::class, 'sendConversation'])->name('admin.messages.sendConversation');
         Route::get('/messages/{message}/download', [App\Http\Controllers\Admin\MessageController::class, 'downloadAttachment'])->name('admin.messages.download');
         Route::delete('/messages/{message}/unsend', [App\Http\Controllers\Admin\MessageController::class, 'unsendMessage'])->name('admin.messages.unsend');
+        // Report a message (admins should be able to report messages too)
+        Route::post('/messages/{message}/report', [App\Http\Controllers\Admin\MessageController::class, 'reportMessage'])->name('admin.messages.report');
         Route::get('/api/all-users', [App\Http\Controllers\Admin\MessageController::class, 'getAllUsers'])->name('admin.api.all-users');
         Route::get('/api/unread-count', [App\Http\Controllers\Admin\MessageController::class, 'getUnreadCount'])->name('admin.api.unread-count');
         Route::get('/api/unread-counts-by-partner', [App\Http\Controllers\Admin\MessageController::class, 'getUnreadCountsByPartner'])->name('admin.api.unread-counts-by-partner');

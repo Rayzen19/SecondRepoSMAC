@@ -298,6 +298,60 @@ class MessageController extends Controller
         ]);
     }
 
+    /**
+     * Report a message
+     */
+    public function reportMessage(Request $request, Message $message)
+    {
+        $userId = Auth::id();
+
+        // Check if user is part of this conversation
+        $hasAccess = $message->sender_id === $userId || 
+                     $message->recipients()->where('recipient_id', $userId)->exists();
+        
+        if (!$hasAccess) {
+            return response()->json([
+                'success' => false,
+                'error' => 'You do not have permission to report this message'
+            ], 403);
+        }
+
+        // Check if user already reported this message
+        if ($message->isReportedBy($userId)) {
+            return response()->json([
+                'success' => false,
+                'error' => 'You have already reported this message'
+            ], 422);
+        }
+
+        $validated = $request->validate([
+            'reason' => 'required|string|in:spam,harassment,inappropriate,offensive,other',
+            'details' => 'nullable|string|max:500',
+            'screenshot' => 'nullable|image|max:5120', // 5MB max
+        ]);
+
+        // Handle screenshot upload
+        $screenshotPath = null;
+        if ($request->hasFile('screenshot')) {
+            $screenshotPath = $request->file('screenshot')->store('message_reports', 'public');
+        }
+
+        $report = \App\Models\MessageReport::create([
+            'message_id' => $message->id,
+            'reported_by' => $userId,
+            'reason' => $validated['reason'],
+            'details' => $validated['details'] ?? null,
+            'screenshot_path' => $screenshotPath,
+            'status' => 'pending',
+        ]);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Message reported successfully. Administrators have been notified.',
+            'report' => $report
+        ]);
+    }
+
     // Get unread message count
     public function getUnreadCount()
     {
