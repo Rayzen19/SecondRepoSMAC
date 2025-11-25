@@ -355,6 +355,22 @@ class SectionAdviserController extends Controller
                     ->count();
             }
 
+            // Include pre-enrollments (pending/approved) so pre-enrolled students
+            // appear in the Section & Advisers counts even if not yet converted
+            // to StudentEnrollment records.
+            try {
+                $preEnrollmentCount = \App\Models\PreEnrollment::where('current_academic_year_id', $activeYear->id)
+                    ->where('strand_id', $section->strand->id)
+                    ->where('section_id', $section->id)
+                    ->whereIn('status', ['pending', 'approved'])
+                    ->count();
+                $count += $preEnrollmentCount;
+            } catch (\Exception $e) {
+                // If PreEnrollment table/columns are missing in some environments,
+                // fall back silently to the existing behavior.
+                Log::warning('PreEnrollment count failed in getSectionCounts', ['error' => $e->getMessage()]);
+            }
+
             $key = $section->strand->code . '-' . $section->id;
             $counts[$key] = $count;
         }
@@ -617,7 +633,6 @@ class SectionAdviserController extends Controller
                 ->first();
             $aysSectionId = $aysSection?->id;
         }
-
         // Clear or assign
         if (empty($validated['teacher_id'])) {
             $deleteQuery = \App\Models\AcademicYearStrandSubject::where('academic_year_id', $activeYear->id)

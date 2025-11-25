@@ -130,16 +130,38 @@ class PreEnrollmentController extends Controller
                 ->first();
 
             if ($existingEnrollment) {
-                // Mark this pre-enrollment as enrolled to avoid duplicate attempts
+                // If an enrollment already exists, ensure it's linked to the correct
+                // academic_year_strand_section so the student appears in Section & Advisers
+                $updateData = [];
+                if (empty($existingEnrollment->academic_year_strand_section_id) || $existingEnrollment->academic_year_strand_section_id != $sectionAssignment->id) {
+                    $updateData['academic_year_strand_section_id'] = $sectionAssignment->id;
+                }
+                if (empty($existingEnrollment->strand_id) || $existingEnrollment->strand_id != $preEnrollment->strand_id) {
+                    $updateData['strand_id'] = $preEnrollment->strand_id;
+                }
+
+                if (!empty($updateData)) {
+                    $existingEnrollment->update($updateData);
+                }
+
+                // Ensure subject enrollments are synced for the (possibly updated) enrollment
+                try {
+                    $existingEnrollment->syncSubjectEnrollments();
+                } catch (\Throwable $e) {
+                    // Don't block the flow if sync fails; log silently
+                }
+
+                // Mark this pre-enrollment as enrolled and link to existing enrollment
                 $preEnrollment->update([
                     'status' => 'enrolled',
                     'processed_at' => now(),
                     'processed_by' => auth()->id(),
-                    'remarks' => 'Student already enrolled - linked to existing enrollment ID: ' . $existingEnrollment->id
+                    'remarks' => 'Student already enrolled - linked to existing enrollment ID: ' . $existingEnrollment->id,
+                    'section_id' => $sectionId, // ensure pre-enrollment records the section used
                 ]);
-                
+
                 DB::commit();
-                return back()->with('warning', 'Student already has an enrollment for this academic year. Pre-enrollment marked as enrolled.');
+                return back()->with('success', 'Student already has an enrollment for this academic year. Existing enrollment updated and pre-enrollment marked as enrolled.');
             }
 
             // Generate registration number
@@ -320,7 +342,31 @@ class PreEnrollmentController extends Controller
                         ->first();
 
                     if ($existingEnrollment) {
-                        throw new \Exception('Student already enrolled');
+                        // Link existing enrollment to the correct academic_year_strand_section
+                        $updateData = [];
+                        if (empty($existingEnrollment->academic_year_strand_section_id) || $existingEnrollment->academic_year_strand_section_id != $sectionAssignment->id) {
+                            $updateData['academic_year_strand_section_id'] = $sectionAssignment->id;
+                        }
+                        if (empty($existingEnrollment->strand_id) || $existingEnrollment->strand_id != $preEnrollment->strand_id) {
+                            $updateData['strand_id'] = $preEnrollment->strand_id;
+                        }
+
+                        if (!empty($updateData)) {
+                            $existingEnrollment->update($updateData);
+                        }
+
+                        try { $existingEnrollment->syncSubjectEnrollments(); } catch (\Throwable $e) { }
+
+                        // Update pre-enrollment and count as success
+                        $preEnrollment->update([
+                            'status' => 'enrolled',
+                            'processed_at' => now(),
+                            'processed_by' => auth()->id(),
+                            'section_id' => $sectionId,
+                        ]);
+
+                        $successCount++;
+                        continue;
                     }
 
                     // Generate registration number
