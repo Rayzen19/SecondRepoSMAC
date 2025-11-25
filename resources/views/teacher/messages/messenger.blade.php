@@ -300,7 +300,13 @@
 
 @push('scripts')
 <!-- Load Laravel Echo via Vite for real-time messaging -->
-@vite(['resources/js/app.js'])
+@if (file_exists(public_path('build/manifest.json')))
+    @vite(['resources/js/app.js'])
+@elseif (file_exists(public_path('js/app.js')))
+    <script src="{{ asset('js/app.js') }}"></script>
+@else
+    <script>console.warn('Vite manifest not found and no fallback JS located. Real-time features may not work.');</script>
+@endif
 
 <script>
     (function(){
