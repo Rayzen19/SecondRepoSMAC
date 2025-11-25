@@ -169,14 +169,15 @@
                             $isFull = $studentCount >= 30;
                         @endphp
                         <button type="button" 
-                                class="btn btn-sm text-white section-btn" 
-                                style="background-color: #353535;"
-                                data-section-id="{{ $section->id }}"
-                                data-strand-code="{{ $strandCode }}"
-                                data-student-count="{{ $studentCount }}"
-                                onclick="assignToSection({{ $section->id }}, '{{ $section->grade }} {{ $section->name }}', '{{ $strandCode }}', '{{ $color }}')"
-                                title="{{ $strandName }} - Grade {{ $section->grade }} ({{ $studentCount }}/30 students)"
-                                @if($isFull) disabled @endif>
+                            class="btn btn-sm text-white section-btn" 
+                            style="background-color: #353535;"
+                            data-section-id="{{ $section->id }}"
+                            data-section-name="{{ $section->grade }} {{ $section->name }}"
+                            data-strand-code="{{ $strandCode }}"
+                            data-student-count="{{ $studentCount }}"
+                            data-badge-color="{{ $color }}"
+                            title="{{ $strandName }} - Grade {{ $section->grade }} ({{ $studentCount }}/30 students)"
+                            @if($isFull) disabled @endif>
                             <i class="ti ti-users me-1"></i>G{{ $section->grade }} {{ $section->name }}
                             @if($strandCode !== 'N/A')
                                 <span class="badge bg-light text-dark ms-1" style="font-size: 0.7rem;">{{ $strandCode }}</span>
@@ -433,6 +434,10 @@
 </div>
 
 <script>
+    // Blade-generated URLs and tokens (JSON-encoded to keep JS parser happy)
+    const SAVE_ASSIGNMENTS_URL = {!! json_encode(route('admin.assigning-list.save-assignments')) !!};
+    const CSRF_TOKEN = {!! json_encode(csrf_token()) !!};
+
     // Store section assignments in memory
     // Structure: { 'STRAND-SECTION': [{ id, name, studentNo, program }, ...] }
     const sectionAssignments = {};
