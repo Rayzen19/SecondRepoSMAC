@@ -836,7 +836,7 @@
                         if (data.id > lastMessageId) {
                             lastMessageId = data.id;
                         }
-                    } else if (senderId !== {{ auth()->id() }}) {
+                    } else if (senderId !== Number('{{ auth()->id() }}')) {
                         // Message from someone we're not currently chatting with - show notification
                         showNotification('New message from ' + (data.sender_name || 'User'));
                     }
@@ -861,7 +861,7 @@
             const senderId = messageData.sender_id;
             const existingConv = document.querySelector(`.conversation-item[data-user-id="${senderId}"]`);
             
-            if (!existingConv && senderId !== {{ auth()->id() }}) {
+            if (!existingConv && senderId !== Number('{{ auth()->id() }}')) {
                 // Add new conversation to the list
                 const conversationList = document.getElementById('conversation-list');
                 const newConv = document.createElement('li');

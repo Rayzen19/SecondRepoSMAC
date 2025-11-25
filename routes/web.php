@@ -2,6 +2,7 @@
 
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Admin\AuthController;
+use App\Http\Controllers\Student\DashboardController;
 use App\Models\Announcement;
 
 // Emergency session fix route - use this if you get 419 errors
@@ -418,7 +419,7 @@ Route::group(['prefix' => 'student'], function () {
     Route::middleware('auth:student')->group(function () {
         Route::post('/logout', [App\Http\Controllers\Student\LoginController::class, 'logout'])->name('student.auth.logout');
         Route::get('/', fn() => redirect()->route('student.dashboard'));
-        Route::get('/dashboard', fn() => view('student.dashboard'))->name('student.dashboard');
+        Route::get('/dashboard', [DashboardController::class, 'index'])->name('student.dashboard');
     Route::get('/academic-years', [App\Http\Controllers\Student\AcademicYearController::class, 'index'])->name('student.academic-years.index');
     Route::get('/subjects', [App\Http\Controllers\Student\SubjectController::class, 'index'])->name('student.subjects.index');
         
@@ -470,7 +471,10 @@ Route::group(['prefix' => 'student'], function () {
 });
 
 // Media routes to serve files from storage when the public/storage symlink is not available
-Route::get('/media/profile_pictures/{filename}', [App\Http\Controllers\MediaController::class, 'profilePicture'])->name('media.profile_picture');
+// Accept any sub-path under storage/app/public by capturing the full path.
+Route::get('/media/{path}', [App\Http\Controllers\MediaController::class, 'profilePicture'])
+    ->where('path', '.*')
+    ->name('media.profile_picture');
 
 // Guardian Portal
 Route::group(['prefix' => 'guardian'], function () {

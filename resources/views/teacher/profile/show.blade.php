@@ -70,8 +70,8 @@
             <div class="card shadow-sm">
                 <div class="card-body text-center">
                     <h5 class="card-title mb-3">Profile Picture</h5>
-                    @if($teacher->profile_picture)
-                        <img src="{{ asset('storage/' . $teacher->profile_picture) }}" 
+                    @if(!empty($profilePictureUrl))
+                        <img src="{{ $profilePictureUrl }}" 
                              alt="Profile Picture" 
                              id="preview-image-teacher"
                              class="rounded-circle mb-3" 

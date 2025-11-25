@@ -36,8 +36,20 @@ class ProfileController extends Controller
                 ]);
             }
         ])->findOrFail($user->user_pk_id);
-        
-        return view('teacher.profile.show', compact('teacher'));
+        // Resolve profile picture URL only if the file actually exists in public storage
+        $profilePictureUrl = null;
+        if ($teacher->profile_picture && Storage::disk('public')->exists($teacher->profile_picture)) {
+            // If the public/storage symlink exists and the file is available via web, prefer that
+            $publicPath = public_path('storage/' . $teacher->profile_picture);
+            if (file_exists($publicPath)) {
+                $profilePictureUrl = asset('storage/' . $teacher->profile_picture);
+            } else {
+                // Fallback: serve the file through the MediaController route which reads from storage/app/public
+                $profilePictureUrl = url('media/' . $teacher->profile_picture);
+            }
+        }
+
+        return view('teacher.profile.show', compact('teacher', 'profilePictureUrl'));
     }
 
     /**
