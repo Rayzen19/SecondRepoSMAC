@@ -176,6 +176,48 @@
     </div>
 </div>
 
+<!-- Report Message Modal -->
+<div class="modal fade" id="reportModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <form id="report-form" enctype="multipart/form-data">
+                @csrf
+                <input type="hidden" name="_token" value="{{ csrf_token() }}">
+                <input type="hidden" id="report-message-id" name="message_id" value="">
+                <div class="modal-header">
+                    <h5 class="modal-title"><i class="ti ti-flag me-2"></i>Report Message</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label">Reason</label>
+                        <select name="reason" id="report-reason" class="form-select" required>
+                            <option value="" selected disabled>Select reason</option>
+                            <option value="spam">Spam</option>
+                            <option value="harassment">Harassment</option>
+                            <option value="inappropriate">Inappropriate</option>
+                            <option value="offensive">Offensive</option>
+                            <option value="other">Other</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Details (optional)</label>
+                        <textarea name="details" id="report-details" class="form-control" rows="4" maxlength="500" placeholder="Add any additional information (max 500 chars)"></textarea>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Attach proof (optional, image up to 5MB)</label>
+                        <input type="file" name="screenshot" id="report-screenshot" class="form-control" accept="image/*">
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-warning" id="report-submit-btn"><i class="ti ti-flag"></i> Submit Report</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
 @endsection
 
 @push('scripts')
@@ -813,48 +855,85 @@
             }
         });
 
-        // Report message handler (event delegation)
-        threadMessages.addEventListener('click', function(e) {
-            const reportBtn = e.target.closest('.report-btn');
-            if (!reportBtn) return;
+        // Report message handler (modal-based flow)
+        (function(){
+            const reportModalEl = document.getElementById('reportModal');
+            const reportForm = document.getElementById('report-form');
+            const reportMessageIdInput = document.getElementById('report-message-id');
+            const reportReason = document.getElementById('report-reason');
+            const reportDetails = document.getElementById('report-details');
+            const reportScreenshot = document.getElementById('report-screenshot');
+            const reportSubmitBtn = document.getElementById('report-submit-btn');
+            let reportModalInstance = null;
 
-            e.preventDefault();
+            if (reportModalEl) {
+                reportModalInstance = new bootstrap.Modal(reportModalEl);
+            }
 
-            const messageId = reportBtn.getAttribute('data-message-id');
-            // Simple reporting flow: ask for reason and optional details
-            let reason = prompt('Reason for reporting (spam, harassment, inappropriate, offensive, other):');
-            if (!reason) return alert('Report cancelled');
-            reason = reason.trim().toLowerCase();
-            const allowed = ['spam','harassment','inappropriate','offensive','other'];
-            if (!allowed.includes(reason)) return alert('Invalid reason. Allowed: ' + allowed.join(', '));
+            // Open modal when clicking the report button (event delegation)
+            threadMessages.addEventListener('click', function(e) {
+                const reportBtn = e.target.closest('.report-btn');
+                if (!reportBtn) return;
 
-            const details = prompt('Optional details (max 500 chars):') || '';
+                e.preventDefault();
 
-            const fd = new FormData();
-            fd.append('_token', document.querySelector('input[name="_token"]').value);
-            fd.append('reason', reason);
-            fd.append('details', details);
+                const messageId = reportBtn.getAttribute('data-message-id');
+                if (!messageId) return;
 
-            fetch('/admin/messages/' + messageId + '/report', {
-                method: 'POST',
-                body: fd
-            })
-            .then(r => r.json())
-            .then(res => {
-                if (res.success) {
-                    alert(res.message || 'Reported. Thank you.');
-                    // disable the report button to prevent duplicate reports
-                    reportBtn.classList.add('disabled');
-                    reportBtn.textContent = 'Reported';
-                } else {
-                    alert(res.error || 'Failed to report message');
-                }
-            })
-            .catch(err => {
-                console.error('Report error:', err);
-                alert('Failed to report message. Please try again.');
+                // Reset form
+                reportForm.reset();
+                reportMessageIdInput.value = messageId;
+
+                // Show modal
+                if (reportModalInstance) reportModalInstance.show();
             });
-        });
+
+            // Submit report form
+            if (reportForm) {
+                reportForm.addEventListener('submit', function(e) {
+                    e.preventDefault();
+                    const messageId = reportMessageIdInput.value;
+                    if (!messageId) return alert('Message id missing');
+
+                    // Basic client-side validation
+                    const reasonVal = reportReason.value;
+                    if (!reasonVal) return alert('Please select a reason');
+
+                    // Disable submit button to prevent duplicates
+                    reportSubmitBtn.disabled = true;
+
+                    const fd = new FormData(reportForm);
+
+                    fetch('/admin/messages/' + messageId + '/report', {
+                        method: 'POST',
+                        body: fd
+                    })
+                    .then(r => r.json())
+                    .then(res => {
+                        if (res && res.success) {
+                            // Close modal and show simple alert
+                            if (reportModalInstance) reportModalInstance.hide();
+                            alert(res.message || 'Report submitted. Thank you.');
+
+                            // Disable all report buttons for this message in the thread
+                            document.querySelectorAll('.report-btn[data-message-id="' + messageId + '"]').forEach(b => {
+                                b.classList.add('disabled');
+                                b.textContent = 'Reported';
+                            });
+                        } else {
+                            alert((res && res.error) ? res.error : 'Failed to submit report');
+                        }
+                    })
+                    .catch(err => {
+                        console.error('Report submit error:', err);
+                        alert('Failed to submit report. Please try again.');
+                    })
+                    .finally(() => {
+                        reportSubmitBtn.disabled = false;
+                    });
+                });
+            }
+        })();
 
         // ===== REAL-TIME LARAVEL ECHO INTEGRATION =====
         if (typeof window.Echo !== 'undefined') {
