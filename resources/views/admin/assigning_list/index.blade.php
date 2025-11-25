@@ -291,8 +291,8 @@
                                     @endif
                                 </td>
                                 <td>
-                                    @if($student->academic_year)
-                                        <span class="badge bg-success-subtle text-success">{{ $student->academic_year }}</span>
+                                    @if($student->grade_level)
+                                        <span class="badge bg-success-subtle text-success">{{ $student->grade_level }}</span>
                                     @else
                                         <span class="text-muted">—</span>
                                     @endif
@@ -523,7 +523,7 @@
                 sectionDisplay.dataset.strand = strandCode;
             }
 
-            // Store in memory - USE SECTION'S STRAND CODE, NOT STUDENT'S PROGRAM
+            // Store in memory - include the SECTION's strand code so save uses correct strand
             const key = `${strandCode}-${sectionId}`;
             if (!sectionAssignments[key]) {
                 sectionAssignments[key] = [];
@@ -542,7 +542,9 @@
                     id: studentId,
                     name: studentName,
                     studentNo: studentNo,
+                    // keep the student's program for display, but store the SECTION's strand code
                     program: studentStrand,
+                    strandCode: strandCode,
                     sectionId: sectionId,
                     sectionName: sectionName
                 });
@@ -723,11 +725,12 @@
         const assignments = [];
         for (const key in sectionAssignments) {
             const students = sectionAssignments[key];
-            
+
             students.forEach(student => {
+                // Use the section's strand code when saving; fall back to student's program if missing
                 assignments.push({
                     student_id: student.id,
-                    strand_code: student.program,
+                    strand_code: student.strandCode || student.program,
                     section_id: student.sectionId
                 });
             });
@@ -840,6 +843,8 @@
                             name: studentCheckbox.dataset.studentName,
                             studentNo: studentCheckbox.dataset.studentNo,
                             program: studentCheckbox.dataset.studentStrand,
+                            // Preserve the strand_code from saved assignment so future saves are correct
+                            strandCode: assignment.strand_code,
                             sectionId: assignment.section_id,
                             sectionName: sectionInfo ? sectionInfo.name : 'Unknown Section'
                         });
@@ -868,9 +873,40 @@
         }
     }
 
-    // Load saved assignments when page loads
+    // Load saved assignments and bind UI handlers when page loads
     document.addEventListener('DOMContentLoaded', function() {
         loadSavedAssignments();
+
+        // Bind click handlers to section buttons so clicking assigns selected students
+        document.querySelectorAll('.section-btn').forEach(button => {
+            // Skip disabled buttons
+            if (button.disabled) return;
+
+            button.style.cursor = 'pointer';
+
+            button.addEventListener('click', function(event) {
+                const sectionId = this.dataset.sectionId || this.getAttribute('data-section-id');
+                const sectionName = this.dataset.sectionName || this.getAttribute('data-section-name');
+                const strandCode = this.dataset.strandCode || this.getAttribute('data-strand-code') || this.dataset.strandCode;
+                const badgeColor = this.dataset.badgeColor || this.getAttribute('data-badge-color') || 'success';
+
+                // If user holds Alt (or Ctrl on Windows) while clicking, open the section students modal instead
+                if (event.altKey || event.ctrlKey) {
+                    viewSectionStudents(strandCode, parseInt(sectionId), sectionName);
+                    return;
+                }
+
+                assignToSection(parseInt(sectionId), sectionName, strandCode, badgeColor);
+            });
+
+            // Double-click to view students in the section
+            button.addEventListener('dblclick', function() {
+                const sectionId = this.dataset.sectionId || this.getAttribute('data-section-id');
+                const sectionName = this.dataset.sectionName || this.getAttribute('data-section-name');
+                const strandCode = this.dataset.strandCode || this.getAttribute('data-strand-code') || this.dataset.strandCode;
+                viewSectionStudents(strandCode, parseInt(sectionId), sectionName);
+            });
+        });
     });
 </script>
 

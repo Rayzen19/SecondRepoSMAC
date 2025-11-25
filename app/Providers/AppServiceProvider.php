@@ -8,6 +8,8 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Artisan;
 use App\Models\StudentEnrollment;
 use App\Models\AcademicYearStrandSubject;
+use App\Models\Student;
+use App\Observers\StudentObserver;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -75,5 +77,12 @@ class AppServiceProvider extends ServiceProvider
             $view->with('schoolYearEnded', $schoolYearEnded);
             $view->with('preEnrollmentEnabled', $preEnrollmentEnabled);
         });
+
+        // Register student observer to auto-enroll new students
+        try {
+            Student::observe(StudentObserver::class);
+        } catch (\Throwable $e) {
+            // If observer registration fails, do not break the app boot.
+        }
     }
 }

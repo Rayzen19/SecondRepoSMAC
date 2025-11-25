@@ -56,6 +56,53 @@
 
     @stack('styles')
 
+    <!-- Global pagination UI fixes to avoid oversized arrow overlays -->
+    <style>
+        /* Ensure pagination layout is consistent across admin pages */
+        .pagination {
+            display: flex !important;
+            flex-wrap: wrap !important;
+            gap: 0.25rem !important;
+            align-items: center !important;
+            padding-left: 0 !important;
+            margin: 0 !important;
+            list-style: none !important;
+        }
+
+        .pagination .page-item {
+            display: inline-block !important;
+        }
+
+        .pagination .page-link {
+            display: inline-block !important;
+            width: auto !important;
+            height: auto !important;
+            max-width: none !important;
+            max-height: none !important;
+            padding: 0.375rem 0.75rem !important;
+            font-size: 0.875rem !important;
+            line-height: 1.5 !important;
+        }
+
+        /* Remove any oversized pseudo-elements that may be injected by other styles */
+        .pagination .page-link::before,
+        .pagination .page-link::after {
+            content: none !important;
+            display: none !important;
+            width: 0 !important;
+            height: 0 !important;
+            font-size: 0 !important;
+        }
+
+        /* Hide unrelated icon fonts inside pagination that could overflow */
+        .pagination [class*="ti-"],
+        .pagination [class*="bx-"],
+        .pagination [class*="ri-"],
+        .pagination [class*="fa-"] {
+            display: none !important;
+        }
+    </style>
+
 </head>
 
 <body>

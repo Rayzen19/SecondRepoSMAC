@@ -1170,7 +1170,10 @@ class ClassRecordController extends Controller
         foreach ($studentIds as $sid) {
             $fq = $first[$sid] ?? null;
             $sq = $second[$sid] ?? null;
-            $avg = ($fq !== null && $sq !== null) ? (($fq + $sq) / 2) : null;
+            // Normalize and round semester initials to 2 decimals for consistent storage
+            $fq = isset($fq) ? round((float)$fq, 2) : null;
+            $sq = isset($sq) ? round((float)$sq, 2) : null;
+            $avg = ($fq !== null && $sq !== null) ? round((($fq + $sq) / 2), 2) : null;
             $final = $avg;
             $remarks = $final !== null ? ($final >= 75 ? 'Passed' : 'Failed') : null;
             $desc = null;

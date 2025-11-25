@@ -47,41 +47,77 @@ class AssigningListController extends Controller
         // Get distinct grade levels from students
         $gradeLevels = ['11', '12']; // SHS Grade levels
         
-        // Build the query
-        $query = Student::query()
-            ->select('students.*')
-            ->whereNull('students.deleted_at')
-            ->orderBy('students.last_name')
-            ->orderBy('students.first_name');
-        
-        // Apply strand filter
+        // Use the same approach as the main Student list: show students with
+        // active/enrolled studentEnrollments for the active academic year.
+        $activeYear = \App\Models\AcademicYear::where('is_active', true)->first();
+
+        // If a strand code is provided, resolve the model to allow matching by
+        // program (code/name) or by enrollment->strand_id
+        $selectedStrand = null;
         if ($request->filled('strand') && $request->strand !== 'all') {
-            $query->where('students.program', $request->strand);
+            $selectedStrand = Strand::where('code', $request->strand)->orWhere('name', $request->strand)->first();
         }
-        
-        // Apply grade level filter
-        if ($request->filled('grade_level') && $request->grade_level !== 'all') {
-            $query->where(function($q) use ($request) {
-                $q->where('students.academic_year', 'like', '%Grade ' . $request->grade_level . '%')
-                  ->orWhere('students.academic_year', 'like', '%G-' . $request->grade_level . '%')
-                  ->orWhere('students.academic_year', '=', 'Grade ' . $request->grade_level)
-                  ->orWhere('students.academic_year', '=', 'G-' . $request->grade_level);
+
+        $query = Student::with(['studentEnrollments' => function($q) use ($activeYear) {
+                $q->where('status', 'enrolled')
+                  ->when($activeYear, fn($sq) => $sq->where('academic_year_id', $activeYear->id))
+                  ->with(['academicYearStrandSection.section', 'academicYear']);
+        }])->orderBy('last_name')->orderBy('first_name');
+
+        // Apply strand filter: match student.program OR their enrollment->strand
+        if ($selectedStrand) {
+            $query->where(function($q) use ($selectedStrand) {
+                $q->where('program', $selectedStrand->code)
+                  ->orWhere('program', $selectedStrand->name)
+                  ->orWhereHas('studentEnrollments', function($sq) use ($selectedStrand) {
+                      $sq->where('strand_id', $selectedStrand->id);
+                  });
             });
         }
-        
+
+        // Apply grade level filter via enrollments' section grade
+        if ($request->filled('grade_level') && $request->grade_level !== 'all') {
+            $gradeLevel = $request->grade_level;
+            $query->whereHas('studentEnrollments', function($sq) use ($gradeLevel, $activeYear) {
+                $sq->where('status', 'enrolled')
+                   ->when($activeYear, fn($q) => $q->where('academic_year_id', $activeYear->id))
+                   ->whereHas('academicYearStrandSection', function($ssq) use ($gradeLevel) {
+                       $ssq->whereHas('section', function($s) use ($gradeLevel) {
+                           $s->where(function($q) use ($gradeLevel) {
+                               $q->where('grade', 'G-' . $gradeLevel)
+                                 ->orWhere('grade', 'Grade ' . $gradeLevel)
+                                 ->orWhere('grade', $gradeLevel);
+                           });
+                       });
+                   });
+            });
+        }
+
+        // Apply section filter via enrollments
+        if ($request->filled('section') && $request->section !== 'all') {
+            $sectionId = $request->section;
+            $query->whereHas('studentEnrollments', function($sq) use ($sectionId, $activeYear) {
+                $sq->where('status', 'enrolled')
+                   ->when($activeYear, fn($q) => $q->where('academic_year_id', $activeYear->id))
+                   ->whereHas('academicYearStrandSection', function($ssq) use ($sectionId) {
+                       $ssq->where('section_id', $sectionId);
+                   });
+            });
+        }
+
         // Apply search filter
         if ($request->filled('search')) {
             $search = $request->search;
             $query->where(function($q) use ($search) {
-                $q->where('students.student_number', 'like', "%{$search}%")
-                  ->orWhere('students.first_name', 'like', "%{$search}%")
-                  ->orWhere('students.last_name', 'like', "%{$search}%")
-                  ->orWhere(DB::raw("CONCAT(students.first_name, ' ', students.last_name)"), 'like', "%{$search}%")
-                  ->orWhere(DB::raw("CONCAT(students.last_name, ', ', students.first_name)"), 'like', "%{$search}%");
+                $q->where('student_number', 'like', "%{$search}%")
+                  ->orWhere('first_name', 'like', "%{$search}%")
+                  ->orWhere('last_name', 'like', "%{$search}%")
+                  ->orWhere(DB::raw("CONCAT(first_name, ' ', last_name)"), 'like', "%{$search}%")
+                  ->orWhere(DB::raw("CONCAT(last_name, ', ', first_name)"), 'like', "%{$search}%");
             });
         }
-        
-        // Get paginated results
+
+        // Paginate results (preserve query string)
         $students = $query->paginate(20)->withQueryString();
         
         // Get active academic year

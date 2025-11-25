@@ -7,7 +7,7 @@
     <title>St. Matthew Academy of Cavite</title>
 
     <!-- Favicon -->
-    <link rel="shortcut icon" type="image/x-icon" href="<?php echo e(asset('assets/images/image.png')); ?>">
+    <link rel="shortcut icon" type="image/x-icon" href="<?php echo e(asset('assets/images/logo.png')); ?>">
 
     <!-- Bootstrap CSS -->
     <link rel="stylesheet" href="<?php echo e(asset('assets/css/bootstrap.min.css')); ?>">
