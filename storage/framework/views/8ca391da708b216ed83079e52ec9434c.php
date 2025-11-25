@@ -50,24 +50,21 @@
         </div>
     </nav>
 
-    <!-- Hero (Corporate) -->
+    <!-- Hero (Corporate) - centered, image removed -->
     <header class="hero-section py-6">
         <div class="container">
-            <div class="row align-items-center">
-                <div class="col-lg-6">
+            <div class="row justify-content-center">
+                <div class="col-12 col-lg-8 text-center">
                     <h1 class="hero-title">Inspiring Excellence, Nurturing Values</h1>
                     <p class="hero-lead">A forward-looking K–12 school with modern facilities, expert faculty, and a supportive community in Bacoor, Cavite.</p>
-                    <div class="d-flex gap-2 mt-4">
+                    <div class="d-flex justify-content-center gap-2 mt-4">
                         <a href="<?php echo e(route('login')); ?>" class="btn bg-info btn-lg rounded-pill px-4">Get Started</a>
                         <a href="#contact" class="btn btn-outline-primary btn-lg rounded-pill px-4">Contact Us</a>
                     </div>
-                    <ul class="hero-meta list-unstyled mt-4">
+                    <ul class="hero-meta list-unstyled mt-4 d-inline-block text-start" style="max-width:480px;">
                         <li><strong>Location:</strong> Little Pasay St., Brgy. Niog 1, Bacoor</li>
                         <li><strong>Email:</strong> <a href="mailto:stmatthew2015@yahoo.com">stmatthew2015@yahoo.com</a></li>
                     </ul>
-                </div>
-                <div class="col-lg-6 text-center d-none d-lg-block">
-                    <div class="hero-visual shadow-lg rounded-3" role="img" aria-label="Campus image" style="background-image: url('<?php echo e(asset('images/hero.svg')); ?>');"></div>
                 </div>
             </div>
         </div>
