@@ -149,10 +149,28 @@
                 </div>
             </div>
             <div class="card-footer">
-                <form id="send-form">
+                <form id="send-form" enctype="multipart/form-data">
                     @csrf
                     <input type="hidden" name="to" id="to-user-id">
-                    <div class="input-group">
+
+                    <div id="attachment-preview" class="mb-2" style="display: none;">
+                        <div class="alert alert-info py-2 px-3 d-flex align-items-center justify-content-between">
+                            <div class="d-flex align-items-center">
+                                <i class="ti ti-paperclip me-2"></i>
+                                <span id="attachment-name">File.pdf</span>
+                                <small class="text-muted ms-2" id="attachment-size"></small>
+                            </div>
+                            <button type="button" class="btn btn-sm btn-link text-danger p-0" id="remove-attachment">
+                                <i class="ti ti-x"></i>
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="d-flex gap-2 align-items-center">
+                        <input type="file" id="file-input" name="attachment" class="d-none" accept="*/*">
+                        <button type="button" class="btn btn-outline-secondary d-flex align-items-center" id="attach-btn" title="Attach file (Max 10MB)">
+                            <i class="ti ti-paperclip fs-5"></i>
+                        </button>
                         <input id="message-input" name="body" class="form-control" placeholder="Type a message..." autocomplete="off">
                         <button class="btn bg-info" type="submit">Send</button>
                     </div>
@@ -214,6 +232,12 @@
         const toInput = document.getElementById('to-user-id');
         const sendForm = document.getElementById('send-form');
         const messageInput = document.getElementById('message-input');
+        const fileInput = document.getElementById('file-input');
+        const attachBtn = document.getElementById('attach-btn');
+        const attachmentPreview = document.getElementById('attachment-preview');
+        const attachmentName = document.getElementById('attachment-name');
+        const attachmentSize = document.getElementById('attachment-size');
+        const removeAttachmentBtn = document.getElementById('remove-attachment');
 
         let currentUserId = null;
         const ME_ID = "{{ Auth::id() ?? '' }}";
@@ -223,6 +247,23 @@
         function formatTime(dt) {
             const d = new Date(dt);
             return d.toLocaleString();
+        }
+
+        function formatFileSize(bytes) {
+            if (!bytes) return '0 Bytes';
+            const k = 1024;
+            const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+            const i = Math.floor(Math.log(bytes) / Math.log(k));
+            return Math.round(bytes / Math.pow(k, i) * 100) / 100 + ' ' + sizes[i];
+        }
+
+        function getFileIcon(mime) {
+            // Minimal icon mapping; default to 'download'
+            return 'download';
+        }
+
+        function formatDate(dt) {
+            return new Date(dt).toLocaleString();
         }
 
         function loadConversation(userId, scrollToBottom = true) {
@@ -280,6 +321,18 @@
                         
                         messageHtml += '<div style="padding-right: 20px;">';
                         messageHtml += (m.subject ? '<strong>' + escapeHtml(m.subject) + '</strong><br>' : '') + nl2br(escapeHtml(m.body));
+
+                        // Attachment (if any)
+                        if (m.attachment_name) {
+                            const fileSizeStr = m.attachment_size ? formatFileSize(m.attachment_size) : '';
+                            messageHtml += '<div class="mt-2">';
+                            messageHtml += '<a href="/student/messages/' + m.id + '/download" class="btn btn-sm btn-outline-primary">';
+                            messageHtml += escapeHtml(m.attachment_name);
+                            if (fileSizeStr) messageHtml += ' <small class="text-muted">(' + fileSizeStr + ')</small>';
+                            messageHtml += '</a>';
+                            messageHtml += '</div>';
+                        }
+
                         messageHtml += '</div><div class="small mt-1" style="opacity: 0.8;">' + formatTime(m.created_at) + '</div>';
                         
                         div.innerHTML = messageHtml;
@@ -367,7 +420,18 @@
                                     
                                     msgHtml += '<div style="padding-right: 20px;">';
                                     msgHtml += (m.subject ? '<strong>' + escapeHtml(m.subject) + '</strong><br>' : '') + nl2br(escapeHtml(m.body));
-                                    msgHtml += '</div><div class="small mt-1" style="opacity: 0.8;">' + formatTime(m.created_at) + '</div>';
+                                    msgHtml += '</div>';
+
+                                    if (m.attachment_name) {
+                                        const fsize = m.attachment_size ? formatFileSize(m.attachment_size) : '';
+                                        msgHtml += '<div class="mt-2">';
+                                        msgHtml += '<a href="/student/messages/' + m.id + '/download" class="btn btn-sm btn-outline-primary">' + escapeHtml(m.attachment_name);
+                                        if (fsize) msgHtml += ' <small class="text-muted">(' + fsize + ')</small>';
+                                        msgHtml += '</a>';
+                                        msgHtml += '</div>';
+                                    }
+
+                                    msgHtml += '<div class="small mt-1" style="opacity: 0.8;">' + formatTime(m.created_at) + '</div>';
                                     
                                     div.innerHTML = msgHtml;
                                     div.setAttribute('data-message-id', m.id);
@@ -392,19 +456,57 @@
             loadConversation(userId);
         });
 
+        // File attach button and preview handlers
+        if (attachBtn && fileInput) {
+            attachBtn.addEventListener('click', function() {
+                fileInput.click();
+            });
+        }
+
+        if (fileInput) {
+            fileInput.addEventListener('change', function(e) {
+                const file = e.target.files[0];
+                if (file) {
+                    if (file.size > 10 * 1024 * 1024) {
+                        alert('File size must be less than 10MB');
+                        fileInput.value = '';
+                        return;
+                    }
+                    attachmentName.textContent = file.name;
+                    attachmentSize.textContent = formatFileSize(file.size);
+                    attachmentPreview.style.display = 'block';
+                }
+            });
+        }
+
+        if (removeAttachmentBtn) {
+            removeAttachmentBtn.addEventListener('click', function() {
+                fileInput.value = '';
+                attachmentPreview.style.display = 'none';
+            });
+        }
+
+        // Send form (supports file attachments)
         sendForm.addEventListener('submit', function(e){
             e.preventDefault();
             if (!currentUserId) return alert('Select a conversation first');
+
             const body = messageInput.value.trim();
-            if (!body) return;
-            
+            const hasFile = fileInput && fileInput.files.length > 0;
+
+            if (!body && !hasFile) {
+                return alert('Please enter a message or attach a file');
+            }
+
+            const formData = new FormData(sendForm);
+            formData.set('to', currentUserId);
+
             fetch("{{ route('student.messages.sendConversation') }}", {
                 method: 'POST',
                 headers: {
-                    'Content-Type': 'application/json',
                     'X-CSRF-TOKEN': document.querySelector('input[name="_token"]').value
                 },
-                body: JSON.stringify({ to: currentUserId, body: body })
+                body: formData
             })
             .then(response => {
                 if (!response.ok) {
@@ -413,15 +515,15 @@
                 return response.json();
             })
             .then(res => {
-                // Append message
+                if (!res.message) throw new Error('Invalid response format');
+
                 const m = res.message;
                 const div = document.createElement('div');
                 div.className = 'p-2 rounded bg-primary text-white align-self-end position-relative';
                 div.style.maxWidth = '70%';
-                
+
                 let msgHtml = '';
-                
-                // Add 3-dot menu (upper right)
+                // 3-dot menu
                 msgHtml += '<div class="dropdown position-absolute top-0 end-0" style="margin: 4px;">';
                 msgHtml += '<button class="btn btn-link btn-sm p-0 text-white" type="button" data-bs-toggle="dropdown" aria-expanded="false" style="line-height: 1; text-decoration: none;">';
                 msgHtml += '<i class="ti ti-dots-vertical" style="font-size: 16px;"></i>';
@@ -430,23 +532,36 @@
                 msgHtml += '<li><a class="dropdown-item text-danger unsend-btn" href="#" data-message-id="' + m.id + '"><i class="ti ti-trash me-2"></i>Delete</a></li>';
                 msgHtml += '</ul>';
                 msgHtml += '</div>';
-                
+
                 msgHtml += '<div style="padding-right: 20px;">';
-                msgHtml += nl2br(escapeHtml(m.body));
-                msgHtml += '</div><div class="small mt-1" style="opacity: 0.8;">' + new Date(m.created_at).toLocaleString() + '</div>';
-                
+                msgHtml += nl2br(escapeHtml(m.body && m.body !== '(File attachment)' ? m.body : ''));
+                msgHtml += '</div>';
+
+                if (m.attachment_name) {
+                    msgHtml += '<div class="mt-2">';
+                    msgHtml += '<a href="/student/messages/' + m.id + '/download" class="btn btn-sm btn-light">' + escapeHtml(m.attachment_name);
+                    if (m.attachment_size) msgHtml += ' <small class="text-muted">(' + formatFileSize(m.attachment_size) + ')</small>';
+                    msgHtml += '</a>';
+                    msgHtml += '</div>';
+                }
+
+                msgHtml += '<div class="small mt-1" style="opacity: 0.8;">' + formatDate(m.created_at) + '</div>';
+
                 div.innerHTML = msgHtml;
                 div.setAttribute('data-message-id', m.id);
                 threadMessages.appendChild(div);
+
+                // Reset inputs and preview
                 messageInput.value = '';
+                if (fileInput) fileInput.value = '';
+                if (attachmentPreview) attachmentPreview.style.display = 'none';
+
                 threadMessages.scrollTop = threadMessages.scrollHeight;
-                
-                // Update last message ID
                 lastMessageId = m.id;
             })
-            .catch(err => { 
-                console.error('Send error:', err); 
-                alert('Failed to send message. Please try again.'); 
+            .catch(err => {
+                console.error('Send error:', err);
+                alert('Failed to send message. Please try again.');
             });
         });
 
