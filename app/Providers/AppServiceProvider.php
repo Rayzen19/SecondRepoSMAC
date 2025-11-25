@@ -5,6 +5,7 @@ namespace App\Providers;
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Support\Facades\View;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Artisan;
 use App\Models\StudentEnrollment;
 use App\Models\AcademicYearStrandSubject;
 
@@ -23,6 +24,17 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
+        // Ensure the storage symlink exists so uploaded files are publicly accessible.
+        try {
+            $publicStorage = public_path('storage');
+            if (!file_exists($publicStorage)) {
+                // attempt to create the storage symlink (same as `php artisan storage:link`)
+                Artisan::call('storage:link');
+            }
+        } catch (\Throwable $e) {
+            // If the symlink creation fails (permission issues on Windows), do not break the app.
+            // The README explains how to run `php artisan storage:link` manually.
+        }
         // Share school year ended status and pre-enrollment status with student views
         View::composer('student.components.template', function ($view) {
             $schoolYearEnded = false;

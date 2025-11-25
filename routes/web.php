@@ -467,6 +467,9 @@ Route::group(['prefix' => 'student'], function () {
     });
 });
 
+// Media routes to serve files from storage when the public/storage symlink is not available
+Route::get('/media/profile_pictures/{filename}', [App\Http\Controllers\MediaController::class, 'profilePicture'])->name('media.profile_picture');
+
 // Guardian Portal
 Route::group(['prefix' => 'guardian'], function () {
     // Login routes - accessible to everyone except already logged-in guardians

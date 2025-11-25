@@ -36,7 +36,7 @@
                 <div class="card-body text-center">
                     <h5 class="card-title mb-3">Profile Picture</h5>
                     @if($student->profile_picture)
-                        <img src="{{ asset('storage/' . $student->profile_picture) }}" 
+                        <img src="{{ route('media.profile_picture', pathinfo($student->profile_picture, PATHINFO_BASENAME)) }}" 
                              alt="Profile Picture" 
                              id="preview-image"
                              class="rounded-circle mb-3" 
