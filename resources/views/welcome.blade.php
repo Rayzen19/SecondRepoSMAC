@@ -27,7 +27,7 @@
     <nav class="navbar navbar-expand-lg navbar-dark bg-white corporate-nav shadow-sm sticky-top">
         <div class="container px-lg-5">
             <a class="navbar-brand d-flex align-items-center text-dark" href="#">
-                <img src="{{ asset('assets/images/image.png') }}" alt="Logo" height="36" class="me-2 logo-img">
+                <img src="{{ asset('assets/images/logo.png') }}" alt="Logo" height="50" class="me-2 logo-img" style="max-height: 50px; width: auto;">
                 <div class="brand-text">
                     <div class="brand-name">St. Matthew Academy</div>
                     <div class="brand-sub">of Cavite</div>
@@ -44,7 +44,7 @@
                     <li class="nav-item"><a class="nav-link text-muted" href="#contact">Contact</a></li>
                 </ul>
                 <div class="ms-lg-3 d-flex gap-2">
-                    <a href="{{ route('login') }}" class="btn btn-primary btn-sm fw-semibold rounded-pill px-4">Login</a>
+                    <a href="{{ route('login') }}" class="btn bg-info btn-sm fw-semibold rounded-pill px-4">Login</a>
                 </div>
             </div>
         </div>
@@ -58,7 +58,7 @@
                     <h1 class="hero-title">Inspiring Excellence, Nurturing Values</h1>
                     <p class="hero-lead">A forward-looking K–12 school with modern facilities, expert faculty, and a supportive community in Bacoor, Cavite.</p>
                     <div class="d-flex gap-2 mt-4">
-                        <a href="{{ route('login') }}" class="btn btn-primary btn-lg rounded-pill px-4">Get Started</a>
+                        <a href="{{ route('login') }}" class="btn bg-info btn-lg rounded-pill px-4">Get Started</a>
                         <a href="#contact" class="btn btn-outline-primary btn-lg rounded-pill px-4">Contact Us</a>
                     </div>
                     <ul class="hero-meta list-unstyled mt-4">

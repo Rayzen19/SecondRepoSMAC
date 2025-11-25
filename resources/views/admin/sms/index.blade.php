@@ -60,7 +60,7 @@
                                       maxlength="160" required placeholder="Enter test message here...">Test message from SMAC School Management System</textarea>
                             <small class="text-muted"><span id="charCount">0</span>/160 characters</small>
                         </div>
-                        <button type="submit" class="btn btn-primary">
+                        <button type="submit" class="btn bg-info">
                             <i class="ti ti-send me-2"></i>Send Test SMS
                         </button>
                     </form>

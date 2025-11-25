@@ -52,7 +52,7 @@
                 </div>
 
                 <a href="{{ url()->previous() }}" class="btn btn-outline-light border me-2">Cancel</a>
-                <button type="submit" class="btn btn-primary">Assign</button>
+                <button type="submit" class="btn bg-info">Assign</button>
             </form>
         </div>
     </div>

@@ -69,7 +69,7 @@
         <h5 class="card-header">Subjects</h5>
         <div class="card-body p-5">
             <div class="mb-3 d-flex justify-content-end">
-                <a href="{{ route('admin.academic-year-strand-subjects.create', ['academic_year' => $adviser->academic_year_id, 'strand' => $adviser->strand_id, 'academic_year_strand_adviser_id' => $adviser->id]) }}" class="btn btn-primary"><i class="ti ti-book-plus me-2"></i>Add Subject</a>
+                <a href="{{ route('admin.academic-year-strand-subjects.create', ['academic_year' => $adviser->academic_year_id, 'strand' => $adviser->strand_id, 'academic_year_strand_adviser_id' => $adviser->id]) }}" class="btn bg-info"><i class="ti ti-book-plus me-2"></i>Add Subject</a>
             </div>
 
             @php $assignments = $assignments ?? collect(); @endphp
@@ -112,7 +112,7 @@
         <h5 class="card-header">Sections</h5>
         <div class="card-body p-5">
             <div class="mb-3 d-flex justify-content-end">
-                <a href="{{ route('admin.academic-year-strand-sections.create', ['academic_year' => $adviser->academic_year_id, 'strand' => $adviser->strand_id, 'academic_year_strand_adviser_id' => $adviser->id]) }}" class="btn btn-primary"><i class="ti ti-plus me-2"></i>Assign Section</a>
+                <a href="{{ route('admin.academic-year-strand-sections.create', ['academic_year' => $adviser->academic_year_id, 'strand' => $adviser->strand_id, 'academic_year_strand_adviser_id' => $adviser->id]) }}" class="btn bg-info"><i class="ti ti-plus me-2"></i>Assign Section</a>
             </div>
 
             @if($sections->isNotEmpty())

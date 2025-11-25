@@ -554,7 +554,7 @@
                             @endphp
                             <td class="text-center js-description">{{ $description }}</td>
                             <td class="text-center">
-                                <a class="btn btn-sm btn-primary" href="{{ route('teacher.class-records.students.show', ['assignment' => $assignment->id, 'student' => $s['student_number']]) }}">
+                                <a class="btn btn-sm bg-info" href="{{ route('teacher.class-records.students.show', ['assignment' => $assignment->id, 'student' => $s['student_number']]) }}">
                                     <i class="ti ti-eye me-1"></i> View
                                 </a>
                             </td>
@@ -571,7 +571,7 @@
                     </button>
                 </div>
                 <div>
-                    <button type="submit" class="btn btn-primary btn-sm">
+                    <button type="submit" class="btn bg-info btn-sm">
                         <i class="ti ti-device-floppy me-1"></i> Save Scores
                     </button>
                 </div>
@@ -637,7 +637,7 @@
                         <td class="text-center">{{ $remarks ?? '—' }}</td>
                         <td class="text-center">{{ $desc ?? '—' }}</td>
                         <td class="text-center">
-                            <a class="btn btn-sm btn-primary" href="{{ route('teacher.class-records.students.show', ['assignment' => $assignment->id, 'student' => $s['student_number']]) }}">
+                            <a class="btn btn-sm bg-info" href="{{ route('teacher.class-records.students.show', ['assignment' => $assignment->id, 'student' => $s['student_number']]) }}">
                                 <i class="ti ti-eye me-1"></i> View
                             </a>
                         </td>
@@ -710,7 +710,7 @@
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
-                    <button type="submit" class="btn btn-primary">Submit</button>
+                    <button type="submit" class="btn bg-info">Submit</button>
                 </div>
             </form>
         </div>
@@ -750,7 +750,7 @@
                 </dl>
             </div>
             <div class="modal-footer">
-                <button type="button" class="btn btn-primary" data-bs-dismiss="modal">Close</button>
+                <button type="button" class="btn bg-info" data-bs-dismiss="modal">Close</button>
             </div>
         </div>
     </div>
@@ -790,7 +790,7 @@
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
-                    <button type="submit" class="btn btn-primary">Create</button>
+                    <button type="submit" class="btn bg-info">Create</button>
                 </div>
             </form>
         </div>

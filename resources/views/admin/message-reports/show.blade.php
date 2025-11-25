@@ -164,7 +164,7 @@
                             <button type="button" class="btn btn-success me-2" onclick="reviewReport()">
                                 <i class="ti ti-check"></i> Mark as Reviewed
                             </button>
-                            <button type="button" class="btn btn-primary me-2" onclick="takeAction()">
+                            <button type="button" class="btn bg-info me-2" onclick="takeAction()">
                                 <i class="ti ti-shield-check"></i> Take Action
                             </button>
                             <button type="button" class="btn btn-secondary" onclick="dismissReport()">

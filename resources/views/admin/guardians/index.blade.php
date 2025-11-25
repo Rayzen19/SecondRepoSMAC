@@ -17,7 +17,7 @@
     </div>
     <div class="d-flex my-xl-auto right-content align-items-center flex-wrap ">
         <div class="mb-2">
-            <a href="{{ route('admin.guardians.create') }}" class="btn btn-primary d-flex align-items-center"><i class="ti ti-circle-plus me-2"></i>Add Guardian</a>
+            <a href="{{ route('admin.guardians.create') }}" class="btn bg-info d-flex align-items-center"><i class="ti ti-circle-plus me-2"></i>Add Guardian</a>
         </div>
     </div>
 </div>

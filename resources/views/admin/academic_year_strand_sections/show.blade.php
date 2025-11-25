@@ -49,7 +49,7 @@
                 </div>
             </div>
             <div class="mt-4 d-flex gap-2">
-                <a href="{{ route('admin.academic-year-strand-sections.edit', $assignment) }}" class="btn btn-primary"><i class="ti ti-edit me-2"></i>Edit</a>
+                <a href="{{ route('admin.academic-year-strand-sections.edit', $assignment) }}" class="btn bg-info"><i class="ti ti-edit me-2"></i>Edit</a>
                 <a href="{{ route('admin.academic-years.show', $assignment->academic_year_id) }}" class="btn btn-secondary">Back</a>
             </div>
         </div>

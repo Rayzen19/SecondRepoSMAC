@@ -17,7 +17,7 @@
     </div>
     <div class="d-flex my-xl-auto right-content align-items-center flex-wrap ">
         <div class="mb-2">
-            <a href="{{ route('admin.student-enrollments.create') }}" class="btn btn-primary d-flex align-items-center">
+            <a href="{{ route('admin.student-enrollments.create') }}" class="btn bg-info d-flex align-items-center">
                 <i class="ti ti-circle-plus me-2"></i>New Enrollment
             </a>
         </div>
@@ -174,7 +174,7 @@
                         <div class="col-md-3">
                             <label class="form-label fw-medium">&nbsp;</label>
                             <div class="d-flex gap-2">
-                                <button class="btn btn-primary flex-fill" type="submit">
+                                <button class="btn bg-info flex-fill" type="submit">
                                     <i class="ti ti-filter me-1"></i>Filter
                                 </button>
                                 <a href="{{ route('admin.student-enrollments.index') }}" class="btn btn-outline-secondary">

@@ -39,7 +39,7 @@
             </div>
             <div class="mt-3 d-flex justify-content-end">
                 <a href="{{ route('teacher.class-records.show', $assignment) }}" class="btn btn-outline-secondary me-2">Cancel</a>
-                <button type="submit" class="btn btn-primary">Create Student</button>
+                <button type="submit" class="btn bg-info">Create Student</button>
             </div>
         </form>
     </div>

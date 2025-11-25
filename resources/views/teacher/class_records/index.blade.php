@@ -67,7 +67,7 @@
                                 @endswitch
                             </td>
                             <td class="text-end">
-                                <a class="btn btn-sm btn-primary" href="{{ route('teacher.class-records.show', ['assignment' => $r['id']]) }}">
+                                <a class="btn btn-sm bg-info" href="{{ route('teacher.class-records.show', ['assignment' => $r['id']]) }}">
                                     <i class="ti ti-eye me-1"></i> View
                                 </a>
                             </td>

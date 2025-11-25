@@ -639,7 +639,7 @@
           '<input class="note-video-url note-input" type="text" />' +
           '</div>';
       var footer = [
-          '<button type="button" href="javascript:void(0);" class="note-btn note-btn-primary note-video-btn disabled" disabled>',
+          '<button type="button" href="javascript:void(0);" class="note-btn note-bg-info note-video-btn disabled" disabled>',
           opt.lang.video.insert,
           '</button>'
       ].join('');
@@ -661,7 +661,7 @@
           '<input class="note-image-url note-input" type="text" />' +
           '</div>';
       var footer = [
-          '<button href="javascript:void(0);" type="button" class="note-btn note-btn-primary note-btn-large note-image-btn disabled" disabled>',
+          '<button href="javascript:void(0);" type="button" class="note-btn note-bg-info note-btn-large note-image-btn disabled" disabled>',
           opt.lang.image.insert,
           '</button>'
       ].join('');
@@ -686,7 +686,7 @@
                   '<label>' + '<input type="checkbox" checked> ' + opt.lang.link.openInNewWindow + '</label>' +
                   '</div>' : '');
       var footer = [
-          '<button href="javascript:void(0);" type="button" class="note-btn note-btn-primary note-link-btn disabled" disabled>',
+          '<button href="javascript:void(0);" type="button" class="note-btn note-bg-info note-link-btn disabled" disabled>',
           opt.lang.link.insert,
           '</button>'
       ].join('');
@@ -6689,7 +6689,7 @@
                   }).render()).html()
                   : ''
           ].join('');
-          var buttonClass = 'btn btn-primary note-btn note-btn-primary note-link-btn';
+          var buttonClass = 'btn bg-info note-btn note-bg-info note-link-btn';
           var footer = "<input type=\"button\" href=\"#\" class=\"" + buttonClass + "\" value=\"" + this.lang.link.insert + "\" disabled>";
           this.$dialog = this.ui.dialog({
               className: 'link-dialog',
@@ -6898,7 +6898,7 @@
               ' col-md-12" type="text" />',
               '</div>'
           ].join('');
-          var buttonClass = 'btn btn-primary note-btn note-btn-primary note-image-btn';
+          var buttonClass = 'btn bg-info note-btn note-bg-info note-image-btn';
           var footer = "<input type=\"button\" href=\"#\" class=\"" + buttonClass + "\" value=\"" + this.lang.image.insert + "\" disabled>";
           this.$dialog = this.ui.dialog({
               title: this.lang.image.insert,
@@ -7121,7 +7121,7 @@
               '<input class="note-video-url form-control note-form-control note-input" type="text" />',
               '</div>'
           ].join('');
-          var buttonClass = 'btn btn-primary note-btn note-btn-primary note-video-btn';
+          var buttonClass = 'btn bg-info note-btn note-bg-info note-video-btn';
           var footer = "<input type=\"button\" href=\"#\" class=\"" + buttonClass + "\" value=\"" + this.lang.video.insert + "\" disabled>";
           this.$dialog = this.ui.dialog({
               title: this.lang.video.insert,

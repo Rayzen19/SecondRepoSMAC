@@ -153,7 +153,7 @@
                         </div>
 
                         <div class="d-flex gap-2">
-                            <button type="submit" class="btn btn-primary">
+                            <button type="submit" class="btn bg-info">
                                 <i class="ti ti-device-floppy me-1"></i>Update Announcement
                             </button>
                             <a href="{{ route('admin.announcements.index') }}" class="btn btn-secondary">

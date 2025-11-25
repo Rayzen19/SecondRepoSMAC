@@ -28,7 +28,7 @@
                                     <h5 class="form-title">Co-Admin Information</h5>
                                 </div>
                                 <div class="col-auto text-end">
-                                    <a href="{{ route('admin.co-admins.edit', $coAdmin) }}" class="btn btn-primary">
+                                    <a href="{{ route('admin.co-admins.edit', $coAdmin) }}" class="btn bg-info">
                                         <i class="feather-edit"></i> Edit
                                     </a>
                                     <form action="{{ route('admin.co-admins.destroy', $coAdmin) }}" method="POST" class="d-inline" onsubmit="return confirm('Are you sure you want to delete this co-admin?');">

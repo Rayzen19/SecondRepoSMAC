@@ -32,7 +32,7 @@
                     <div class="page-header">
                         <div class="row align-items-center">
                             <div class="col-auto text-end float-end ms-auto download-grp">
-                                <a href="{{ route('admin.attendance.create') }}" class="btn btn-primary">
+                                <a href="{{ route('admin.attendance.create') }}" class="btn bg-info">
                                     <i class="fas fa-plus me-2"></i>Add Attendance
                                 </a>
                                 <button type="submit" form="exportForm" class="btn btn-outline-primary">
@@ -132,7 +132,7 @@
                         </div>
                         <div class="col-12 col-sm-6 col-md-6 col-xl-2 d-flex align-items-end">
                             <div class="input-block local-forms w-100">
-                                <button type="submit" class="btn btn-primary w-100">
+                                <button type="submit" class="btn bg-info w-100">
                                     <i class="fas fa-filter me-2"></i>Filter
                                 </button>
                             </div>
@@ -213,7 +213,7 @@
                                         </div>
                                     </td>
                                     <td class="text-end">
-                                        <a href="{{ route('admin.attendance.show', $log) }}" class="btn btn-sm btn-primary">
+                                        <a href="{{ route('admin.attendance.show', $log) }}" class="btn btn-sm bg-info">
                                             View
                                         </a>
                                     </td>

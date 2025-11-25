@@ -56,7 +56,7 @@
                                 <label for="email" class="form-label">Email address</label>
                                 <input type="email" name="email" id="email" value="{{ old('email', request('email', '')) }}" class="form-control" required autofocus>
                             </div>
-                            <button type="submit" class="btn btn-primary w-100">Send OTP</button>
+                            <button type="submit" class="btn bg-info w-100">Send OTP</button>
                         </form>
                         <div class="mt-3 text-center">
                             <a class="text-primary" href="{{ route($guard . '.auth.loginForm') }}">Back to Login</a>

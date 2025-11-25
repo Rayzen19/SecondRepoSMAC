@@ -100,7 +100,7 @@ route('student.profile.password.update')  // Update password
 ### Bootstrap Classes Used
 - `card`, `card-header`, `card-body`
 - `form-control`, `form-label`, `form-text`
-- `btn`, `btn-primary`, `btn-secondary`, `btn-danger`
+- `btn`, `bg-info`, `btn-secondary`, `btn-danger`
 - `alert`, `alert-success`, `alert-danger`
 - `badge`, `bg-success`, `bg-secondary`
 - `rounded-circle`

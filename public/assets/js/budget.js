@@ -20,7 +20,7 @@ Template Name: Smarthr - Bootstrap Admin Template
 						'<div class="d-flex align-items-center">' + 
 							'<input type="text" class="form-control">' +
 							'<div class="ms-2">' +
-								'<a href="javascript:void(0);" class="btn btn-icon trash-revenue btn-sm btn-primary rounded-circle"><i class="ti ti-trash"></i></a>' +
+								'<a href="javascript:void(0);" class="btn btn-icon trash-revenue btn-sm bg-info rounded-circle"><i class="ti ti-trash"></i></a>' +
 							'</div>' +
 						'</div>' +
 					'</div>' +
@@ -54,7 +54,7 @@ Template Name: Smarthr - Bootstrap Admin Template
 						'<div class="d-flex align-items-center">' + 
 							'<input type="text" class="form-control">' +
 							'<div class="ms-2">' +
-								'<a href="javascript:void(0);" class="btn btn-icon trash-expenses btn-sm btn-primary rounded-circle"><i class="ti ti-trash"></i></a>' +
+								'<a href="javascript:void(0);" class="btn btn-icon trash-expenses btn-sm bg-info rounded-circle"><i class="ti ti-trash"></i></a>' +
 							'</div>' +
 						'</div>' +
 					'</div>' +

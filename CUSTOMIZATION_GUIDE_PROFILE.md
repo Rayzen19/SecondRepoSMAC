@@ -488,7 +488,7 @@ $request->validate([
 
 Find and replace in profile views:
 
-- Primary button: `btn-primary` → `btn-success` (green)
+- Primary button: `bg-info` → `btn-success` (green)
 - Danger button: `btn-danger` → `btn-warning` (yellow)
 - Background: `bg-white` → `bg-light`
 

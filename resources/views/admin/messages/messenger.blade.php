@@ -62,7 +62,7 @@
         <div class="card">
             <div class="card-header d-flex justify-content-between align-items-center">
                 <h5 class="mb-0">Conversations</h5>
-                <button class="btn btn-sm btn-primary" id="new-conversation-btn">
+                <button class="btn btn-sm bg-info" id="new-conversation-btn">
                     <i class="ti ti-plus"></i> New
                 </button>
             </div>
@@ -127,7 +127,7 @@
                             <i class="ti ti-paperclip"></i>
                         </button>
                         <input id="message-input" name="body" class="form-control" placeholder="Type a message..." autocomplete="off">
-                        <button class="btn btn-primary" type="submit">Send</button>
+                        <button class="btn bg-info" type="submit">Send</button>
                     </div>
                 </form>
             </div>
@@ -168,7 +168,7 @@
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                <button type="button" class="btn btn-primary" id="start-chat-btn" disabled>
+                <button type="button" class="btn bg-info" id="start-chat-btn" disabled>
                     <i class="ti ti-message"></i> Start Chat
                 </button>
             </div>

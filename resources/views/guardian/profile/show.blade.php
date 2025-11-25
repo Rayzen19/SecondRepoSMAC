@@ -79,7 +79,7 @@
                 </ul>
 
                 <div class="mt-4">
-                    <a href="{{ route('guardian.profile.edit') }}" class="btn btn-primary w-100 mb-2">
+                    <a href="{{ route('guardian.profile.edit') }}" class="btn bg-info w-100 mb-2">
                         <i class="ti ti-edit me-2"></i>Edit Profile
                     </a>
                     <button type="button" class="btn btn-outline-primary w-100" data-bs-toggle="modal" data-bs-target="#changePasswordModal">
@@ -256,7 +256,7 @@
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                    <button type="submit" class="btn btn-primary">Update Password</button>
+                    <button type="submit" class="btn bg-info">Update Password</button>
                 </div>
             </form>
         </div>

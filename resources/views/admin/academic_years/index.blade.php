@@ -12,7 +12,7 @@
         </nav>
     </div>
     <div class="mb-2">
-        <a href="{{ route('admin.academic-years.create') }}" class="btn btn-primary d-flex align-items-center"><i class="ti ti-plus me-2"></i>Add Academic Year</a>
+        <a href="{{ route('admin.academic-years.create') }}" class="btn bg-info d-flex align-items-center"><i class="ti ti-plus me-2"></i>Add Academic Year</a>
     </div>
     
 </div>

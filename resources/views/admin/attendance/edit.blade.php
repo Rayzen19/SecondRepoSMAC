@@ -121,7 +121,7 @@
                     </div>
 
                     <a href="{{ route('admin.attendance.show', $log) }}" class="btn btn-outline-light border me-2">Cancel</a>
-                    <button type="submit" class="btn btn-primary">Update Attendance</button>
+                    <button type="submit" class="btn bg-info">Update Attendance</button>
                 </div>
             </form>
         </div>

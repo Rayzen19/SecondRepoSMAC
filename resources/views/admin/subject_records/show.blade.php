@@ -60,7 +60,7 @@
             <h6 class="mb-0">Records</h6>
             <div class="d-flex gap-2">
                 <a href="{{ route('admin.subject-records.export', $record) }}" class="btn btn-sm btn-outline-success"><i class="ti ti-download me-1"></i>Download CSV</a>
-                <a href="{{ route('admin.subject-record-results.create', ['subject_record_id' => $record->id]) }}" class="btn btn-sm btn-primary"><i class="ti ti-plus me-1"></i>Add Entry</a>
+                <a href="{{ route('admin.subject-record-results.create', ['subject_record_id' => $record->id]) }}" class="btn btn-sm bg-info"><i class="ti ti-plus me-1"></i>Add Entry</a>
             </div>
         </div>
         <div class="card-body">

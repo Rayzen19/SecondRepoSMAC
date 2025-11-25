@@ -46,7 +46,7 @@
                     </p>
 
                     <div class="d-grid gap-2">
-                        <a href="<?php echo e(route('admin.profile.edit')); ?>" class="btn btn-primary">
+                        <a href="<?php echo e(route('admin.profile.edit')); ?>" class="btn bg-info">
                             <i class="ti ti-edit me-2"></i>Edit Profile
                         </a>
                         <a href="<?php echo e(route('admin.profile.password.edit')); ?>" class="btn btn-outline-danger">
@@ -64,7 +64,7 @@
                     <h5 class="mb-0">
                         <i class="ti ti-info-circle me-2"></i>Account Information
                     </h5>
-                    <a href="<?php echo e(route('admin.profile.edit')); ?>" class="btn btn-primary btn-sm">
+                    <a href="<?php echo e(route('admin.profile.edit')); ?>" class="btn bg-info btn-sm">
                         <i class="ti ti-edit me-1"></i>Edit Profile
                     </a>
                 </div>

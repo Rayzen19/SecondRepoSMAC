@@ -189,7 +189,7 @@
                         </div>
                     </div>
                     <a href="{{ route('admin.students.index') }}" class="btn btn-outline-light border me-2">Cancel</a>
-                    <button type="submit" class="btn btn-primary">Update</button>
+                    <button type="submit" class="btn bg-info">Update</button>
                 </div>
             </form>
         </div>

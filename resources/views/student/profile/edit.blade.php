@@ -171,7 +171,7 @@
                             <a href="{{ route('student.profile.show') }}" class="btn btn-secondary">
                                 <i class="ti ti-x me-1"></i>Cancel
                             </a>
-                            <button type="submit" class="btn btn-primary">
+                            <button type="submit" class="btn bg-info">
                                 <i class="ti ti-check me-1"></i>Save Changes
                             </button>
                         </div>

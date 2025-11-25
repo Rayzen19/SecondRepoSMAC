@@ -140,7 +140,7 @@
                 </div>
 
                 <a href="{{ url()->previous() }}" class="btn btn-outline-light border me-2">Cancel</a>
-                <button type="submit" class="btn btn-primary">Create</button>
+                <button type="submit" class="btn bg-info">Create</button>
             </form>
         </div>
     </div>

@@ -72,7 +72,7 @@
                 </div>
 
                 <div class="mt-3 d-flex gap-2">
-                    <button class="btn btn-primary" type="submit">Update</button>
+                    <button class="btn bg-info" type="submit">Update</button>
                     <a href="{{ route('admin.subject-record-results.show', $result) }}" class="btn btn-secondary">Cancel</a>
                 </div>
             </form>

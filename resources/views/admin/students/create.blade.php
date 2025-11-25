@@ -186,7 +186,7 @@
                         </div>
                     </div>
                     <a href="{{ route('admin.dashboard') }}" class="btn btn-outline-light border me-2">Back</a>
-                    <button type="submit" class="btn btn-primary">Save</button>
+                    <button type="submit" class="btn bg-info">Save</button>
                 </div>
             </form>
         </div>

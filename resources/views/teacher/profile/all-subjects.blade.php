@@ -183,7 +183,7 @@
                                             <div class="d-flex gap-1 flex-wrap">
                                                 @if($studentCount > 0)
                                                     <a href="{{ route('teacher.class-records.show', $assignment->id) }}" 
-                                                       class="btn btn-sm btn-primary" 
+                                                       class="btn btn-sm bg-info" 
                                                        title="View Class Records"
                                                        data-bs-toggle="tooltip">
                                                         <i class="ti ti-list-details"></i>

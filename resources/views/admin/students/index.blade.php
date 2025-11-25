@@ -19,7 +19,7 @@
     </div>
     <div class="d-flex my-xl-auto right-content align-items-center flex-wrap ">
         <div class="mb-2">
-            <a href="{{ route('admin.students.create') }}" class="btn btn-primary d-flex align-items-center"><i class="ti ti-circle-plus me-2"></i>Add Student</a>
+            <a href="{{ route('admin.students.create') }}" class="btn bg-info d-flex align-items-center"><i class="ti ti-circle-plus me-2"></i>Add Student</a>
         </div>
     </div>
 </div>
@@ -148,7 +148,7 @@
                     </select>
                 </div>
                 <div class="col-md-2 d-flex align-items-end">
-                    <button type="submit" class="btn btn-primary me-2">
+                    <button type="submit" class="btn bg-info me-2">
                         <i class="ti ti-filter me-1"></i>Filter
                     </button>
                     <a href="{{ route('admin.students.index') }}" class="btn btn-secondary">

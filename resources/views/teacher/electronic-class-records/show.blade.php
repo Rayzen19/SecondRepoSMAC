@@ -19,7 +19,7 @@
                         <i class="fas fa-plus"></i> Add Assessment
                     </button>
                     <a href="{{ route('admin.electronic-class-records.export', ['assignment' => $assignment->id, 'quarter' => $quarter]) }}" 
-                       class="btn btn-primary">
+                       class="btn bg-info">
                         <i class="fas fa-download"></i> Export
                     </a>
                     <a href="{{ route('admin.electronic-class-records.index') }}" class="btn btn-secondary">
@@ -192,7 +192,7 @@
             </div>
         </div>
         <div class="card-footer">
-            <button type="button" class="btn btn-primary" id="saveScoresBtn">
+            <button type="button" class="btn bg-info" id="saveScoresBtn">
                 <i class="fas fa-save"></i> Save All Scores
             </button>
             <span class="text-muted ms-3" id="saveStatus"></span>
@@ -317,7 +317,7 @@
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                    <button type="submit" class="btn btn-primary">Add Assessment</button>
+                    <button type="submit" class="btn bg-info">Add Assessment</button>
                 </div>
             </form>
         </div>

@@ -17,7 +17,7 @@
     </div>
     <div class="d-flex my-xl-auto right-content align-items-center flex-wrap">
         <div class="mb-2">
-            <a href="{{ route('admin.announcements.create') }}" class="btn btn-primary d-flex align-items-center">
+            <a href="{{ route('admin.announcements.create') }}" class="btn bg-info d-flex align-items-center">
                 <i class="ti ti-circle-plus me-2"></i>Add Announcement
             </a>
         </div>
@@ -91,7 +91,7 @@
                             <td>{{ $announcement->creator->name ?? 'N/A' }}</td>
                             <td>
                                 <div class="d-flex gap-2">
-                                    <a href="{{ route('admin.announcements.edit', $announcement) }}" class="btn btn-sm btn-primary">
+                                    <a href="{{ route('admin.announcements.edit', $announcement) }}" class="btn btn-sm bg-info">
                                         <i class="ti ti-edit"></i> Edit
                                     </a>
                                     <form action="{{ route('admin.announcements.destroy', $announcement) }}" method="POST" class="d-inline" onsubmit="return confirm('Are you sure you want to delete this announcement?')">
@@ -109,7 +109,7 @@
                             <td colspan="6" class="text-center py-4">
                                 <i class="ti ti-speakerphone text-muted" style="font-size: 3rem;"></i>
                                 <p class="text-muted mb-0">No announcements found.</p>
-                                <a href="{{ route('admin.announcements.create') }}" class="btn btn-primary btn-sm mt-2">
+                                <a href="{{ route('admin.announcements.create') }}" class="btn bg-info btn-sm mt-2">
                                     <i class="ti ti-plus me-1"></i>Create your first announcement
                                 </a>
                             </td>

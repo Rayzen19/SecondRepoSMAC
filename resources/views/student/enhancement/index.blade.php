@@ -37,7 +37,7 @@
             </div>
             <div class="col-md-3">
                 <label class="form-label d-block">&nbsp;</label>
-                <button type="submit" class="btn btn-primary w-100">
+                <button type="submit" class="btn bg-info w-100">
                     <i class="ti ti-filter me-1"></i> Apply Filters
                 </button>
             </div>

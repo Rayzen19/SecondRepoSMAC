@@ -317,7 +317,7 @@
                                         <!-- Quarterly Grade equals Initial Grade here -->
                                         <td class="text-center">{{ $fmt($initial) }}</td>
                                         <td class="text-center">
-                                            <a class="btn btn-sm btn-primary" href="{{ route('teacher.class-records.students.show', ['assignment' => $assignment->id, 'student' => $s['student_number']]) }}">
+                                            <a class="btn btn-sm bg-info" href="{{ route('teacher.class-records.students.show', ['assignment' => $assignment->id, 'student' => $s['student_number']]) }}">
                                                 <i class="ti ti-eye me-1"></i> View
                                             </a>
                                         </td>
@@ -388,7 +388,7 @@
                                         <td class="text-center">{{ $remarks ?? '—' }}</td>
                                         <td class="text-center">{{ $desc ?? '—' }}</td>
                                         <td class="text-center">
-                                            <a class="btn btn-sm btn-primary" href="{{ route('teacher.class-records.students.show', ['assignment' => $assignment->id, 'student' => $s['student_number']]) }}">
+                                            <a class="btn btn-sm bg-info" href="{{ route('teacher.class-records.students.show', ['assignment' => $assignment->id, 'student' => $s['student_number']]) }}">
                                                 <i class="ti ti-eye me-1"></i> View
                                             </a>
                                         </td>

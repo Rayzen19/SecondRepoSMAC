@@ -20,7 +20,7 @@
                             <h4 class="mb-1">My Profile</h4>
                             <p class="text-muted mb-0">View and manage your personal information</p>
                         </div>
-                        <a href="{{ route('student.profile.edit') }}" class="btn btn-primary">
+                        <a href="{{ route('student.profile.edit') }}" class="btn bg-info">
                             <i class="ti ti-edit me-1"></i>Edit Profile
                         </a>
                     </div>
@@ -55,7 +55,7 @@
                         @csrf
                         @method('POST')
                         <div class="mb-2">
-                            <label for="profile_picture" class="btn btn-primary btn-sm w-100 mb-2">
+                            <label for="profile_picture" class="btn bg-info btn-sm w-100 mb-2">
                                 <i class="ti ti-photo me-1"></i> Choose File
                             </label>
                             <input type="file" name="profile_picture" id="profile_picture" class="d-none" accept="image/*" onchange="previewImageStudent(event)" required>

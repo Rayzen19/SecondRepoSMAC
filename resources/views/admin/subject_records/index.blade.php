@@ -17,7 +17,7 @@
     </div>
     <div class="d-flex my-xl-auto right-content align-items-center flex-wrap ">
         <div class="mb-2">
-            <a href="{{ route('admin.subject-records.create') }}" class="btn btn-primary d-flex align-items-center"><i class="ti ti-plus me-2"></i>New Record</a>
+            <a href="{{ route('admin.subject-records.create') }}" class="btn bg-info d-flex align-items-center"><i class="ti ti-plus me-2"></i>New Record</a>
         </div>
     </div>
 </div>

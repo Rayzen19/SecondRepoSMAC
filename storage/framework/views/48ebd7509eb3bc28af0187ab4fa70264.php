@@ -85,7 +85,7 @@ unset($__errorArgs, $__bag); ?>
                         </div>
 
                         <div class="d-flex gap-2">
-                            <button type="submit" class="btn btn-primary">
+                            <button type="submit" class="btn bg-info">
                                 <i class="ti ti-check me-2"></i>Save Changes
                             </button>
                             <a href="<?php echo e(route('admin.profile.show')); ?>" class="btn btn-secondary">
