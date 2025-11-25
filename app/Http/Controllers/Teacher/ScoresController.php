@@ -122,13 +122,17 @@ class ScoresController extends Controller
             
             $availableStudents = $studentsQuery->get()
                 ->map(function ($se) {
-                    $student = $se->studentEnrollment->student;
+                    $student = optional($se->studentEnrollment)->student;
+                    if (!$student) {
+                        return null;
+                    }
                     return [
                         'id' => $student->id,
                         'name' => $student->first_name . ' ' . $student->last_name,
                         'student_number' => $student->student_number,
                     ];
                 })
+                ->filter()
                 ->sortBy('name')
                 ->values();
         }
@@ -191,7 +195,11 @@ class ScoresController extends Controller
                 $allPercentages = [];
 
                 foreach ($subjectEnrollments as $se) {
-                    $student = $se->studentEnrollment->student;
+                    $student = optional($se->studentEnrollment)->student;
+                    if (!$student) {
+                        // Skip enrollments that no longer have a student enrollment relation
+                        continue;
+                    }
 
                     // Get all results for this student
                     $results = SubjectRecordResult::whereIn('subject_record_id', $assessments->pluck('id'))
