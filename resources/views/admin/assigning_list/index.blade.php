@@ -434,9 +434,9 @@
 </div>
 
 <script>
-    // Blade-generated URLs and tokens (JSON-encoded to keep JS parser happy)
-    const SAVE_ASSIGNMENTS_URL = {!! json_encode(route('admin.assigning-list.save-assignments')) !!};
-    const CSRF_TOKEN = {!! json_encode(csrf_token()) !!};
+    // Blade-generated URLs and tokens
+    const SAVE_ASSIGNMENTS_URL = "{{ route('admin.assigning-list.save-assignments') }}";
+    const CSRF_TOKEN = "{{ csrf_token() }}";
 
     // Store section assignments in memory
     // Structure: { 'STRAND-SECTION': [{ id, name, studentNo, program }, ...] }

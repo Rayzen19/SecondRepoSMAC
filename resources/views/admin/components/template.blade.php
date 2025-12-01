@@ -200,7 +200,7 @@
                 </div>
             </div>
             <div class="sidebar-inner slimscroll">
-                <div id="sidebar-menu" class="sidebar-menu">
+                <div id="sidebar-menu" class="sidebar-menu" style="padding-bottom: 100px;">
                     @php
                         $isTeachers = request()->routeIs('admin.teachers.*');
                         $isStudents = request()->routeIs('admin.students.*');
@@ -354,19 +354,16 @@
                             </ul>
                         </li>
                     </ul>
-                    <!-- Logout in sidebar menu at the bottom -->
-                    <div class="sidebar-logout-block">
-                        <form action="{{ route('admin.auth.logout') }}" method="POST" class="d-inline">
-                            @csrf
-                            <button type="submit" class="btn btn-outline-danger w-100">
-                                <i class="ti ti-logout me-1"></i> Logout
-                            </button>
-                        </form>
-                    </div>
-                            </ul>
-                        </li>
-                    </ul>
                 </div>
+            </div>
+            <!-- Logout in sidebar menu at the bottom -->
+            <div class="sidebar-logout-block">
+                <form action="{{ route('admin.auth.logout') }}" method="POST" class="d-inline">
+                    @csrf
+                    <button type="submit" class="btn btn-outline-danger w-100">
+                        <i class="ti ti-logout me-1"></i> Logout
+                    </button>
+                </form>
             </div>
         </div>
         <!-- /Sidebar -->
