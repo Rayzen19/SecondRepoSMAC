@@ -280,38 +280,79 @@ class SectionAdviserController extends Controller
                 ->first();
         }
 
-        if (!$academicYearStrandSection) {
-            return response()->json([
-                'success' => true,
-                'students' => [],
-                'count' => 0
-            ]);
+        $studentsArray = [];
+        $studentIds = [];
+
+        // Get enrolled students from database
+        if ($academicYearStrandSection) {
+            // Explicitly filter by active academic year and exclude soft-deleted records
+            $enrollments = \App\Models\StudentEnrollment::with('student')
+                ->where('academic_year_strand_section_id', $academicYearStrandSection->id)
+                ->where('academic_year_id', $activeYear->id) // Ensure we only get current year enrollments
+                ->whereNull('deleted_at') // Explicitly exclude soft-deleted records
+                ->get();
+
+            foreach ($enrollments as $enrollment) {
+                if ($enrollment->student) {
+                    $studentIds[] = $enrollment->student->id;
+                    $studentsArray[] = [
+                        'id' => $enrollment->student->id,
+                        'student_number' => $enrollment->student->student_number,
+                        'first_name' => $enrollment->student->first_name,
+                        'last_name' => $enrollment->student->last_name,
+                        'middle_name' => $enrollment->student->middle_name,
+                        'program' => $enrollment->student->program,
+                        'academic_year' => $enrollment->student->academic_year,
+                        'registration_number' => $enrollment->registration_number,
+                        'source' => 'database'
+                    ];
+                }
+            }
         }
 
-        // Get enrolled students
-        // Include all enrollments tied to this section (avoid over-filtering by status)
-        $enrollments = \App\Models\StudentEnrollment::with('student')
-            ->where('academic_year_strand_section_id', $academicYearStrandSection->id)
-            ->get();
+        // Also check session for pending assignments that haven't been saved yet
+        $sessionAssignments = session('student_assignments', []);
+        if (!empty($sessionAssignments)) {
+            foreach ($sessionAssignments as $assignment) {
+                // Check if this assignment matches the requested section
+                if (isset($assignment['strand_code']) && isset($assignment['section_id']) && isset($assignment['student_id'])) {
+                    if ($assignment['strand_code'] == $validated['strand_code'] && 
+                        $assignment['section_id'] == $validated['section_id'] &&
+                        !in_array($assignment['student_id'], $studentIds)) {
+                        
+                        // Fetch student details
+                        $student = Student::find($assignment['student_id']);
+                        if ($student) {
+                            $studentIds[] = $student->id;
+                            $studentsArray[] = [
+                                'id' => $student->id,
+                                'student_number' => $student->student_number,
+                                'first_name' => $student->first_name,
+                                'last_name' => $student->last_name,
+                                'middle_name' => $student->middle_name,
+                                'program' => $student->program,
+                                'academic_year' => $student->academic_year,
+                                'registration_number' => null,
+                                'source' => 'session'
+                            ];
+                        }
+                    }
+                }
+            }
+        }
 
-        $students = $enrollments->map(function($enrollment) {
-            return [
-                'id' => $enrollment->student->id,
-                'student_number' => $enrollment->student->student_number,
-                'first_name' => $enrollment->student->first_name,
-                'last_name' => $enrollment->student->last_name,
-                'middle_name' => $enrollment->student->middle_name,
-                'program' => $enrollment->student->program,
-                'academic_year' => $enrollment->student->academic_year,
-                'registration_number' => $enrollment->registration_number
-            ];
+        // Sort by last name
+        usort($studentsArray, function($a, $b) {
+            return strcmp($a['last_name'], $b['last_name']);
         });
 
         return response()->json([
             'success' => true,
-            'students' => $students,
-            'count' => $students->count()
-        ]);
+            'students' => $studentsArray,
+            'count' => count($studentsArray)
+        ])->header('Cache-Control', 'no-store, no-cache, must-revalidate, max-age=0')
+          ->header('Pragma', 'no-cache')
+          ->header('Expires', '0');
     }
 
     /**
@@ -332,6 +373,22 @@ class SectionAdviserController extends Controller
         $sections = \App\Models\Section::with('strand')->get();
         $counts = [];
 
+        // Get session assignments to include pending assignments
+        $sessionAssignments = session('student_assignments', []);
+        $sessionCounts = [];
+        foreach ($sessionAssignments as $assignment) {
+            if (isset($assignment['strand_code']) && isset($assignment['section_id'])) {
+                $key = $assignment['strand_code'] . '-' . $assignment['section_id'];
+                if (!isset($sessionCounts[$key])) {
+                    $sessionCounts[$key] = [];
+                }
+                // Track unique student IDs to avoid duplicates
+                if (isset($assignment['student_id'])) {
+                    $sessionCounts[$key][] = $assignment['student_id'];
+                }
+            }
+        }
+
         foreach ($sections as $section) {
             if (!$section->strand) continue;
 
@@ -348,11 +405,14 @@ class SectionAdviserController extends Controller
                     ->first();
             }
 
+            $enrolledStudentIds = [];
             $count = 0;
             if ($academicYearStrandSection) {
-                // Count all enrollments linked to the section to reflect true assignments
-                $count = \App\Models\StudentEnrollment::where('academic_year_strand_section_id', $academicYearStrandSection->id)
-                    ->count();
+                // Get all student IDs enrolled in this section
+                $enrolledStudentIds = \App\Models\StudentEnrollment::where('academic_year_strand_section_id', $academicYearStrandSection->id)
+                    ->pluck('student_id')
+                    ->toArray();
+                $count = count($enrolledStudentIds);
             }
 
             // Include pre-enrollments (pending/approved) so pre-enrolled students
@@ -371,7 +431,13 @@ class SectionAdviserController extends Controller
                 Log::warning('PreEnrollment count failed in getSectionCounts', ['error' => $e->getMessage()]);
             }
 
+            // Add session assignments that haven't been saved yet (avoid counting duplicates)
             $key = $section->strand->code . '-' . $section->id;
+            if (isset($sessionCounts[$key])) {
+                $uniqueSessionStudents = array_diff($sessionCounts[$key], $enrolledStudentIds);
+                $count += count($uniqueSessionStudents);
+            }
+
             $counts[$key] = $count;
         }
 
