@@ -9,8 +9,10 @@ use App\Models\Section;
 use App\Models\Strand;
 use App\Models\SubjectRecordResult;
 use App\Models\Announcement;
+use App\Models\User;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
+use Carbon\Carbon;
 
 class DashboardController extends Controller
 {
@@ -74,16 +76,25 @@ class DashboardController extends Controller
         });
 
         // Pass/Fail Statistics (passing grade = 75)
-        $totalResults = SubjectRecordResult::count();
-        $passedCount = SubjectRecordResult::where('final_score', '>=', 75)->count();
-        $failedCount = $totalResults - $passedCount;
+        // Based on student averages, not individual subject records
+        $studentAverages = SubjectRecordResult::select(
+            'student_id',
+            DB::raw('AVG(final_score) as avg_score')
+        )
+        ->whereNotNull('final_score')
+        ->groupBy('student_id')
+        ->get();
+        
+        $totalStudents = $studentAverages->count();
+        $passedStudents = $studentAverages->where('avg_score', '>=', 75)->count();
+        $failedStudents = $studentAverages->where('avg_score', '<', 75)->count();
         
         $passFailStats = [
-            'total' => $totalResults,
-            'passed' => $passedCount,
-            'failed' => $failedCount,
-            'pass_rate' => $totalResults > 0 ? round(($passedCount / $totalResults) * 100, 1) : 0,
-            'fail_rate' => $totalResults > 0 ? round(($failedCount / $totalResults) * 100, 1) : 0,
+            'total' => $totalStudents,
+            'passed' => $passedStudents,
+            'failed' => $failedStudents,
+            'pass_rate' => $totalStudents > 0 ? round(($passedStudents / $totalStudents) * 100, 1) : 0,
+            'fail_rate' => $totalStudents > 0 ? round(($failedStudents / $totalStudents) * 100, 1) : 0,
         ];
 
         // Academic Calendar (placeholder - would need an events table)
@@ -93,6 +104,46 @@ class DashboardController extends Controller
             ['date' => 'Dec 20', 'event' => 'Christmas Break Starts'],
             ['date' => 'Jan 6', 'event' => 'Classes Resume'],
             ['date' => 'Mar 10', 'event' => 'Final Exams'],
+        ];
+
+        // User Registration Trends (last 12 months) - Students Only
+        $registrationTrends = Student::select(
+            DB::raw('DATE_FORMAT(created_at, "%Y-%m") as month'),
+            DB::raw('COUNT(*) as count')
+        )
+        ->where('created_at', '>=', Carbon::now()->subMonths(12))
+        ->groupBy('month')
+        ->orderBy('month', 'asc')
+        ->get();
+
+        // Fill in missing months with 0 registrations
+        $months = [];
+        $counts = [];
+        for ($i = 11; $i >= 0; $i--) {
+            $date = Carbon::now()->subMonths($i);
+            $monthKey = $date->format('Y-m');
+            $monthLabel = $date->format('M Y');
+            
+            $found = $registrationTrends->firstWhere('month', $monthKey);
+            $months[] = $monthLabel;
+            $counts[] = $found ? $found->count : 0;
+        }
+
+        $registrationData = [
+            'months' => $months,
+            'counts' => $counts
+        ];
+
+        // Students Per Strand (Bar Chart Data) - Count unique students only
+        $strandsWithCounts = Strand::leftJoin('student_enrollments', 'strands.id', '=', 'student_enrollments.strand_id')
+            ->select('strands.name', DB::raw('COUNT(DISTINCT student_enrollments.student_id) as student_count'))
+            ->groupBy('strands.id', 'strands.name')
+            ->orderBy('strands.name')
+            ->get();
+
+        $strandData = [
+            'names' => $strandsWithCounts->pluck('name')->toArray(),
+            'counts' => $strandsWithCounts->pluck('student_count')->toArray()
         ];
 
         return view('admin.dashboard', compact(
@@ -106,7 +157,9 @@ class DashboardController extends Controller
             'performance',
             'topStudents',
             'passFailStats',
-            'calendar'
+            'calendar',
+            'registrationData',
+            'strandData'
         ));
     }
 }

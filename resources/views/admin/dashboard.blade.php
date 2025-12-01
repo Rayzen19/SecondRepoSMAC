@@ -85,54 +85,6 @@
 
 	<div class="row">
 		<div class="col-lg-8">
-			<!-- Student Performance Analytics by Strand -->
-			<div class="card shadow-sm rounded-4 mb-4">
-				<div class="card-header bg-opacity-10 rounded-top-4">
-					<h5 class="mb-0 fw-bold" style="color:#313131"><i class="ti ti-chart-bar me-2" style="color:#313131"></i>Performance by Strand</h5>
-				</div>
-				<div class="card-body">
-					<div class="row align-items-center">
-						<div class="col-12 col-lg-7 mb-3 mb-lg-0">
-							<!-- Placeholder for chart -->
-							<div class="bg-light rounded-4 p-3 d-flex align-items-center justify-content-center w-100" style="min-height:180px;">
-								<span class="text-muted">[Chart: Average Grades by Strand]</span>
-							</div>
-						</div>
-						<div class="col-12 col-lg-5">
-							<div class="d-flex flex-wrap gap-2 justify-content-between">
-								<div class="flex-grow-1 flex-basis-0 min-w-0" style="min-width:160px; max-width:160px; width:160px;">
-									<div class="d-flex justify-content-between align-items-center border" style="border-color:#0b2e13 !important; background-color:#d1fae5; border-radius:0.75rem; padding:0.5rem 1rem; min-width:160px; max-width:160px; width:160px;">
-										<span class="fw-semibold" style="color:#313131">STEM</span>
-										<span class="badge text-white" style="background-color:#0b2e13;">{{ $performance['STEM'] ?? 'N/A' }}</span>
-									</div>
-								</div>
-								<div class="flex-grow-1 flex-basis-0 min-w-0" style="min-width:160px; max-width:160px; width:160px;">
-									<div class="d-flex justify-content-between align-items-center border" style="border-color:#0b2e13 !important; background-color:#d1fae5; border-radius:0.75rem; padding:0.5rem 1rem; min-width:160px; max-width:160px; width:160px;">
-										<span class="fw-semibold" style="color:#313131">ABM</span>
-										<span class="badge text-white" style="background-color:#0b2e13;">{{ $performance['ABM'] ?? 'N/A' }}</span>
-									</div>
-								</div>
-								<div class="flex-grow-1 flex-basis-0 min-w-0" style="min-width:160px; max-width:160px; width:160px;">
-									<div class="d-flex justify-content-between align-items-center border" style="border-color:#0b2e13 !important; background-color:#d1fae5; border-radius:0.75rem; padding:0.5rem 1rem; min-width:160px; max-width:160px; width:160px;">
-										<span class="fw-semibold" style="color:#313131">HUMSS</span>
-										<span class="badge text-white" style="background-color:#0b2e13;">{{ $performance['HUMSS'] ?? 'N/A' }}</span>
-									</div>
-								</div>
-								<div class="flex-grow-1 flex-basis-0 min-w-0" style="min-width:160px; max-width:160px; width:160px;">
-									<div class="d-flex justify-content-between align-items-center border" style="border-color:#0b2e13 !important; background-color:#d1fae5; border-radius:0.75rem; padding:0.5rem 1rem; min-width:160px; max-width:160px; width:160px;">
-										<span class="fw-semibold" style="color:#313131">TVL</span>
-										<span class="badge text-white" style="background-color:#0b2e13;">{{ $performance['TVL'] ?? 'N/A' }}</span>
-									</div>
-								</div>
-							</div>
-							<div class="mt-2">
-								<span class="text-muted small">* Data based on latest grading period</span>
-							</div>
-						</div>
-					</div>
-				</div>
-			</div>
-
 			<!-- Pass/Fail Statistics -->
 			<div class="card shadow-sm rounded-4 mb-4">
 				<div class="card-header bg-opacity-10 rounded-top-4">
@@ -163,6 +115,30 @@
 							</div>
 						</div>
 					</div>
+			</div>
+		</div>
+
+		<!-- User Registration Trends -->
+		<div class="card shadow-sm rounded-4 mb-4">
+			<div class="card-header bg-opacity-10 rounded-top-4">
+				<h5 class="mb-0 fw-bold" style="color:#313131">
+					<i class="ti ti-chart-line me-2" style="color:#3b82f6"></i>Student Registration Trends
+				</h5>
+			</div>
+			<div class="card-body">
+				<div id="registrationTrendsChart"></div>
+			</div>
+		</div>
+
+		<!-- Students Per Strand -->
+		<div class="card shadow-sm rounded-4 mb-4">
+			<div class="card-header bg-opacity-10 rounded-top-4">
+				<h5 class="mb-0 fw-bold" style="color:#313131">
+					<i class="ti ti-chart-bar me-2" style="color:#10b981"></i>Students per Strand
+				</h5>
+			</div>
+			<div class="card-body">
+				<div id="studentsPerStrandChart"></div>
 			</div>
 		</div>
 		</div>
@@ -303,3 +279,189 @@
 	</div>
 </div>
 @endsection
+
+@push('scripts')
+<script>
+// User Registration Trends Chart
+var registrationOptions = {
+    series: [{
+        name: 'New Students',
+        data: {!! json_encode($registrationData['counts']) !!}
+    }],
+    chart: {
+        type: 'line',
+        height: 350,
+        toolbar: {
+            show: true,
+            tools: {
+                download: true,
+                selection: false,
+                zoom: false,
+                zoomin: false,
+                zoomout: false,
+                pan: false,
+                reset: false
+            }
+        }
+    },
+    colors: ['#3b82f6'],
+    dataLabels: {
+        enabled: false
+    },
+    stroke: {
+        curve: 'smooth',
+        width: 3
+    },
+    grid: {
+        borderColor: '#e7e7e7',
+        row: {
+            colors: ['#f3f3f3', 'transparent'],
+            opacity: 0.5
+        },
+    },
+    markers: {
+        size: 5,
+        colors: ['#3b82f6'],
+        strokeColors: '#fff',
+        strokeWidth: 2,
+        hover: {
+            size: 7
+        }
+    },
+    xaxis: {
+        categories: {!! json_encode($registrationData['months']) !!},
+        title: {
+            text: 'Month',
+            style: {
+                fontSize: '12px',
+                fontWeight: 600
+            }
+        },
+        labels: {
+            rotate: -45,
+            style: {
+                fontSize: '11px'
+            }
+        }
+    },
+    yaxis: {
+        title: {
+            text: 'Number of Registrations',
+            style: {
+                fontSize: '12px',
+                fontWeight: 600
+            }
+        },
+        labels: {
+            formatter: function (val) {
+                return Math.floor(val);
+            }
+        }
+    },
+    tooltip: {
+        y: {
+            formatter: function (val) {
+                return val + ' student' + (val !== 1 ? 's' : '');
+            }
+        }
+    }
+};
+
+var registrationChart = new ApexCharts(document.querySelector("#registrationTrendsChart"), registrationOptions);
+registrationChart.render();
+
+// Students Per Strand Bar Chart
+var strandOptions = {
+    series: [{
+        name: 'Students',
+        data: {!! json_encode($strandData['counts']) !!}
+    }],
+    chart: {
+        type: 'bar',
+        height: 350,
+        toolbar: {
+            show: true,
+            tools: {
+                download: true,
+                selection: false,
+                zoom: false,
+                zoomin: false,
+                zoomout: false,
+                pan: false,
+                reset: false
+            }
+        }
+    },
+    colors: ['#10b981'],
+    plotOptions: {
+        bar: {
+            borderRadius: 6,
+            dataLabels: {
+                position: 'top'
+            },
+            distributed: false,
+            horizontal: false,
+        }
+    },
+    dataLabels: {
+        enabled: true,
+        formatter: function (val) {
+            return val;
+        },
+        offsetY: -20,
+        style: {
+            fontSize: '12px',
+            colors: ["#304758"]
+        }
+    },
+    grid: {
+        borderColor: '#e7e7e7',
+        row: {
+            colors: ['#f3f3f3', 'transparent'],
+            opacity: 0.5
+        },
+    },
+    xaxis: {
+        categories: {!! json_encode($strandData['names']) !!},
+        title: {
+            text: 'Strand',
+            style: {
+                fontSize: '12px',
+                fontWeight: 600
+            }
+        },
+        labels: {
+            style: {
+                fontSize: '11px'
+            },
+            rotate: -45,
+            rotateAlways: false
+        }
+    },
+    yaxis: {
+        title: {
+            text: 'Number of Students',
+            style: {
+                fontSize: '12px',
+                fontWeight: 600
+            }
+        },
+        labels: {
+            formatter: function (val) {
+                return Math.floor(val);
+            }
+        }
+    },
+    tooltip: {
+        y: {
+            formatter: function (val) {
+                return val + ' student' + (val !== 1 ? 's' : '');
+            }
+        }
+    }
+};
+
+var strandChart = new ApexCharts(document.querySelector("#studentsPerStrandChart"), strandOptions);
+strandChart.render();
+</script>
+@endpush

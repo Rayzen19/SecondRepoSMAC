@@ -16,6 +16,11 @@
         </nav>
     </div>
     <div class="d-flex my-xl-auto right-content align-items-center flex-wrap ">
+        <div class="mb-2 me-2">
+            <button type="button" class="btn btn-outline-success d-flex align-items-center" onclick="exportToExcel()">
+                <i class="ti ti-file-spreadsheet me-2"></i>Export to Excel
+            </button>
+        </div>
         <div class="mb-2">
             <a href="<?php echo e(route('admin.teachers.create')); ?>" class="btn bg-info d-flex align-items-center"><i class="ti ti-circle-plus me-2"></i>Add Teacher</a>
         </div>
@@ -100,6 +105,7 @@
 <?php $__env->stopSection(); ?>
 
 <?php $__env->startPush('scripts'); ?>
+<script src="https://cdn.sheetjs.com/xlsx-0.20.1/package/dist/xlsx.full.min.js"></script>
 <script>
 function openDeleteModal(deleteUrl, teacherName) {
     const deleteForm = document.getElementById('deleteForm');
@@ -107,6 +113,69 @@ function openDeleteModal(deleteUrl, teacherName) {
     
     const modal = new bootstrap.Modal(document.getElementById('deleteModal'));
     modal.show();
+}
+
+function exportToExcel() {
+    // Get the table
+    const table = document.querySelector('.datatable');
+    
+    // Clone the table to manipulate it
+    const clonedTable = table.cloneNode(true);
+    
+    // Remove action column (last column) from header
+    const headerRow = clonedTable.querySelector('thead tr');
+    if (headerRow) {
+        const lastHeaderCell = headerRow.querySelector('th:last-child');
+        if (lastHeaderCell) lastHeaderCell.remove();
+    }
+    
+    // Remove action column from all body rows
+    const bodyRows = clonedTable.querySelectorAll('tbody tr');
+    bodyRows.forEach(row => {
+        const lastCell = row.querySelector('td:last-child');
+        if (lastCell) lastCell.remove();
+        
+        // Clean up the subjects column - extract text from badges
+        const subjectsCell = row.querySelectorAll('td')[3];
+        if (subjectsCell) {
+            const badges = subjectsCell.querySelectorAll('.badge');
+            if (badges.length > 0) {
+                const subjects = Array.from(badges).map(badge => badge.textContent.trim()).join(', ');
+                subjectsCell.innerHTML = subjects;
+            }
+        }
+        
+        // Clean up status column - extract text from badge
+        const statusCell = row.querySelectorAll('td')[4];
+        if (statusCell) {
+            const badge = statusCell.querySelector('.badge');
+            if (badge) {
+                statusCell.textContent = badge.textContent.trim();
+            }
+        }
+    });
+    
+    // Create workbook and worksheet
+    const wb = XLSX.utils.book_new();
+    const ws = XLSX.utils.table_to_sheet(clonedTable);
+    
+    // Set column widths
+    ws['!cols'] = [
+        { wch: 15 },  // Emp #
+        { wch: 30 },  // Name
+        { wch: 30 },  // Email
+        { wch: 40 },  // Subjects Handled
+        { wch: 10 }   // Status
+    ];
+    
+    // Add worksheet to workbook
+    XLSX.utils.book_append_sheet(wb, ws, 'Teachers');
+    
+    // Generate filename with current date
+    const filename = `Teachers_List_${new Date().toISOString().split('T')[0]}.xlsx`;
+    
+    // Download the file
+    XLSX.writeFile(wb, filename);
 }
 </script>
 <?php $__env->stopPush(); ?>

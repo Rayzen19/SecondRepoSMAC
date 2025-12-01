@@ -18,6 +18,11 @@
         </nav>
     </div>
     <div class="d-flex my-xl-auto right-content align-items-center flex-wrap ">
+        <div class="mb-2 me-2">
+            <button type="button" class="btn btn-outline-success d-flex align-items-center" onclick="exportToExcel()">
+                <i class="ti ti-file-spreadsheet me-2"></i>Export to Excel
+            </button>
+        </div>
         <div class="mb-2">
             <a href="{{ route('admin.students.create') }}" class="btn bg-info d-flex align-items-center"><i class="ti ti-circle-plus me-2"></i>Add Student</a>
         </div>
@@ -286,5 +291,114 @@ document.addEventListener('DOMContentLoaded', function() {
         filterForm.submit();
     });
 });
+
+function exportToExcel() {
+    // Get the DataTable instance
+    const dataTable = $('.datatable').DataTable();
+    
+    // Prepare data array for export
+    const exportData = [];
+    
+    // Add headers
+    exportData.push(['Student Name', 'Student Number', 'Contact', 'Address', 'Guardian Name', 'Guardian Contact', 'Program', 'Grade Level', 'Section', 'Status']);
+    
+    // Get all rows data (not just visible ones)
+    dataTable.rows({ search: 'applied' }).every(function() {
+        const rowNode = this.node();
+        const cells = $(rowNode).find('td');
+        
+        // Extract student info
+        const studentCell = cells.eq(0);
+        const nameLink = studentCell.find('a').first();
+        const studentName = nameLink.length ? nameLink.text().trim() : '';
+        
+        // Extract student number from the first .fs-12 span
+        const studentNumberSpan = studentCell.find('.fs-12').first();
+        const studentNumber = studentNumberSpan.length ? studentNumberSpan.text().trim() : '';
+        
+        // Extract contact and address from remaining .fs-12 spans
+        const allSmallText = studentCell.find('.fs-12');
+        const contact = allSmallText.length > 0 ? allSmallText.eq(0).text().trim() : '';
+        const address = allSmallText.length > 1 ? allSmallText.eq(1).text().trim() : '';
+        
+        // Extract guardian info
+        const guardianCell = cells.eq(1);
+        const guardianName = guardianCell.find('.text-dark').text().trim();
+        const guardianContact = guardianCell.find('.fs-12').text().trim();
+        
+        // Extract program
+        const program = cells.eq(2).text().trim();
+        
+        // Extract grade level
+        let gradeLevel = '';
+        const gradeLevelBadge = cells.eq(3).find('.badge');
+        if (gradeLevelBadge.length) {
+            gradeLevel = 'Grade ' + gradeLevelBadge.text().trim();
+        } else {
+            gradeLevel = cells.eq(3).text().trim();
+        }
+        
+        // Extract section
+        let section = '';
+        const sectionBadge = cells.eq(4).find('.badge');
+        if (sectionBadge.length) {
+            section = sectionBadge.text().trim();
+        } else {
+            section = cells.eq(4).text().trim();
+        }
+        
+        // Extract status
+        let status = '';
+        const statusBadge = cells.eq(5).find('.badge');
+        if (statusBadge.length) {
+            status = statusBadge.text().trim();
+        }
+        
+        // Add row to export data
+        exportData.push([
+            studentName,
+            studentNumber,
+            contact,
+            address,
+            guardianName,
+            guardianContact,
+            program,
+            gradeLevel,
+            section,
+            status
+        ]);
+    });
+    
+    // Create workbook and worksheet
+    const wb = XLSX.utils.book_new();
+    const ws = XLSX.utils.aoa_to_sheet(exportData);
+    
+    // Set column widths
+    ws['!cols'] = [
+        { wch: 30 },  // Student Name
+        { wch: 15 },  // Student Number
+        { wch: 15 },  // Contact
+        { wch: 30 },  // Address
+        { wch: 25 },  // Guardian Name
+        { wch: 30 },  // Guardian Contact
+        { wch: 10 },  // Program
+        { wch: 12 },  // Grade Level
+        { wch: 20 },  // Section
+        { wch: 10 }   // Status
+    ];
+    
+    // Add worksheet to workbook
+    XLSX.utils.book_append_sheet(wb, ws, 'Students');
+    
+    // Generate filename with current date
+    const filename = `Students_List_${new Date().toISOString().split('T')[0]}.xlsx`;
+    
+    // Download the file
+    XLSX.writeFile(wb, filename);
+}
 </script>
+
+<!-- SheetJS library for Excel export -->
+<script src="https://cdn.sheetjs.com/xlsx-0.20.1/package/dist/xlsx.full.min.js"></script>
+
 @endsection
