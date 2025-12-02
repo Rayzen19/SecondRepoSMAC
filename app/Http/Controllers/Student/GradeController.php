@@ -56,6 +56,21 @@ class GradeController extends Controller
     $selectedTerm = $request->get('term');
     // grade level: 11|12|all
     $selectedGradeLevel = $request->get('grade_level', 'all');
+    // section filter
+    $selectedSectionId = $request->get('section_id', 'all');
+
+    // Get available sections for this student across all their enrollments
+    $availableSections = collect([['id' => 'all', 'name' => 'All Sections']]);
+    $studentSections = StudentEnrollment::with(['academicYearStrandSection.section'])
+        ->where('student_id', $studentId)
+        ->get()
+        ->pluck('academicYearStrandSection.section')
+        ->filter()
+        ->unique('id')
+        ->map(function($section) {
+            return ['id' => $section->id, 'name' => $section->name . ' (' . $section->grade . ')'];
+        });
+    $availableSections = $availableSections->concat($studentSections);
 
         // Find all years where this student has at least one subject enrollment
         $studentYearEnrollments = StudentEnrollment::withCount('subjectEnrollments')
@@ -125,16 +140,29 @@ class GradeController extends Controller
                 'academicYearStrandSubject.subject',
                 'studentEnrollment.academicYearStrandSection.section',
             ])
-            ->whereHas('studentEnrollment', function ($q) use ($studentId, $selectedYearId) {
+            ->whereHas('studentEnrollment', function ($q) use ($studentId, $selectedYearId, $selectedSectionId) {
                 $q->where('student_id', $studentId)
                   ->where('academic_year_id', $selectedYearId);
+                
+                // Filter by section if selected
+                if ($selectedSectionId && $selectedSectionId !== 'all') {
+                    $q->whereHas('academicYearStrandSection.section', function($qq) use ($selectedSectionId) {
+                        $qq->where('id', $selectedSectionId);
+                    });
+                }
             })
             ->whereHas('academicYearStrandSubject', function($q) {
                 $q->where('grades_published', true); // Only show published grades
             })
             ->when($selectedGradeLevel && $selectedGradeLevel !== 'all', function($q) use ($selectedGradeLevel) {
                 $q->whereHas('studentEnrollment.academicYearStrandSection.section', function($qq) use ($selectedGradeLevel) {
-                    $qq->where('grade', $selectedGradeLevel);
+                    // Handle multiple grade formats: 11, G-11, Grade 11, etc.
+                    $qq->where(function($qqq) use ($selectedGradeLevel) {
+                        $qqq->where('grade', $selectedGradeLevel)
+                            ->orWhere('grade', 'G-' . $selectedGradeLevel)
+                            ->orWhere('grade', 'Grade ' . $selectedGradeLevel)
+                            ->orWhere('grade', 'LIKE', '%' . $selectedGradeLevel . '%');
+                    });
                 });
             })
             ->get();
@@ -187,15 +215,24 @@ class GradeController extends Controller
                 $semesterKey = $selectedTerm === 'finals' ? '2nd' : '1st';
                 $grades = $subjectEnrollments->map(function ($se) use ($semesterKey, $studentId, $computeInitial) {
                     $subject = $se->academicYearStrandSubject->subject;
+                    $section = $se->studentEnrollment->academicYearStrandSection->section ?? null;
                     
                     // Get appropriate grade based on semester
                     $fq = $se->fq_grade ?? $computeInitial($se->academic_year_strand_subject_id, $studentId, '1st');
                     $sq = $se->sq_grade ?? $computeInitial($se->academic_year_strand_subject_id, $studentId, '2nd');
                     $grade = $semesterKey === '2nd' ? $sq : $fq;
                     
+                    // Get units from subject
+                    $lecUnit = $subject->lec_units ?? 3;
+                    $labUnit = $subject->lab_units ?? 0;
+                    
                     return [
                         'subject_code' => $subject?->code,
                         'subject_name' => $subject?->name,
+                        'section' => $section ? $section->name : 'N/A',
+                        'schedule_code' => 'N/A', // Can be added later if schedule table exists
+                        'lec_unit' => $lecUnit,
+                        'lab_unit' => $labUnit,
                         'grade' => $grade ?? null,
                         'fq_grade' => $fq,
                         'sq_grade' => $sq,
@@ -304,7 +341,9 @@ class GradeController extends Controller
             'selectedYearId' => $selectedYearId,
             'selectedTerm' => $selectedTerm,
             'selectedGradeLevel' => $selectedGradeLevel,
+            'selectedSectionId' => $selectedSectionId,
             'gradeLevels' => $gradeLevels,
+            'sections' => $availableSections,
             'student' => $student,
             'grades' => $grades,
             'average' => $average,

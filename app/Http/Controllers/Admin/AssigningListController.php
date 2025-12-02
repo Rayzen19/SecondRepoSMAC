@@ -181,10 +181,36 @@ class AssigningListController extends Controller
         
         foreach ($validated['assignments'] as $assignment) {
             try {
+                // Find the student and validate their strand
+                $student = \App\Models\Student::find($assignment['student_id']);
+                if (!$student) {
+                    $errors[] = "Student ID {$assignment['student_id']} not found";
+                    continue;
+                }
+
+                // Validate that student's program matches the section's strand
+                if ($student->program && $student->program !== $assignment['strand_code']) {
+                    $studentName = "{$student->first_name} {$student->last_name}";
+                    $errors[] = "Cannot assign {$studentName} to {$assignment['strand_code']} section: Student is enrolled in {$student->program} strand";
+                    continue;
+                }
+
                 // Find the strand
                 $strand = \App\Models\Strand::where('code', $assignment['strand_code'])->first();
                 if (!$strand) {
                     $errors[] = "Strand {$assignment['strand_code']} not found";
+                    continue;
+                }
+                
+                // Verify the section belongs to the correct strand
+                $section = \App\Models\Section::with('strand')->find($assignment['section_id']);
+                if (!$section) {
+                    $errors[] = "Section ID {$assignment['section_id']} not found";
+                    continue;
+                }
+                
+                if ($section->strand && $section->strand->code !== $assignment['strand_code']) {
+                    $errors[] = "Section mismatch: Section '{$section->name}' belongs to {$section->strand->code}, not {$assignment['strand_code']}";
                     continue;
                 }
                 

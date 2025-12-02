@@ -50,6 +50,9 @@
     <!-- Select2 CSS -->
     <link rel="stylesheet" href="{{ asset('assets/plugins/select2/css/select2.min.css') }}">
 
+    <!-- SweetAlert2 CSS -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css">
+
     <!-- Main CSS -->
     <link rel="stylesheet" href="{{ asset('assets/css/style.css') }}?v={{ time() }}">
     <link rel="stylesheet" href="{{ asset('assets/css/responsive-sidebar.css') }}">
@@ -407,6 +410,9 @@
 
     <!-- Bootstrap Core JS -->
     <script src="{{ asset('assets/js/bootstrap.bundle.min.js') }}"></script>
+
+    <!-- SweetAlert2 JS -->
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
     <!-- Feather Icon JS -->
     <script src="{{ asset('assets/js/feather.min.js') }}"></script>

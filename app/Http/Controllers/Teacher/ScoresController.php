@@ -12,8 +12,11 @@ use App\Models\Student;
 use App\Models\SubjectRecord;
 use App\Models\SubjectRecordResult;
 use App\Models\Teacher;
+use App\Mail\ScoreNotification;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Facades\Log;
 
 class ScoresController extends Controller
 {
@@ -32,11 +35,6 @@ class ScoresController extends Controller
             abort(401, 'Teacher not found');
         }
 
-        // Get all academic years
-        $academicYears = AcademicYear::orderBy('name', 'desc')
-            ->orderBy('semester', 'asc')
-            ->get();
-
         // Get selected filters
         $selectedYearId = $request->get('academic_year_id');
         $selectedSubjectId = $request->get('subject_id');
@@ -44,6 +42,11 @@ class ScoresController extends Controller
         $selectedTerm = $request->get('term', 'midterm');
         $selectedAssessmentId = $request->get('assessment_id');
         $selectedStudentId = $request->get('student_id');
+
+        // Get all academic years
+        $academicYears = AcademicYear::orderBy('name', 'desc')
+            ->orderBy('semester', 'asc')
+            ->get();
         
         // Auto-select year if not set
         if (!$selectedYearId) {
@@ -73,6 +76,13 @@ class ScoresController extends Controller
             // Get current assignment to fetch sections
             if ($selectedSubjectId) {
                 $currentAssignment = AcademicYearStrandSubject::find($selectedSubjectId);
+                
+                // Verify the selected subject belongs to the current academic year
+                if ($currentAssignment && $currentAssignment->academic_year_id != $selectedYearId) {
+                    // Subject doesn't exist in this academic year, clear selection
+                    $selectedSubjectId = null;
+                    $currentAssignment = null;
+                }
             }
         }
 
@@ -158,6 +168,7 @@ class ScoresController extends Controller
                 ->when($selectedAssessmentId, function ($q) use ($selectedAssessmentId) {
                     $q->where('id', $selectedAssessmentId);
                 })
+                ->orderBy('created_at', 'desc')
                 ->orderBy('date_given', 'desc')
                 ->orderBy('type', 'asc')
                 ->get();
@@ -201,9 +212,10 @@ class ScoresController extends Controller
                         continue;
                     }
 
-                    // Get all results for this student
+                    // Get all results for this student, ordered by recently created
                     $results = SubjectRecordResult::whereIn('subject_record_id', $assessments->pluck('id'))
                         ->where('student_id', $student->id)
+                        ->orderBy('created_at', 'desc')
                         ->get()
                         ->keyBy('subject_record_id');
 
@@ -302,6 +314,13 @@ class ScoresController extends Controller
 
         foreach ($validated['scores'] as $scoreData) {
             try {
+                // Log the score data being processed
+                Log::info('Processing score', [
+                    'student_id' => $scoreData['student_id'],
+                    'assessment_id' => $scoreData['assessment_id'],
+                    'raw_score' => $scoreData['raw_score']
+                ]);
+
                 // Verify the assessment belongs to teacher
                 $assessment = SubjectRecord::find($scoreData['assessment_id']);
                 if (!$assessment) {
@@ -321,8 +340,21 @@ class ScoresController extends Controller
                     continue;
                 }
 
+                // Check if score already exists
+                $existingScore = SubjectRecordResult::where('subject_record_id', $scoreData['assessment_id'])
+                    ->where('student_id', $scoreData['student_id'])
+                    ->first();
+                
+                $isNewScore = !$existingScore;
+                $isScoreChanged = false;
+                
+                if ($existingScore) {
+                    // Check if the score actually changed
+                    $isScoreChanged = $existingScore->raw_score != $scoreData['raw_score'];
+                }
+                
                 // Update or create the score
-                SubjectRecordResult::updateOrCreate(
+                $scoreResult = SubjectRecordResult::updateOrCreate(
                     [
                         'subject_record_id' => $scoreData['assessment_id'],
                         'student_id' => $scoreData['student_id'],
@@ -331,6 +363,14 @@ class ScoresController extends Controller
                         'raw_score' => $scoreData['raw_score'],
                     ]
                 );
+
+                // Send email notification ONLY if this is a new score or the score was changed
+                if ($isNewScore || $isScoreChanged) {
+                    Log::info("Score was " . ($isNewScore ? 'newly added' : 'changed') . " - sending email notification");
+                    $this->sendScoreNotification($scoreData['student_id'], $assessment, $scoreData['raw_score'], $scoreData['max_score'], $assignment);
+                } else {
+                    Log::info("Score unchanged for student {$scoreData['student_id']} - skipping email notification");
+                }
 
                 $savedCount++;
             } catch (\Exception $e) {
@@ -350,6 +390,102 @@ class ScoresController extends Controller
                 'message' => 'Failed to save scores',
                 'errors' => $errors
             ], 400);
+        }
+    }
+
+    /**
+     * Send score notification email to guardian(s)
+     */
+    private function sendScoreNotification($studentId, $assessment, $rawScore, $maxScore, $assignment)
+    {
+        try {
+            // Get student with fresh guardians relationship - ensure we're getting the correct student
+            $student = Student::with(['guardians' => function($query) {
+                $query->whereNull('guardian_students.deleted_at');
+            }])->find($studentId);
+            
+            if (!$student) {
+                Log::warning("Student not found for ID: {$studentId}");
+                return;
+            }
+
+            // Log which student we're processing with full details
+            Log::info("Sending score notification for student: {$student->first_name} {$student->last_name} (ID: {$studentId}, Student Number: {$student->student_number})");
+
+            // Get academic year info
+            $academicYear = AcademicYear::find($assignment->academic_year_id);
+            $subject = $assignment->subject;
+            
+            // Prepare email data
+            $studentName = $student->first_name . ' ' . $student->last_name;
+            $assessmentName = $assessment->name;
+            $assessmentType = $assessment->type;
+            $subjectName = $subject->code . ' - ' . $subject->name;
+            $academicYearName = $academicYear ? $academicYear->name . ' - ' . ucfirst($academicYear->semester) . ' Semester' : 'N/A';
+            $term = $assessment->quarter === '1st' ? '1st Quarter (Midterm)' : '2nd Quarter (Finals)';
+            $dateGiven = $assessment->date_given ? date('F d, Y', strtotime($assessment->date_given)) : 'N/A';
+
+            // Send email to all guardians linked via guardian_students table
+            if ($student->guardians && $student->guardians->count() > 0) {
+                Log::info("Found {$student->guardians->count()} guardian(s) for student ID: {$studentId}");
+                
+                foreach ($student->guardians as $guardian) {
+                    if ($guardian->email && filter_var($guardian->email, FILTER_VALIDATE_EMAIL)) {
+                        Log::info("✉️ Sending score email:", [
+                            'student_id' => $studentId,
+                            'student_name' => $studentName,
+                            'student_number' => $student->student_number,
+                            'guardian_id' => $guardian->id,
+                            'guardian_name' => $guardian->first_name . ' ' . $guardian->last_name,
+                            'guardian_email' => $guardian->email,
+                            'assessment' => $assessmentName,
+                            'score' => "{$rawScore}/{$maxScore}"
+                        ]);
+                        
+                        Mail::to($guardian->email)->send(
+                            new ScoreNotification(
+                                $studentName,
+                                $assessmentName,
+                                $assessmentType,
+                                $rawScore,
+                                $maxScore,
+                                $subjectName,
+                                $academicYearName,
+                                $term,
+                                $dateGiven
+                            )
+                        );
+                        
+                        Log::info("✅ Email sent successfully to {$guardian->email}");
+                    } else {
+                        Log::warning("⚠️ Guardian {$guardian->id} has invalid or missing email for student {$studentId}");
+                    }
+                }
+            } else {
+                Log::info("No guardians found in guardians relationship for student ID: {$studentId}");
+            }
+
+            // Also send to guardian_email field if it exists (legacy support)
+            if ($student->guardian_email && filter_var($student->guardian_email, FILTER_VALIDATE_EMAIL)) {
+                Log::info("Sending email to legacy guardian email: {$student->guardian_email} for student: {$studentName}");
+                
+                Mail::to($student->guardian_email)->send(
+                    new ScoreNotification(
+                        $studentName,
+                        $assessmentName,
+                        $assessmentType,
+                        $rawScore,
+                        $maxScore,
+                        $subjectName,
+                        $academicYearName,
+                        $term,
+                        $dateGiven
+                    )
+                );
+            }
+        } catch (\Exception $e) {
+            // Log error but don't fail the score save operation
+            Log::error('Failed to send score notification for student ID ' . $studentId . ': ' . $e->getMessage());
         }
     }
 }

@@ -54,10 +54,10 @@
                             </select>
                         </div>
                         <div class="col-md-2">
-                            <label for="term" class="form-label">Term</label>
+                            <label for="term" class="form-label">Term/Quarter</label>
                             <select name="term" id="term" class="form-select" onchange="this.form.submit()">
-                                <option value="midterm" {{ $selectedTerm === 'midterm' ? 'selected' : '' }}>Midterm (1st)</option>
-                                <option value="finals" {{ $selectedTerm === 'finals' ? 'selected' : '' }}>Finals (2nd)</option>
+                                <option value="midterm" {{ $selectedTerm === 'midterm' ? 'selected' : '' }}>1st Quarter (Midterm)</option>
+                                <option value="finals" {{ $selectedTerm === 'finals' ? 'selected' : '' }}>2nd Quarter (Finals)</option>
                             </select>
                         </div>
                         <div class="col-md-2">

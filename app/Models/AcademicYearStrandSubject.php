@@ -74,6 +74,11 @@ class AcademicYearStrandSubject extends Model
         return $this->belongsTo(AcademicYearStrandSection::class, 'academic_year_strand_section_id');
     }
 
+    public function academicYearStrandSection(): BelongsTo
+    {
+        return $this->belongsTo(AcademicYearStrandSection::class, 'academic_year_strand_section_id');
+    }
+
     /**
      * Booted model events.
      * When a new assignment is created, ensure SubjectEnrollment rows

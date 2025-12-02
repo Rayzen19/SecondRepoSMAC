@@ -21,7 +21,7 @@
         <div class="card">
             <div class="card-body">
                 <form method="GET" action="{{ route('student.grades.index') }}" class="row g-3">
-                    <div class="col-md-4">
+                    <div class="col-md-3">
                         <label class="form-label">Academic Year</label>
                         <select name="academic_year_id" class="form-select" onchange="this.form.submit()">
                             @foreach($academicYears as $year)
@@ -31,7 +31,7 @@
                             @endforeach
                         </select>
                     </div>
-                    <div class="col-md-4">
+                    <div class="col-md-3">
                         <label class="form-label">Term</label>
                         <select name="term" class="form-select" onchange="this.form.submit()">
                             <option value="midterm" {{ ($selectedTerm ?? '') === 'midterm' ? 'selected' : '' }}>Midterm</option>
@@ -39,11 +39,21 @@
                             <option value="final" {{ ($selectedTerm ?? '') === 'final' ? 'selected' : '' }}>Final Grade</option>
                         </select>
                     </div>
-                    <div class="col-md-4">
+                    <div class="col-md-3">
                         <label class="form-label">Grade Level</label>
                         <select name="grade_level" class="form-select" onchange="this.form.submit()">
                             @foreach($gradeLevels as $value => $label)
                                 <option value="{{ $value }}" {{ ($selectedGradeLevel ?? 'all') == $value ? 'selected' : '' }}>{{ $label }}</option>
+                            @endforeach
+                        </select>
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label">Section</label>
+                        <select name="section_id" class="form-select" onchange="this.form.submit()">
+                            @foreach($sections as $section)
+                                <option value="{{ $section['id'] }}" {{ ($selectedSectionId ?? 'all') == $section['id'] ? 'selected' : '' }}>
+                                    {{ $section['name'] }}
+                                </option>
                             @endforeach
                         </select>
                     </div>
@@ -56,92 +66,105 @@
 <!-- Grades Table -->
 <div class="row">
     <div class="col-md-12">
-        <div class="card">
-            <div class="card-header" style="background-color: #ddddf6ff;">
-                <h5 class="mb-0">Grades</h5>
-            </div>
-            <div class="card-body">
-                @if($grades->count() > 0)
+        @if($grades->count() > 0)
+            <div class="card">
+                <div class="card-body p-0">
+                    <div class="alert alert-info m-3 mb-2" role="alert">
+                        <i class="fas fa-info-circle"></i>
+                        INC or 4.00 grade can only be edited within one (1) academic year; otherwise, grade will be marked 5.00
+                    </div>
+
                     <div class="table-responsive">
-                        <table class="table table-bordered table-hover">
-                            <thead class="table-light">
+                        <table class="table table-hover mb-0">
+                            <thead style="background-color: #f8f9fa; border-bottom: 2px solid #dee2e6;">
                                 <tr>
-                                    <th>Subject Code</th>
-                                    <th>Subject Name</th>
-                                    <th class="text-center">1st Sem</th>
-                                    <th class="text-center">2nd Sem</th>
-                                    <th class="text-center">Average</th>
-                                    <th class="text-center">Final Grade</th>
+                                    <th style="padding: 12px;">Subject Code</th>
+                                    <th>Subject Title</th>
+                                    <th class="text-center">Section</th>
+                                    <th class="text-center">Schedule Code</th>
+                                    <th class="text-center">Lec Unit</th>
+                                    <th class="text-center">Lab Unit</th>
+                                    <th class="text-center">Total</th>
+                                    <th class="text-center">Grade</th>
+                                    <th class="text-center">Completion</th>
                                 </tr>
                             </thead>
                             <tbody>
+                                @php
+                                    $totalLec = 0;
+                                    $totalLab = 0;
+                                    $totalUnits = 0;
+                                @endphp
                                 @foreach($grades as $grade)
+                                    @php
+                                        $lecUnit = $grade['lec_unit'] ?? 0;
+                                        $labUnit = $grade['lab_unit'] ?? 0;
+                                        $total = $lecUnit + $labUnit;
+                                        $totalLec += $lecUnit;
+                                        $totalLab += $labUnit;
+                                        $totalUnits += $total;
+                                        
+                                        // Determine grade display based on selected term
+                                        $displayGrade = null;
+                                        if($selectedTerm === 'midterm' || $selectedTerm === 'finals') {
+                                            $displayGrade = $selectedTerm === 'midterm' ? $grade['fq_grade'] : $grade['sq_grade'];
+                                        } else {
+                                            $displayGrade = $grade['f_grade'] ?? $grade['a_grade'];
+                                        }
+                                    @endphp
                                     <tr>
-                                        <td>{{ $grade['subject_code'] }}</td>
+                                        <td style="padding: 10px;">{{ $grade['subject_code'] }}</td>
                                         <td>{{ $grade['subject_name'] }}</td>
                                         <td class="text-center">
-                                            @if($grade['fq_grade'])
-                                                <span class="badge grade-badge {{ $grade['fq_grade'] >= 90 ? 'bg-success' : ($grade['fq_grade'] >= 80 ? 'bg-primary' : ($grade['fq_grade'] >= 75 ? 'bg-warning' : 'bg-danger')) }}">
-                                                    {{ number_format($grade['fq_grade'], 2) }}
+                                            <span class="badge bg-info text-white">{{ $grade['section'] ?? 'N/A' }}</span>
+                                        </td>
+                                        <td class="text-center">{{ $grade['schedule_code'] ?? 'N/A' }}</td>
+                                        <td class="text-center">{{ $lecUnit }}</td>
+                                        <td class="text-center">{{ $labUnit }}</td>
+                                        <td class="text-center"><strong>{{ $total }}</strong></td>
+                                        <td class="text-center">
+                                            @if($displayGrade)
+                                                <span class="badge {{ $displayGrade >= 90 ? 'bg-success' : ($displayGrade >= 80 ? 'bg-primary' : ($displayGrade >= 75 ? 'bg-warning text-dark' : 'bg-danger')) }}" style="font-size: 14px; padding: 6px 12px;">
+                                                    {{ number_format($displayGrade, 2) }}
                                                 </span>
                                             @else
                                                 <span class="text-muted">—</span>
                                             @endif
                                         </td>
                                         <td class="text-center">
-                                            @if($grade['sq_grade'])
-                                                <span class="badge grade-badge {{ $grade['sq_grade'] >= 90 ? 'bg-success' : ($grade['sq_grade'] >= 80 ? 'bg-primary' : ($grade['sq_grade'] >= 75 ? 'bg-warning' : 'bg-danger')) }}">
-                                                    {{ number_format($grade['sq_grade'], 2) }}
-                                                </span>
-                                            @else
-                                                <span class="text-muted">—</span>
-                                            @endif
-                                        </td>
-                                        <td class="text-center">
-                                            @if($grade['a_grade'])
-                                                <span class="badge grade-badge {{ $grade['a_grade'] >= 90 ? 'bg-success' : ($grade['a_grade'] >= 80 ? 'bg-primary' : ($grade['a_grade'] >= 75 ? 'bg-warning' : 'bg-danger')) }}">
-                                                    {{ number_format($grade['a_grade'], 2) }}
-                                                </span>
-                                            @else
-                                                <span class="text-muted">—</span>
-                                            @endif
-                                        </td>
-                                        <td class="text-center">
-                                            @if($grade['f_grade'])
-                                                <span class="badge grade-badge {{ $grade['f_grade'] >= 90 ? 'bg-success' : ($grade['f_grade'] >= 80 ? 'bg-primary' : ($grade['f_grade'] >= 75 ? 'bg-warning' : 'bg-danger')) }}">
-                                                    {{ number_format($grade['f_grade'], 2) }}
-                                                </span>
-                                            @else
-                                                <span class="text-muted">—</span>
-                                            @endif
+                                            <span class="text-muted">—</span>
                                         </td>
                                     </tr>
                                 @endforeach
+                                <tr style="background-color: #f8f9fa; font-weight: bold; border-top: 2px solid #dee2e6;">
+                                    <td colspan="4" class="text-end" style="padding: 12px;">Total:</td>
+                                    <td class="text-center">{{ $totalLec }}</td>
+                                    <td class="text-center">{{ $totalLab }}</td>
+                                    <td class="text-center">{{ $totalUnits }}</td>
+                                    <td colspan="2"></td>
+                                </tr>
                             </tbody>
                         </table>
                     </div>
-                    
+
                     @if($average)
-                        <div class="text-end mt-3">
-                            <div class="d-inline-block bg-primary text-white px-4 py-2 rounded">
-                                <strong>Average: {{ $average }}</strong>
-                            </div>
+                        <div class="p-3 text-end" style="background-color: #f8f9fa; border-top: 2px solid #dee2e6;">
+                            <span class="badge bg-warning text-dark" style="font-size: 16px; padding: 8px 20px;">
+                                Average: {{ number_format($average, 2) }}
+                            </span>
                         </div>
                     @endif
-                @else
-                    <div class="alert alert-info">
-                        No grades available for this selection.
-                    </div>
-                @endif
+                </div>
             </div>
-        </div>
+        @else
+            <div class="card">
+                <div class="card-body">
+                    <div class="alert alert-info">
+                        <i class="fas fa-info-circle"></i> No grades available for this selection.
+                    </div>
+                </div>
+            </div>
+        @endif
     </div>
 </div>
-
-<style>
-    /* Larger font for grade badges */
-    .grade-badge {
-        font-size: 19px !important;
-    }
-</style>
 @endsection

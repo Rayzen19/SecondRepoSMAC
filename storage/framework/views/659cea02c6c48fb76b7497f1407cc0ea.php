@@ -305,7 +305,7 @@ function exportToExcel() {
     const exportData = [];
     
     // Add headers
-    exportData.push(['Student', 'Guardian', 'Program', 'Grade Level', 'Section', 'Status']);
+    exportData.push(['Student Name', 'Student Number', 'Contact', 'Address', 'Guardian Name', 'Guardian Contact', 'Program', 'Grade Level', 'Section', 'Status']);
     
     // Get all rows data (not just visible ones)
     dataTable.rows({ search: 'applied' }).every(function() {
@@ -313,25 +313,23 @@ function exportToExcel() {
         const cells = $(rowNode).find('td');
         
         // Extract student info
-        let studentInfo = '';
         const studentCell = cells.eq(0);
         const nameLink = studentCell.find('a').first();
-        const studentNumber = studentCell.find('.fs-12').first();
-        const allSmallText = studentCell.find('.fs-12');
+        const studentName = nameLink.length ? nameLink.text().trim() : '';
         
-        if (nameLink.length) studentInfo += nameLink.text().trim();
-        if (studentNumber.length) studentInfo += ' | ' + studentNumber.text().trim();
-        if (allSmallText.length > 0) studentInfo += ' | ' + allSmallText.eq(0).text().trim();
-        if (allSmallText.length > 1) studentInfo += ' | ' + allSmallText.eq(1).text().trim();
+        // Extract student number from the first .fs-12 span
+        const studentNumberSpan = studentCell.find('.fs-12').first();
+        const studentNumber = studentNumberSpan.length ? studentNumberSpan.text().trim() : '';
+        
+        // Extract contact and address from remaining .fs-12 spans
+        const allSmallText = studentCell.find('.fs-12');
+        const contact = allSmallText.length > 0 ? allSmallText.eq(0).text().trim() : '';
+        const address = allSmallText.length > 1 ? allSmallText.eq(1).text().trim() : '';
         
         // Extract guardian info
-        let guardianInfo = '';
         const guardianCell = cells.eq(1);
         const guardianName = guardianCell.find('.text-dark').text().trim();
         const guardianContact = guardianCell.find('.fs-12').text().trim();
-        
-        if (guardianName) guardianInfo += guardianName;
-        if (guardianContact) guardianInfo += ' | ' + guardianContact;
         
         // Extract program
         const program = cells.eq(2).text().trim();
@@ -363,8 +361,12 @@ function exportToExcel() {
         
         // Add row to export data
         exportData.push([
-            studentInfo,
-            guardianInfo,
+            studentName,
+            studentNumber,
+            contact,
+            address,
+            guardianName,
+            guardianContact,
             program,
             gradeLevel,
             section,
@@ -378,12 +380,16 @@ function exportToExcel() {
     
     // Set column widths
     ws['!cols'] = [
-        { wch: 50 },  // Student
-        { wch: 40 },  // Guardian
-        { wch: 15 },  // Program
+        { wch: 30 },  // Student Name
+        { wch: 15 },  // Student Number
+        { wch: 15 },  // Contact
+        { wch: 30 },  // Address
+        { wch: 25 },  // Guardian Name
+        { wch: 30 },  // Guardian Contact
+        { wch: 10 },  // Program
         { wch: 12 },  // Grade Level
-        { wch: 15 },  // Section
-        { wch: 12 }   // Status
+        { wch: 20 },  // Section
+        { wch: 10 }   // Status
     ];
     
     // Add worksheet to workbook

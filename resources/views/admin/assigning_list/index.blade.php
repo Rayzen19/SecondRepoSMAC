@@ -467,7 +467,47 @@
         const checkedBoxes = document.querySelectorAll('.student-checkbox:checked');
         
         if (checkedBoxes.length === 0) {
-            alert('Please select at least one student to assign to a section.');
+            Swal.fire({
+                icon: 'warning',
+                title: 'No Students Selected',
+                text: 'Please select at least one student to assign to a section.',
+                confirmButtonText: 'OK',
+                confirmButtonColor: '#f39c12'
+            });
+            return;
+        }
+
+        // Validate that all selected students match the section's strand
+        const mismatchedStudents = [];
+        checkedBoxes.forEach(checkbox => {
+            const studentStrand = checkbox.dataset.studentStrand;
+            if (studentStrand && studentStrand !== strandCode) {
+                const studentName = checkbox.dataset.studentName;
+                mismatchedStudents.push(`${studentName} (${studentStrand})`);
+            }
+        });
+
+        if (mismatchedStudents.length > 0) {
+            const mismatchList = mismatchedStudents.slice(0, 5).map(s => `<li class="text-start">${s}</li>`).join('');
+            const remaining = mismatchedStudents.length > 5 ? `<li class="text-start text-muted">...and ${mismatchedStudents.length - 5} more</li>` : '';
+            Swal.fire({
+                icon: 'error',
+                title: 'Cannot Assign to Different Strand!',
+                html: `
+                    <div class="text-start">
+                        <p class="mb-2">Section <strong>"${sectionName}"</strong> is for <span class="badge bg-primary">${strandCode}</span> strand.</p>
+                        <p class="mb-2 text-danger"><strong>The following student(s) are from different strand(s):</strong></p>
+                        <ul class="list-unstyled ps-3">
+                            ${mismatchList}
+                            ${remaining}
+                        </ul>
+                        <p class="mt-3 mb-0 text-info"><i class="ti ti-info-circle me-1"></i>Please select only students from <strong>${strandCode}</strong> strand.</p>
+                    </div>
+                `,
+                confirmButtonText: 'Got it',
+                confirmButtonColor: '#3085d6',
+                width: '600px'
+            });
             return;
         }
 
@@ -488,7 +528,36 @@
         // Check if adding these students would exceed the limit
         if (currentCount + newStudentsCount > MAX_STUDENTS_PER_SECTION) {
             const remaining = MAX_STUDENTS_PER_SECTION - currentCount;
-            alert(`Cannot assign students: Section ${sectionName} is full or would exceed maximum capacity.\n\nCurrent: ${currentCount}/${MAX_STUDENTS_PER_SECTION} students\nTrying to add: ${newStudentsCount} students\nRemaining capacity: ${remaining} students`);
+            Swal.fire({
+                icon: 'error',
+                title: 'Section Capacity Exceeded',
+                html: `
+                    <div class="text-start">
+                        <p class="mb-3">Section <strong>"${sectionName}"</strong> is full or would exceed maximum capacity.</p>
+                        <div class="card bg-light border-0">
+                            <div class="card-body">
+                                <div class="row text-center">
+                                    <div class="col-4">
+                                        <small class="text-muted d-block">Current</small>
+                                        <h5 class="mb-0 text-primary">${currentCount}/${MAX_STUDENTS_PER_SECTION}</h5>
+                                    </div>
+                                    <div class="col-4">
+                                        <small class="text-muted d-block">Trying to Add</small>
+                                        <h5 class="mb-0 text-warning">${newStudentsCount}</h5>
+                                    </div>
+                                    <div class="col-4">
+                                        <small class="text-muted d-block">Remaining</small>
+                                        <h5 class="mb-0 text-success">${remaining}</h5>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `,
+                confirmButtonText: 'OK',
+                confirmButtonColor: '#dc3545',
+                width: '500px'
+            });
             return;
         }
 
@@ -702,21 +771,31 @@
         console.log('Section assignments updated. Local changes:', Object.keys(sectionAssignments).length, 'sections');
     }
 
-    // Show alert message
+    // Show alert message using SweetAlert2 Toast
     function showAlert(message, type = 'success') {
-        const alertDiv = document.createElement('div');
-        alertDiv.className = `alert alert-${type} alert-dismissible fade show`;
-        alertDiv.setAttribute('role', 'alert');
-        alertDiv.innerHTML = `
-            ${message}
-            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-        `;
-        document.querySelector('.content').insertBefore(alertDiv, document.querySelector('.row'));
+        const iconMap = {
+            'success': 'success',
+            'danger': 'error',
+            'warning': 'warning',
+            'info': 'info'
+        };
         
-        // Auto-dismiss after 3 seconds
-        setTimeout(() => {
-            alertDiv.remove();
-        }, 3000);
+        const Toast = Swal.mixin({
+            toast: true,
+            position: 'top-end',
+            showConfirmButton: false,
+            timer: 3000,
+            timerProgressBar: true,
+            didOpen: (toast) => {
+                toast.addEventListener('mouseenter', Swal.stopTimer)
+                toast.addEventListener('mouseleave', Swal.resumeTimer)
+            }
+        });
+        
+        Toast.fire({
+            icon: iconMap[type] || 'success',
+            title: message
+        });
     }
 
     // Save all student assignments to the server
@@ -771,22 +850,51 @@
             console.log('Response OK:', response.ok);
             
             if (response.ok && data.success) {
-                showAlert(`✅ Successfully saved ${data.count} student assignment(s) to database! The assignments will now appear in the Section & Advisers page.`, 'success');
-                // Clear the local assignments after successful save
-                Object.keys(sectionAssignments).forEach(key => delete sectionAssignments[key]);
-                // Reload page to show fresh data from database
-                setTimeout(() => window.location.reload(), 2000);
+                Swal.fire({
+                    icon: 'success',
+                    title: 'Assignments Saved!',
+                    html: `Successfully saved <strong>${data.count}</strong> student assignment(s) to database!<br><br>The assignments will now appear in the Section & Advisers page.`,
+                    confirmButtonText: 'OK',
+                    confirmButtonColor: '#28a745',
+                    timer: 3000,
+                    timerProgressBar: true
+                }).then(() => {
+                    // Clear the local assignments after successful save
+                    Object.keys(sectionAssignments).forEach(key => delete sectionAssignments[key]);
+                    // Reload page to show fresh data from database
+                    window.location.reload();
+                });
             } else {
                 console.error('Save failed:', data);
                 console.error('Full response:', response);
                 const errorMsg = data.message || 'Failed to save assignments. Please try again.';
-                const errorDetails = data.errors ? '\nDetails: ' + JSON.stringify(data.errors) : '';
-                showAlert(`❌ ${errorMsg}${errorDetails}`, 'danger');
+                let errorDetails = '';
+                
+                if (data.errors && data.errors.length > 0) {
+                    const errorList = data.errors.slice(0, 5).map(err => `<li class="text-start">${err}</li>`).join('');
+                    const remaining = data.errors.length > 5 ? `<li class="text-start text-muted">...and ${data.errors.length - 5} more errors</li>` : '';
+                    errorDetails = `<div class="mt-3"><ul class="list-unstyled text-start">${errorList}${remaining}</ul></div>`;
+                }
+                
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Save Failed',
+                    html: `<p>${errorMsg}</p>${errorDetails}`,
+                    confirmButtonText: 'OK',
+                    confirmButtonColor: '#dc3545',
+                    width: '600px'
+                });
             }
         } catch (error) {
             console.error('Error saving assignments:', error);
             console.error('Error stack:', error.stack);
-            showAlert('❌ An error occurred while saving. Check the console for details.', 'danger');
+            Swal.fire({
+                icon: 'error',
+                title: 'Connection Error',
+                text: 'An error occurred while saving. Please check your connection and try again.',
+                confirmButtonText: 'OK',
+                confirmButtonColor: '#dc3545'
+            });
         } finally {
             // Restore button state
             if (saveButton) {

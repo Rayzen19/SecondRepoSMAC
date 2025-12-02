@@ -20,7 +20,12 @@
         <div class="d-flex align-items-center justify-content-between">
             <div>
                 <h5 class="mb-1">Academic Year: {{ $activeYear?->display_name ?? '—' }}</h5>
-                <div class="text-muted small">Semester: <span class="badge bg-secondary">{{ $activeYear?->semester ?? '—' }}</span></div>
+                <div class="mb-2">
+                    <span class="text-muted small me-3">Semester: <span class="badge bg-secondary">{{ $activeYear?->semester ?? '—' }}</span></span>
+                    @if($gradeLevel)
+                    <span class="text-muted small">Grade Level: <span class="badge bg-primary">{{ $gradeLevel }}</span></span>
+                    @endif
+                </div>
             </div>
             <div class="text-end">
                 <div class="text-muted small">Total Subjects</div>

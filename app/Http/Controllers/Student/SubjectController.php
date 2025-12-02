@@ -106,8 +106,15 @@ class SubjectController extends Controller
         $appliedSubjects = $subjects->where('subject_type', 'applied');
         $specializedSubjects = $subjects->where('subject_type', 'specialized');
 
+        // Get grade level from student enrollment
+        $gradeLevel = null;
+        if (isset($studentEnrollment) && $studentEnrollment) {
+            $gradeLevel = $studentEnrollment->academicYearStrandSection?->section?->grade;
+        }
+
         return view('student.subjects.index', [
             'activeYear' => $activeYear,
+            'gradeLevel' => $gradeLevel,
             'coreSubjects' => $coreSubjects,
             'appliedSubjects' => $appliedSubjects,
             'specializedSubjects' => $specializedSubjects,
