@@ -155,8 +155,8 @@
                                 <label class="form-label">Grade Level <span class="text-danger">*</span></label>
                                 <select name="grade_level" class="form-select" required>
                                     <option value="" disabled {{ old('grade_level') ? '' : 'selected' }}>Select grade level</option>
-                                    <option value="11" {{ old('grade_level') == '11' ? 'selected' : '' }}>Grade 11</option>
-                                    <option value="12" {{ old('grade_level') == '12' ? 'selected' : '' }}>Grade 12</option>
+                                    <option value="Grade 11" {{ old('grade_level') == 'Grade 11' ? 'selected' : '' }}>Grade 11</option>
+                                    <option value="Grade 12" {{ old('grade_level') == 'Grade 12' ? 'selected' : '' }}>Grade 12</option>
                                 </select>
                                 @error('grade_level')<div class="text-red-600 text-xs">{{ $message }}</div>@enderror
                             </div>

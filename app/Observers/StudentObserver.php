@@ -39,17 +39,6 @@ class StudentObserver
             }
         }
 
-        // Try to find an AYSS for this strand
-        $ayssId = null;
-        if ($strandId) {
-            $ayss = AcademicYearStrandSection::where('academic_year_id', $activeYear->id)
-                ->where('strand_id', $strandId)
-                ->first();
-            if ($ayss) {
-                $ayssId = $ayss->id;
-            }
-        }
-
         // Generate a registration number
         $year = date('Y');
         $prefix = "REG-{$year}-";
@@ -70,16 +59,12 @@ class StudentObserver
             'student_id' => $student->id,
             'strand_id' => $strandId,
             'academic_year_id' => $activeYear->id,
-            'academic_year_strand_section_id' => $ayssId,
+            'academic_year_strand_section_id' => null, // No automatic section assignment
             'registration_number' => $registrationNumber,
             'status' => 'enrolled',
         ]);
 
-        // Sync subject enrollments if available
-        try {
-            $enrollment->syncSubjectEnrollments();
-        } catch (\Throwable $e) {
-            // noop - not critical
-        }
+        // Do not sync subject enrollments until section is assigned
+        // Subject enrollments require a section to be set
     }
 }

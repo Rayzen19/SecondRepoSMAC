@@ -391,64 +391,8 @@ class StudentController extends Controller
             }
         }
 
-        // Automatically create enrollment record for the student
-        try {
-            // Find the strand based on the program
-            $strand = Strand::where('code', $validated['program'])
-                ->orWhere('name', $validated['program'])
-                ->first();
-
-            if ($strand && $yearModel) {
-                // Find an appropriate section for this grade level, strand, and academic year
-                // that's not full (max 30 students)
-                $academicYearStrandSection = AcademicYearStrandSection::where('academic_year_id', $yearModel->id)
-                    ->where('strand_id', $strand->id)
-                    ->whereHas('section', function($q) use ($validated) {
-                        $q->where('grade', $validated['grade_level']);
-                    })
-                    ->withCount('studentEnrollments')
-                    ->having('student_enrollments_count', '<', 30)
-                    ->orderBy('student_enrollments_count', 'asc')
-                    ->first();
-
-                if ($academicYearStrandSection) {
-                    // Generate registration number
-                    $prefix = $yearModel->name;
-                    $count = StudentEnrollment::where('academic_year_id', $yearModel->id)->count() + 1;
-                    $registrationNumber = sprintf('%s-%05d', substr($prefix, 0, 5), $count);
-
-                    // Create the enrollment
-                    $enrollment = StudentEnrollment::create([
-                        'student_id' => $student->id,
-                        'strand_id' => $strand->id,
-                        'academic_year_id' => $yearModel->id,
-                        'academic_year_strand_section_id' => $academicYearStrandSection->id,
-                        'registration_number' => $registrationNumber,
-                        'status' => 'enrolled',
-                    ]);
-
-                    // Sync subject enrollments
-                    $enrollment->syncSubjectEnrollments();
-
-                    Log::info('Student enrollment automatically created', [
-                        'student_id' => $student->id,
-                        'enrollment_id' => $enrollment->id,
-                    ]);
-                } else {
-                    Log::warning('No available section found for automatic enrollment', [
-                        'student_id' => $student->id,
-                        'grade_level' => $validated['grade_level'],
-                        'strand' => $strand->name,
-                    ]);
-                }
-            }
-        } catch (\Throwable $e) {
-            // Log but don't block student creation if enrollment fails
-            Log::error('Failed to create automatic enrollment', [
-                'student_id' => $student->id,
-                'error' => $e->getMessage(),
-            ]);
-        }
+        // Note: Enrollment is automatically created by StudentObserver
+        // No need to create it here to avoid duplication
 
         return redirect()->route('admin.students.index')->with('success', 'Student created successfully. Login details have been emailed to student and guardian.');
     }
