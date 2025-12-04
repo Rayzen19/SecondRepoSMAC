@@ -87,7 +87,8 @@ class Announcement extends Model
     {
         // Prioritize uploaded image over URL
         if ($this->image_path) {
-            return asset('storage/' . $this->image_path);
+            // Use url() helper instead of asset() to ensure proper URL generation
+            return url('storage/' . $this->image_path);
         }
         return $this->image_url;
     }

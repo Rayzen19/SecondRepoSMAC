@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\Announcement;
+use App\Jobs\SendAnnouncementNotifications;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Storage;
@@ -54,10 +55,13 @@ class AnnouncementController extends Controller
             $validated['image_path'] = $path;
         }
 
-        Announcement::create($validated);
+        $announcement = Announcement::create($validated);
+
+        // Dispatch job to send email notifications to all users
+        SendAnnouncementNotifications::dispatch($announcement);
 
         return redirect()->route('admin.announcements.index')
-            ->with('success', 'Announcement created successfully.');
+            ->with('success', 'Announcement created successfully. Email notifications are being sent to all users.');
     }
 
     /**
@@ -113,7 +117,18 @@ class AnnouncementController extends Controller
             $validated['image_path'] = $path;
         }
 
+        // Check if announcement was not active before but is now being activated
+        $wasInactive = !$announcement->is_active;
+        $isNowActive = $validated['is_active'];
+
         $announcement->update($validated);
+
+        // Send notifications if announcement is newly activated
+        if ($wasInactive && $isNowActive) {
+            SendAnnouncementNotifications::dispatch($announcement);
+            return redirect()->route('admin.announcements.index')
+                ->with('success', 'Announcement updated and activated. Email notifications are being sent to all users.');
+        }
 
         return redirect()->route('admin.announcements.index')
             ->with('success', 'Announcement updated successfully.');

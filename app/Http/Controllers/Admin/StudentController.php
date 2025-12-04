@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Models\AcademicYear;
 use App\Models\AcademicYearStrandAdviser;
+use App\Models\AcademicYearStrandSection;
 use App\Models\Auth\StudentUser;
 use App\Models\Auth\GuardianUser;
 use App\Models\Strand;
@@ -247,6 +248,7 @@ class StudentController extends Controller
             'guardian_contact' => 'required|string|unique:students,guardian_contact',
             'guardian_email' => 'required|email|unique:students,guardian_email',
             'program' => 'required|string|max:255',
+            'grade_level' => 'required|string|max:50',
             'academic_year' => 'required|string|max:50',
             'academic_year_id' => 'nullable|exists:academic_years,id',
             'status' => 'required|in:active,graduated,dropped',
@@ -387,6 +389,65 @@ class StudentController extends Controller
                     'error' => $e->getMessage(),
                 ]);
             }
+        }
+
+        // Automatically create enrollment record for the student
+        try {
+            // Find the strand based on the program
+            $strand = Strand::where('code', $validated['program'])
+                ->orWhere('name', $validated['program'])
+                ->first();
+
+            if ($strand && $yearModel) {
+                // Find an appropriate section for this grade level, strand, and academic year
+                // that's not full (max 30 students)
+                $academicYearStrandSection = AcademicYearStrandSection::where('academic_year_id', $yearModel->id)
+                    ->where('strand_id', $strand->id)
+                    ->whereHas('section', function($q) use ($validated) {
+                        $q->where('grade', $validated['grade_level']);
+                    })
+                    ->withCount('studentEnrollments')
+                    ->having('student_enrollments_count', '<', 30)
+                    ->orderBy('student_enrollments_count', 'asc')
+                    ->first();
+
+                if ($academicYearStrandSection) {
+                    // Generate registration number
+                    $prefix = $yearModel->name;
+                    $count = StudentEnrollment::where('academic_year_id', $yearModel->id)->count() + 1;
+                    $registrationNumber = sprintf('%s-%05d', substr($prefix, 0, 5), $count);
+
+                    // Create the enrollment
+                    $enrollment = StudentEnrollment::create([
+                        'student_id' => $student->id,
+                        'strand_id' => $strand->id,
+                        'academic_year_id' => $yearModel->id,
+                        'academic_year_strand_section_id' => $academicYearStrandSection->id,
+                        'registration_number' => $registrationNumber,
+                        'status' => 'enrolled',
+                    ]);
+
+                    // Sync subject enrollments
+                    $enrollment->syncSubjectEnrollments();
+
+                    Log::info('Student enrollment automatically created', [
+                        'student_id' => $student->id,
+                        'enrollment_id' => $enrollment->id,
+                    ]);
+                } else {
+                    Log::warning('No available section found for automatic enrollment', [
+                        'student_id' => $student->id,
+                        'grade_level' => $validated['grade_level'],
+                        'strand' => $strand->name,
+                    ]);
+                }
+            }
+        } catch (\Throwable $e) {
+            // Log but don't block student creation if enrollment fails
+            Log::error('Failed to create automatic enrollment', [
+                'student_id' => $student->id,
+                'error' => $e->getMessage(),
+            ]);
         }
 
         return redirect()->route('admin.students.index')->with('success', 'Student created successfully. Login details have been emailed to student and guardian.');

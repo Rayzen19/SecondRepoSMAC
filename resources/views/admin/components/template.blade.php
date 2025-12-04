@@ -195,10 +195,18 @@
                             <span class="notification-status-dot"></span>
                         </a>
                     </div>
-                    <div class="me-0">
+                    <div class="me-3">
                         <a href="{{ route('admin.messages.messenger') }}" class="btn btn-menubar">
                             <i class="ti ti-message"></i>
                         </a>
+                    </div>
+                    <div class="me-0">
+                        <form action="{{ route('admin.auth.logout') }}" method="POST" class="d-inline m-0">
+                            @csrf
+                            <button type="submit" class="btn btn-menubar" title="Logout" style="border: none; background: transparent; padding: 0.5rem; display: inline-flex; align-items: center; justify-content: center;">
+                                <i class="ti ti-logout"></i>
+                            </button>
+                        </form>
                     </div>
                 </div>
             </div>
@@ -303,6 +311,12 @@
                                     </a>
                                 </li>
 
+                                <li class="{{ request()->routeIs('admin.reports.*') ? 'active' : '' }}">
+                                    <a class="{{ request()->routeIs('admin.reports.*') ? 'active' : '' }}" href="{{ route('admin.reports.index') }}">
+                                        <i class="ti ti-chart-bar"></i><span>Reports</span>
+                                    </a>
+                                </li>
+
                                 @auth('admin')
                                 <li class="{{ request()->routeIs('admin.messages.*') && !request()->routeIs('admin.message-reports.*') ? 'active' : '' }}">
                                     <a class="{{ request()->routeIs('admin.messages.*') && !request()->routeIs('admin.message-reports.*') ? 'active' : '' }}" href="{{ route('admin.messages.messenger') }}">
@@ -354,19 +368,21 @@
                                     </ul>
                                 </li>
 
+                                <li>
+                                    <form action="{{ route('admin.auth.logout') }}" method="POST" class="d-inline w-100">
+                                        @csrf
+                                        <button type="submit" class="w-100 text-start border-0 bg-transparent p-0" style="cursor: pointer;">
+                                            <a style="display: flex; align-items: center; padding: 10px 20px; text-decoration: none; color: #dc3545;">
+                                                <i class="ti ti-logout" style="color: #dc3545;"></i><span style="color: #dc3545;">Logout</span>
+                                            </a>
+                                        </button>
+                                    </form>
+                                </li>
+
                             </ul>
                         </li>
                     </ul>
                 </div>
-            </div>
-            <!-- Logout in sidebar menu at the bottom -->
-            <div class="sidebar-logout-block">
-                <form action="{{ route('admin.auth.logout') }}" method="POST" class="d-inline">
-                    @csrf
-                    <button type="submit" class="btn btn-outline-danger w-100">
-                        <i class="ti ti-logout me-1"></i> Logout
-                    </button>
-                </form>
             </div>
         </div>
         <!-- /Sidebar -->
@@ -381,6 +397,14 @@
                 <a href="{{ route('admin.dashboard') }}" class="portal-mobile-logo">
                     <img src="{{ asset('assets/images/SMAClogo.png') }}" alt="SMAC Logo">
                 </a>
+                <div class="ms-auto">
+                    <form action="{{ route('admin.auth.logout') }}" method="POST" class="d-inline">
+                        @csrf
+                        <button type="submit" class="btn btn-sm btn-outline-danger" title="Logout">
+                            <i class="ti ti-logout"></i>
+                        </button>
+                    </form>
+                </div>
             </header>
             <div class="content">
                 @yield('breadcrumb')

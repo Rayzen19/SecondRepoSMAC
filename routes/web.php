@@ -165,6 +165,10 @@ Route::group(['prefix' => 'admin'], function () {
         Route::delete('/archive/teachers/{teacher}', [App\Http\Controllers\Admin\ArchiveController::class, 'deleteTeacher'])->name('admin.archive.teachers.delete');
         Route::delete('/archive/students/{student}', [App\Http\Controllers\Admin\ArchiveController::class, 'deleteStudent'])->name('admin.archive.students.delete');
 
+        // Reports
+        Route::get('/reports', [App\Http\Controllers\Admin\ReportController::class, 'index'])->name('admin.reports.index');
+        Route::get('/reports/export', [App\Http\Controllers\Admin\ReportController::class, 'export'])->name('admin.reports.export');
+
         // Guardians
         Route::get('/guardians', [App\Http\Controllers\Admin\GuardianController::class, 'index'])->name('admin.guardians.index');
         Route::get('/guardians/create', [App\Http\Controllers\Admin\GuardianController::class, 'create'])->name('admin.guardians.create');
