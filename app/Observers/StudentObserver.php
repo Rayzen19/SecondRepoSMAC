@@ -7,6 +7,7 @@ use App\Models\AcademicYearStrandSection;
 use App\Models\StudentEnrollment;
 use App\Models\Strand;
 use App\Models\Student;
+use Illuminate\Support\Facades\Log;
 
 class StudentObserver
 {
@@ -54,17 +55,39 @@ class StudentObserver
         }
         $currentNumber++;
         $registrationNumber = $prefix . str_pad($currentNumber, 5, '0', STR_PAD_LEFT);
+        // Resolve a valid section assignment if possible
+        $sectionAssignmentId = null;
+        if ($strandId) {
+            $section = AcademicYearStrandSection::where('academic_year_id', $activeYear->id)
+                ->where('strand_id', $strandId)
+                ->orderBy('id')
+                ->first();
+            if ($section) {
+                $sectionAssignmentId = $section->id;
+            }
+        }
+
+        // If the database enforces NOT NULL on academic_year_strand_section_id,
+        // skip auto-enrollment when no section can be resolved to avoid integrity errors.
+        if ($sectionAssignmentId === null) {
+            // Optionally: queue for manual assignment or log
+            Log::warning('Skipped auto-enrollment: no section found for student', [
+                'student_id' => $student->id,
+                'strand_id' => $strandId,
+                'academic_year_id' => $activeYear->id,
+            ]);
+            return;
+        }
 
         $enrollment = StudentEnrollment::create([
             'student_id' => $student->id,
             'strand_id' => $strandId,
             'academic_year_id' => $activeYear->id,
-            'academic_year_strand_section_id' => null, // No automatic section assignment
+            'academic_year_strand_section_id' => $sectionAssignmentId,
             'registration_number' => $registrationNumber,
             'status' => 'enrolled',
         ]);
 
-        // Do not sync subject enrollments until section is assigned
-        // Subject enrollments require a section to be set
+        // Do not sync subject enrollments until further rules are applied
     }
 }
