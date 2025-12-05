@@ -30,8 +30,13 @@ class SmsController extends Controller
             'message' => 'required|string|max:160',
         ]);
 
+        $phone = $this->normalizePhone($request->phone);
+        if (!$phone) {
+            return back()->with('error', 'Invalid phone number format. Use 09XXXXXXXXX or +639XXXXXXXXX.');
+        }
+
         $result = $this->smsService->sendSms(
-            $request->phone,
+            $phone,
             $request->message
         );
 
@@ -72,8 +77,13 @@ class SmsController extends Controller
             return back()->with('error', 'Recipient phone number not found.');
         }
 
+        $phone = $this->normalizePhone($recipient->phone);
+        if (!$phone) {
+            return back()->with('error', 'Recipient phone is invalid. Use 09XXXXXXXXX or +639XXXXXXXXX.');
+        }
+
         $result = $this->smsService->sendSms(
-            $recipient->phone,
+            $phone,
             $request->message
         );
 
@@ -120,11 +130,20 @@ class SmsController extends Controller
             }
         }
 
-        if (empty($phoneNumbers)) {
+        // Normalize and filter phone numbers to E.164 (PH +63)
+        $normalized = [];
+        foreach ($phoneNumbers as $p) {
+            $np = $this->normalizePhone($p);
+            if ($np) {
+                $normalized[] = $np;
+            }
+        }
+
+        if (empty($normalized)) {
             return back()->with('error', 'No valid phone numbers found.');
         }
 
-        $results = $this->smsService->sendBulkSms($phoneNumbers, $request->message);
+        $results = $this->smsService->sendBulkSms($normalized, $request->message);
         
         $successCount = 0;
         foreach ($results as $res) {
@@ -209,5 +228,37 @@ class SmsController extends Controller
             default:
                 return collect();
         }
+    }
+
+    /**
+     * Normalize Philippine mobile numbers to provider-accepted format (+639XXXXXXXXX or 639XXXXXXXXX).
+     * Returns normalized string or null if invalid.
+     */
+    private function normalizePhone($phone)
+    {
+        if (!is_string($phone)) {
+            return null;
+        }
+        $p = trim($phone);
+        // Remove spaces, dashes, parentheses
+        $p = preg_replace('/[\s\-()]/', '', $p);
+
+        // If starts with +63, ensure length
+        if (preg_match('/^\+639\d{9}$/', $p)) {
+            return $p; // already E.164
+        }
+        // If starts with 09, convert to +63
+        if (preg_match('/^09\d{9}$/', $p)) {
+            return '+63' . substr($p, 1); // +639XXXXXXXXX
+        }
+        // If starts with 639...
+        if (preg_match('/^639\d{9}$/', $p)) {
+            return '+' . $p; // +639XXXXXXXXX
+        }
+        // If starts with 9 and has 9 more digits (e.g., 9XXXXXXXXX), add +63
+        if (preg_match('/^9\d{9}$/', $p)) {
+            return '+63' . $p;
+        }
+        return null;
     }
 }
