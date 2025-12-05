@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\AcademicYear;
 use App\Models\AcademicYearStrandSection;
 use App\Models\AcademicYearStrandSubject;
+use App\Mail\GradePublishedNotification;
 use App\Models\Student;
 use App\Models\SubjectEnrollment;
 use App\Models\StudentEnrollment;
@@ -14,6 +15,7 @@ use App\Models\SubjectRecordResult;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Mail;
 
 class ClassRecordController extends Controller
 {
@@ -1246,7 +1248,64 @@ class ClassRecordController extends Controller
         ]);
 
         $status = $assignment->grades_published ? 'published' : 'unpublished';
-        return back()->with('success', "Grades have been {$status} successfully. Students can " . ($assignment->grades_published ? 'now' : 'no longer') . " view their grades.");
+
+        // If publishing now, notify guardians linked to enrolled students
+        if ($assignment->grades_published) {
+            try {
+                // Eager load students and their guardians for this assignment
+                $subjectEnrollments = $assignment->subjectEnrollments()
+                    ->with(['studentEnrollment.student.guardians', 'academicYearStrandSubject.subject', 'studentEnrollment.academicYear'])
+                    ->get();
+
+                $smsEnabled = !empty(config('services.semaphore.api_key'));
+                $smsService = $smsEnabled ? app(\App\Services\SemaphoreSmsService::class) : null;
+
+                foreach ($subjectEnrollments as $se) {
+                    $student = optional($se->studentEnrollment)->student;
+                    if (!$student) { continue; }
+
+                    $subjectName = optional($assignment->subject)->name ?? 'Subject';
+                    $semester = '1st'; // default; if app tracks per term, adjust accordingly
+
+                    // Build common message
+                    $emailMailable = new GradePublishedNotification(
+                        $student->first_name . ' ' . $student->last_name,
+                        $subjectName,
+                        optional($assignment->strand)->name ?? 'Strand',
+                        optional($assignment->academicYear)->name ?? 'School Year',
+                        $semester
+                    );
+
+                    $smsMessage = "SMAC: Grades published for $subjectName. Please log in to view.";
+
+                    // Send to guardians via relationship table
+                    if ($student->guardians && $student->guardians->count() > 0) {
+                        foreach ($student->guardians as $guardian) {
+                            if ($guardian->email && filter_var($guardian->email, FILTER_VALIDATE_EMAIL)) {
+                                try { Mail::to($guardian->email)->send($emailMailable); } catch (\Throwable $e) { Log::warning('Guardian email send failed', ['guardian_id' => $guardian->id, 'error' => $e->getMessage()]); }
+                            }
+                            if ($smsEnabled && $smsService && !empty($guardian->mobile_number)) {
+                                try { $smsService->sendSms($guardian->mobile_number, $smsMessage); } catch (\Throwable $e) { Log::warning('Guardian SMS send failed', ['guardian_number' => $guardian->mobile_number, 'error' => $e->getMessage()]); }
+                            }
+                        }
+                    } else {
+                        Log::info('No guardians linked via pivot for student', ['student_id' => $student->id]);
+                    }
+
+                    // Legacy fields support
+                    if (!empty($student->guardian_email) && filter_var($student->guardian_email, FILTER_VALIDATE_EMAIL)) {
+                        try { Mail::to($student->guardian_email)->send($emailMailable); } catch (\Throwable $e) { Log::warning('Legacy guardian email send failed', ['email' => $student->guardian_email, 'error' => $e->getMessage()]); }
+                    }
+                    if ($smsEnabled && $smsService && !empty($student->guardian_contact)) {
+                        try { $smsService->sendSms($student->guardian_contact, $smsMessage); } catch (\Throwable $e) { Log::warning('Legacy guardian SMS send failed', ['number' => $student->guardian_contact, 'error' => $e->getMessage()]); }
+                    }
+                }
+            } catch (\Throwable $e) {
+                Log::error('Failed to dispatch guardian notifications for grade publication', ['assignment_id' => $assignment->id, 'error' => $e->getMessage()]);
+            }
+        }
+
+        return back()->with('success', "Grades have been {$status} successfully. Students can now view their grades. Guardians have been notified.");
     }
 
     /**
