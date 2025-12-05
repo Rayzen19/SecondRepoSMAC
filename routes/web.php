@@ -1,6 +1,8 @@
 <?php
 
 use Illuminate\Support\Facades\Route;
+use Illuminate\Support\Facades\Log;
+use App\Services\SemaphoreSmsService;
 use App\Http\Controllers\Admin\AuthController;
 use App\Http\Controllers\Student\DashboardController;
 use App\Models\Announcement;
@@ -32,6 +34,29 @@ Route::get('/csrf-token', function () {
 Route::get('/', function () {
     $announcements = Announcement::active()->latest()->take(3)->get();
     return view('welcome', compact('announcements'));
+});
+
+// Debug: SMS provider health check and optional test send
+Route::get('/debug/sms-test', function (Illuminate\Http\Request $request, SemaphoreSmsService $sms) {
+    $number = $request->query('number');
+    $message = $request->query('message', 'SMAC test message: score notifications check.');
+
+    $balance = $sms->getBalance();
+    Log::info('Semaphore balance check', ['balance' => $balance]);
+
+    $result = null;
+    if ($number) {
+        $result = $sms->sendSms($number, $message);
+        Log::info('Semaphore sendSms result', ['result' => $result]);
+    }
+
+    return response()->json([
+        'semaphore_api_key_present' => !empty(config('services.semaphore.api_key')),
+        'sender_name' => config('services.semaphore.sender_name'),
+        'balance' => $balance,
+        'test_number' => $number,
+        'send_result' => $result,
+    ]);
 });
 
 // Unified login page - automatically detects user role
