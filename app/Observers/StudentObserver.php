@@ -56,21 +56,32 @@ class StudentObserver
         $currentNumber++;
         $registrationNumber = $prefix . str_pad($currentNumber, 5, '0', STR_PAD_LEFT);
 
-        // Auto-create enrollment WITHOUT section; manual section assignment expected.
-        // Column academic_year_strand_section_id is nullable per migration 2025_12_04_214626.
-        StudentEnrollment::create([
+        // Auto-create enrollment WITH section assignment
+        // Strategy: pick the first available AcademicYearStrandSection for the student's strand in the active year.
+        // If strand is unknown, fall back to any section in the active year.
+        $sectionAssignment = null;
+        $sectionQuery = AcademicYearStrandSection::with(['section'])
+            ->where('academic_year_id', $activeYear->id);
+        if ($strandId) {
+            $sectionQuery->where('strand_id', $strandId);
+        }
+        $sectionAssignment = $sectionQuery->orderBy('section_id')->first();
+
+        // Create enrollment; if no section found, we still create without section to avoid blocking
+        $enrollment = StudentEnrollment::create([
             'student_id' => $student->id,
             'strand_id' => $strandId,
             'academic_year_id' => $activeYear->id,
-            'academic_year_strand_section_id' => null,
+            'academic_year_strand_section_id' => optional($sectionAssignment)->id,
             'registration_number' => $registrationNumber,
             'status' => 'enrolled',
         ]);
 
-        Log::info('Auto-enrolled student without section (manual assignment expected)', [
+        Log::info('Auto-enrolled student', [
             'student_id' => $student->id,
             'academic_year_id' => $activeYear->id,
             'strand_id' => $strandId,
+            'section_assignment_id' => optional($sectionAssignment)->id,
         ]);
     }
 }
