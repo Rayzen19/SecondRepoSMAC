@@ -36,11 +36,15 @@ class SmsController extends Controller
             'SMAC'
         );
 
-        if ($result) {
+        if ($result && !isset($result['error'])) {
             return back()->with('success', 'Test SMS sent successfully! Check your phone.');
         }
 
-        return back()->with('error', 'Failed to send SMS. Please check your API key and try again.');
+        $errorMsg = is_array($result) && isset($result['error'])
+            ? $result['error']
+            : 'Failed to send SMS. Please check your number and API settings.';
+
+        return back()->with('error', $errorMsg);
     }
 
     public function sendSingle(Request $request)
@@ -63,11 +67,14 @@ class SmsController extends Controller
             'SMAC'
         );
 
-        if ($result) {
+        if ($result && !isset($result['error'])) {
             return back()->with('success', "SMS sent to {$recipient->first_name} {$recipient->last_name}");
         }
 
-        return back()->with('error', 'Failed to send SMS.');
+        $errorMsg = is_array($result) && isset($result['error'])
+            ? $result['error']
+            : 'Failed to send SMS.';
+        return back()->with('error', $errorMsg);
     }
 
     public function sendBulk(Request $request)
@@ -98,7 +105,12 @@ class SmsController extends Controller
 
         $results = $this->smsService->sendBulkSms($phoneNumbers, $request->message, 'SMAC');
         
-        $successCount = count(array_filter($results));
+        $successCount = 0;
+        foreach ($results as $res) {
+            if ($res && !isset($res['error'])) {
+                $successCount++;
+            }
+        }
         $totalCount = count($results);
 
         return back()->with('success', "SMS sent to {$successCount} out of {$totalCount} recipients.");

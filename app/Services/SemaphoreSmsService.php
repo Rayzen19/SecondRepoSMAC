@@ -10,6 +10,7 @@ class SemaphoreSmsService
     protected $apiKey;
     protected $client;
     protected $baseUrl = 'https://api.semaphore.co';
+    protected $balanceTtlSeconds = 60; // cache TTL to avoid 429
 
     public function __construct()
     {
@@ -28,12 +29,21 @@ class SemaphoreSmsService
     public function sendSms($number, $message, $senderId = null)
     {
         try {
+            // Normalize number to PH E.164 where applicable
+            $normalized = $this->normalizePhoneNumber($number);
+            if (!$normalized) {
+                Log::warning('Invalid phone number provided', ['number' => $number]);
+                return [
+                    'error' => 'Invalid phone number format. Use 09XXXXXXXXX or +639XXXXXXXXX.',
+                ];
+            }
+
             $response = $this->client->post('/api/v4/messages', [
                 'form_params' => [
                     'apikey' => $this->apiKey,
-                    'number' => $number,
+                    'number' => $normalized,
                     'message' => $message,
-                    'sendername' => $senderId ?? config('app.name'),
+                    'sendername' => $senderId ?? config('services.semaphore.sender_name') ?? config('app.name'),
                 ]
             ]);
 
@@ -61,6 +71,15 @@ class SemaphoreSmsService
     public function getBalance()
     {
         try {
+            // Cache balance to reduce rate limit hits
+            $cacheKey = 'semaphore_balance_cache';
+            if (function_exists('cache')) {
+                $cached = cache()->get($cacheKey);
+                if ($cached) {
+                    return $cached;
+                }
+            }
+
             $response = $this->client->get('/api/v4/account', [
                 'query' => ['apikey' => $this->apiKey],
                 'http_errors' => false
@@ -72,11 +91,15 @@ class SemaphoreSmsService
             // Handle different HTTP status codes
             switch ($statusCode) {
                 case 200:
+                    // Store in cache
+                    if (function_exists('cache')) {
+                        cache()->put($cacheKey, $result, $this->balanceTtlSeconds);
+                    }
                     return $result;
                     
                 case 429:
                     Log::warning('Semaphore API Rate Limit Hit');
-                    return ['error' => 'Rate limit exceeded. Please wait a few seconds and try again.', 'status_code' => 429];
+                    return ['error' => 'Rate limit exceeded. Please wait 60 seconds and try again.', 'status_code' => 429];
                     
                 case 401:
                 case 403:
@@ -94,6 +117,39 @@ class SemaphoreSmsService
             Log::error('Semaphore Balance Check Error: ' . $e->getMessage());
             return ['error' => $e->getMessage(), 'status_code' => 0];
         }
+    }
+
+    /**
+     * Normalize PH mobile numbers to E.164 (+639XXXXXXXXX)
+     * Accepts 09XXXXXXXXX, 9XXXXXXXXX, +639XXXXXXXXX, 639XXXXXXXXX
+     * Returns null if invalid
+     */
+    private function normalizePhoneNumber(?string $number): ?string
+    {
+        if (!$number) return null;
+        $digits = preg_replace('/\D+/', '', $number);
+
+        // Handle leading 0 (e.g., 09XXXXXXXXX -> +639XXXXXXXXX)
+        if (preg_match('/^09(\d{9})$/', $digits, $m)) {
+            return '+639' . $m[1];
+        }
+        // Handle without leading 0 (e.g., 9XXXXXXXXX -> +639XXXXXXXXX)
+        if (preg_match('/^9(\d{9})$/', $digits, $m)) {
+            return '+639' . $m[1];
+        }
+        // Handle 639XXXXXXXXX -> +639XXXXXXXXX
+        if (preg_match('/^639(\d{9})$/', $digits, $m)) {
+            return '+639' . $m[1];
+        }
+        // Handle already E.164 +639XXXXXXXXX
+        if (preg_match('/^\+?639(\d{9})$/', $number)) {
+            return strpos($number, '+') === 0 ? $number : ('+' . $number);
+        }
+        // Allow other E.164 numbers if they look valid (e.g., +1XXXXXXXXXX)
+        if (preg_match('/^\+\d{10,15}$/', $number)) {
+            return $number;
+        }
+        return null;
     }
 
     /**
