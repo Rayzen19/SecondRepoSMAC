@@ -44,9 +44,11 @@ class SemaphoreSmsService
                     'number' => $normalized,
                     'message' => $message,
                     'sendername' => $senderId ?? config('services.semaphore.sender_name') ?? config('app.name'),
-                ]
+                ],
+                'http_errors' => false
             ]);
 
+            $statusCode = $response->getStatusCode();
             $result = json_decode($response->getBody(), true);
             
             if (isset($result[0]['status']) && $result[0]['status'] === 'Queued') {
@@ -54,8 +56,26 @@ class SemaphoreSmsService
                 return $result;
             }
             
-            Log::warning('SMS sending issue', ['response' => $result]);
-            return $result;
+            // Extract a meaningful error message
+            $errorMessage = 'Failed to send SMS.';
+            if (is_array($result)) {
+                // Common Semaphore validation/error patterns
+                if (isset($result[0]['status']) && $result[0]['status'] === 'Failed' && isset($result[0]['message'])) {
+                    $errorMessage = $result[0]['message'];
+                } elseif (isset($result[0]['error'])) {
+                    $errorMessage = $result[0]['error'];
+                } elseif (isset($result['error'])) {
+                    $errorMessage = is_string($result['error']) ? $result['error'] : json_encode($result['error']);
+                } elseif (isset($result[0]['status']) && isset($result[0]['status_message'])) {
+                    $errorMessage = $result[0]['status_message'];
+                } elseif (isset($result['senderName'])) {
+                    // e.g. {"senderName":"The senderName supplied is not valid"}
+                    $errorMessage = 'Invalid sender name: ' . $result['senderName'];
+                }
+            }
+
+            Log::warning('SMS sending issue', ['status' => $statusCode, 'response' => $result, 'error' => $errorMessage]);
+            return ['error' => $errorMessage, 'status_code' => $statusCode, 'raw' => $result];
 
         } catch (\Exception $e) {
             Log::error('Semaphore SMS Error: ' . $e->getMessage());
