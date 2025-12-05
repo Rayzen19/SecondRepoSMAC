@@ -32,8 +32,7 @@ class SmsController extends Controller
 
         $result = $this->smsService->sendSms(
             $request->phone,
-            $request->message,
-            'SMAC'
+            $request->message
         );
 
         if ($result && !isset($result['error'])) {
@@ -63,8 +62,7 @@ class SmsController extends Controller
 
         $result = $this->smsService->sendSms(
             $recipient->phone,
-            $request->message,
-            'SMAC'
+            $request->message
         );
 
         if ($result && !isset($result['error'])) {
@@ -103,7 +101,7 @@ class SmsController extends Controller
             return back()->with('error', 'No valid phone numbers found.');
         }
 
-        $results = $this->smsService->sendBulkSms($phoneNumbers, $request->message, 'SMAC');
+        $results = $this->smsService->sendBulkSms($phoneNumbers, $request->message);
         
         $successCount = 0;
         foreach ($results as $res) {

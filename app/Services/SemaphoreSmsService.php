@@ -51,8 +51,11 @@ class SemaphoreSmsService
             $statusCode = $response->getStatusCode();
             $result = json_decode($response->getBody(), true);
             
-            if (isset($result[0]['status']) && $result[0]['status'] === 'Queued') {
-                Log::info('SMS sent successfully', ['response' => $result]);
+            // Treat successful provider acceptance as success
+            $statusField = $result[0]['status'] ?? null;
+            $hasMessageId = isset($result[0]['message_id']);
+            if ($statusCode === 200 && ($statusField === 'Queued' || $statusField === 'Pending' || $statusField === 'Sent' || $hasMessageId)) {
+                Log::info('SMS accepted by provider', ['status' => $statusField, 'response' => $result]);
                 return $result;
             }
             
