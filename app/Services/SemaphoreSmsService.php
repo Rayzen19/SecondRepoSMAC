@@ -119,7 +119,7 @@ class SemaphoreSmsService
 
         } catch (\Exception $e) {
             Log::error('Semaphore SMS Error: ' . $e->getMessage());
-            return false;
+            return ['error' => 'SMS provider error: ' . $e->getMessage(), 'status_code' => 0];
         }
     }
 
