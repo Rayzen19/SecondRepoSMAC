@@ -38,13 +38,29 @@ class SemaphoreSmsService
                 ];
             }
 
+            // Validate sender name: Semaphore requires up to 11 alphanumeric chars
+            $sender = $senderId ?? (config('services.semaphore.sender_name') ?? config('app.name'));
+            if (is_string($sender)) {
+                // Remove non-alphanumeric and trim length to 11
+                $sanitized = preg_replace('/[^A-Za-z0-9]/', '', $sender) ?: $sender;
+                if (strlen($sanitized) > 11) {
+                    $sanitized = substr($sanitized, 0, 11);
+                }
+            } else {
+                $sanitized = null;
+            }
+
+            $form = [
+                'apikey' => $this->apiKey,
+                'number' => $normalized,
+                'message' => $message,
+            ];
+            if (!empty($sanitized)) {
+                $form['sendername'] = $sanitized;
+            }
+
             $response = $this->client->post('/api/v4/messages', [
-                'form_params' => [
-                    'apikey' => $this->apiKey,
-                    'number' => $normalized,
-                    'message' => $message,
-                    'sendername' => $senderId ?? config('services.semaphore.sender_name') ?? config('app.name'),
-                ],
+                'form_params' => $form,
                 'http_errors' => false
             ]);
 
@@ -71,9 +87,30 @@ class SemaphoreSmsService
                     $errorMessage = is_string($result['error']) ? $result['error'] : json_encode($result['error']);
                 } elseif (isset($result[0]['status']) && isset($result[0]['status_message'])) {
                     $errorMessage = $result[0]['status_message'];
-                } elseif (isset($result['senderName'])) {
-                    // e.g. {"senderName":"The senderName supplied is not valid"}
-                    $errorMessage = 'Invalid sender name: ' . $result['senderName'];
+                } elseif (isset($result['sendername'])) {
+                    // e.g. {"sendername":["The selected sendername is invalid."]}
+                    $err = $result['sendername'];
+                    if (is_array($err)) {
+                        $errorMessage = 'Invalid sender name: ' . implode(', ', $err);
+                    } else {
+                        $errorMessage = 'Invalid sender name: ' . $err;
+                    }
+                } elseif (isset($result['number'])) {
+                    // e.g. {"number":["The number format is invalid."]}
+                    $err = $result['number'];
+                    if (is_array($err)) {
+                        $errorMessage = 'Invalid number: ' . implode(', ', $err);
+                    } else {
+                        $errorMessage = 'Invalid number: ' . $err;
+                    }
+                } elseif (isset($result['message'])) {
+                    // e.g. {"message":["The message may not be greater than 160 characters."]}
+                    $err = $result['message'];
+                    if (is_array($err)) {
+                        $errorMessage = implode(', ', $err);
+                    } else {
+                        $errorMessage = (string)$err;
+                    }
                 }
             }
 
