@@ -311,6 +311,10 @@ class ScoresController extends Controller
 
         $savedCount = 0;
         $errors = [];
+        $notificationsSummary = [
+            'emails_sent' => 0,
+            'sms_sent' => 0,
+        ];
 
         foreach ($validated['scores'] as $scoreData) {
             try {
@@ -366,8 +370,12 @@ class ScoresController extends Controller
 
                 // Send email notification ONLY if this is a new score or the score was changed
                 if ($isNewScore || $isScoreChanged) {
-                    Log::info("Score was " . ($isNewScore ? 'newly added' : 'changed') . " - sending email notification");
-                    $this->sendScoreNotification($scoreData['student_id'], $assessment, $scoreData['raw_score'], $scoreData['max_score'], $assignment);
+                    Log::info("Score was " . ($isNewScore ? 'newly added' : 'changed') . " - sending notifications");
+                    $result = $this->sendScoreNotification($scoreData['student_id'], $assessment, $scoreData['raw_score'], $scoreData['max_score'], $assignment);
+                    if (is_array($result)) {
+                        $notificationsSummary['emails_sent'] += $result['emails_sent'] ?? 0;
+                        $notificationsSummary['sms_sent'] += $result['sms_sent'] ?? 0;
+                    }
                 } else {
                     Log::info("Score unchanged for student {$scoreData['student_id']} - skipping email notification");
                 }
@@ -382,7 +390,8 @@ class ScoresController extends Controller
             return response()->json([
                 'success' => true, 
                 'message' => "Successfully saved {$savedCount} score(s)",
-                'errors' => $errors
+                'errors' => $errors,
+                'notifications' => $notificationsSummary,
             ]);
         } else {
             return response()->json([
@@ -428,6 +437,8 @@ class ScoresController extends Controller
             $dateGiven = $assessment->date_given ? date('F d, Y', strtotime($assessment->date_given)) : 'N/A';
 
             // Send email to all guardians linked via guardian_students table
+            $emailsSent = 0;
+            $smsSent = 0;
             if ($student->guardians && $student->guardians->count() > 0) {
                 Log::info("Found {$student->guardians->count()} guardian(s) for student ID: {$studentId}");
                 
@@ -459,6 +470,7 @@ class ScoresController extends Controller
                         );
                         
                         Log::info("✅ Email sent successfully to {$guardian->email}");
+                        $emailsSent++;
                     } else {
                         Log::warning("⚠️ Guardian {$guardian->id} has invalid or missing email for student {$studentId}");
                     }
@@ -469,6 +481,7 @@ class ScoresController extends Controller
                         $result = $smsService->sendSms($guardian->mobile_number, $smsMessage);
                         if (is_array($result) && empty($result['error'])) {
                             Log::info("📱 SMS queued to guardian {$guardian->mobile_number}", ['response' => $result]);
+                            $smsSent++;
                         } else {
                             Log::warning("SMS failed for guardian {$guardian->mobile_number}", ['response' => $result]);
                         }
@@ -495,6 +508,7 @@ class ScoresController extends Controller
                         $dateGiven
                     )
                 );
+                $emailsSent++;
             }
 
             // Also send SMS to legacy guardian_contact if present and SMS enabled
@@ -503,13 +517,16 @@ class ScoresController extends Controller
                 $result = $smsService->sendSms($student->guardian_contact, $smsMessage);
                 if (is_array($result) && empty($result['error'])) {
                     Log::info("📱 SMS queued to legacy guardian contact {$student->guardian_contact}", ['response' => $result]);
+                    $smsSent++;
                 } else {
                     Log::warning("SMS failed for legacy guardian contact {$student->guardian_contact}", ['response' => $result]);
                 }
             }
+            return ['emails_sent' => $emailsSent, 'sms_sent' => $smsSent];
         } catch (\Exception $e) {
             // Log error but don't fail the score save operation
             Log::error('Failed to send score notification for student ID ' . $studentId . ': ' . $e->getMessage());
+            return ['emails_sent' => 0, 'sms_sent' => 0];
         }
     }
 }

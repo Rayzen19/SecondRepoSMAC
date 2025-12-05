@@ -249,7 +249,9 @@ document.addEventListener('DOMContentLoaded', function() {
             .then(response => response.json())
             .then(data => {
                 if (data.success) {
-                    alert('Scores saved successfully!');
+                    const notif = data.notifications || { emails_sent: 0, sms_sent: 0 };
+                    const msg = `Scores saved successfully!\nEmails sent: ${notif.emails_sent}\nText messages sent: ${notif.sms_sent}`;
+                    alert(msg);
                     location.reload();
                 } else {
                     alert('Error: ' + (data.message || 'Failed to save scores'));
