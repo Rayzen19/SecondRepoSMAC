@@ -27,7 +27,7 @@ class SmsController extends Controller
     {
         $request->validate([
             'phone' => 'required|string',
-            'message' => 'required|string|max:160',
+            'message' => 'required|string|max:480',
         ]);
 
         $phone = $this->normalizePhone($request->phone);
@@ -35,31 +35,36 @@ class SmsController extends Controller
             return back()->with('error', 'Invalid phone number format. Use 09XXXXXXXXX or +639XXXXXXXXX.');
         }
 
-        $result = $this->smsService->sendSms(
-            $phone,
-            $request->message
-        );
+        $result = $this->smsService->sendSms($phone, $request->message);
 
-        // Interpret provider response more robustly
-        $isSuccess = false;
-        if (is_array($result)) {
-            // Semaphore returns an array of message objects when successful
-            $first = $result[0] ?? [];
-            $status = $first['status'] ?? null;
-            $hasId = isset($first['message_id']);
-            $isSuccess = ($status === 'Queued' || $status === 'Pending' || $status === 'Sent' || $hasId) && !isset($result['error']);
-        } elseif ($result === true) {
-            $isSuccess = true;
+        // When multipart, service returns array of segment results
+        $segments = is_array($result) ? $result : [$result];
+        $sent = 0; $failed = 0; $errors = [];
+        foreach ($segments as $seg) {
+            if (is_array($seg) && !isset($seg['error'])) {
+                $first = $seg[0] ?? [];
+                $status = $first['status'] ?? null;
+                $hasId = isset($first['message_id']);
+                if ($status === 'Queued' || $status === 'Pending' || $status === 'Sent' || $hasId) {
+                    $sent++;
+                } else {
+                    $failed++;
+                    $errors[] = $this->extractError($seg);
+                }
+            } else {
+                $failed++;
+                $errors[] = is_array($seg) && isset($seg['error']) ? $seg['error'] : 'Unknown provider error';
+            }
         }
 
-        if ($isSuccess) {
-            return back()->with('success', 'Test SMS sent successfully! Check your phone.');
+        if ($sent > 0 && $failed === 0) {
+            return back()->with('success', "Test SMS sent successfully (segments: {$sent}).");
         }
-
-        $errorMsg = is_array($result) && isset($result['error'])
-            ? $result['error']
-            : 'Failed to send SMS. Please check your number and API settings.';
-
+        if ($sent > 0 && $failed > 0) {
+            return back()->with('success', "Sent {$sent} segment(s), {$failed} failed: " . implode('; ', array_filter($errors)));
+        }
+        // All failed
+        $errorMsg = !empty($errors) ? implode('; ', array_filter($errors)) : 'Failed to send SMS. Please check your number and API settings.';
         return back()->with('error', $errorMsg);
     }
 
@@ -68,7 +73,7 @@ class SmsController extends Controller
         $request->validate([
             'recipient_type' => 'required|in:teacher,student,guardian',
             'recipient_id' => 'required|integer',
-            'message' => 'required|string|max:160',
+            'message' => 'required|string|max:480',
         ]);
 
         $recipient = $this->getRecipient($request->recipient_type, $request->recipient_id);
@@ -82,29 +87,34 @@ class SmsController extends Controller
             return back()->with('error', 'Recipient phone is invalid. Use 09XXXXXXXXX or +639XXXXXXXXX.');
         }
 
-        $result = $this->smsService->sendSms(
-            $phone,
-            $request->message
-        );
+        $result = $this->smsService->sendSms($phone, $request->message);
 
-        // Interpret provider response more robustly
-        $isSuccess = false;
-        if (is_array($result)) {
-            $first = $result[0] ?? [];
-            $status = $first['status'] ?? null;
-            $hasId = isset($first['message_id']);
-            $isSuccess = ($status === 'Queued' || $status === 'Pending' || $status === 'Sent' || $hasId) && !isset($result['error']);
-        } elseif ($result === true) {
-            $isSuccess = true;
+        $segments = is_array($result) ? $result : [$result];
+        $sent = 0; $failed = 0; $errors = [];
+        foreach ($segments as $seg) {
+            if (is_array($seg) && !isset($seg['error'])) {
+                $first = $seg[0] ?? [];
+                $status = $first['status'] ?? null;
+                $hasId = isset($first['message_id']);
+                if ($status === 'Queued' || $status === 'Pending' || $status === 'Sent' || $hasId) {
+                    $sent++;
+                } else {
+                    $failed++;
+                    $errors[] = $this->extractError($seg);
+                }
+            } else {
+                $failed++;
+                $errors[] = is_array($seg) && isset($seg['error']) ? $seg['error'] : 'Unknown provider error';
+            }
         }
 
-        if ($isSuccess) {
-            return back()->with('success', "SMS sent to {$recipient->first_name} {$recipient->last_name}");
+        if ($sent > 0 && $failed === 0) {
+            return back()->with('success', "SMS sent to {$recipient->first_name} {$recipient->last_name} (segments: {$sent}).");
         }
-
-        $errorMsg = is_array($result) && isset($result['error'])
-            ? $result['error']
-            : 'Failed to send SMS.';
+        if ($sent > 0 && $failed > 0) {
+            return back()->with('success', "Sent {$sent} segment(s), {$failed} failed: " . implode('; ', array_filter($errors)));
+        }
+        $errorMsg = !empty($errors) ? implode('; ', array_filter($errors)) : 'Failed to send SMS.';
         return back()->with('error', $errorMsg);
     }
 
@@ -112,7 +122,7 @@ class SmsController extends Controller
     {
         $request->validate([
             'recipient_type' => 'required|in:teachers,students,guardians,custom',
-            'message' => 'required|string|max:160',
+            'message' => 'required|string|max:480',
             'phone_numbers' => 'required_if:recipient_type,custom|array',
             'phone_numbers.*' => 'string',
         ]);
@@ -145,15 +155,55 @@ class SmsController extends Controller
 
         $results = $this->smsService->sendBulkSms($normalized, $request->message);
         
-        $successCount = 0;
-        foreach ($results as $res) {
-            if ($res && !isset($res['error'])) {
-                $successCount++;
+        $successCount = 0; $totalCount = 0;
+        foreach ($results as $perNumber) {
+            $segments = is_array($perNumber) ? $perNumber : [$perNumber];
+            $totalCount++;
+            $anySuccess = false;
+            foreach ($segments as $seg) {
+                if (is_array($seg) && !isset($seg['error'])) {
+                    $first = $seg[0] ?? [];
+                    $status = $first['status'] ?? null;
+                    $hasId = isset($first['message_id']);
+                    if ($status === 'Queued' || $status === 'Pending' || $status === 'Sent' || $hasId) {
+                        $anySuccess = true; break;
+                    }
+                }
             }
+            if ($anySuccess) $successCount++;
         }
-        $totalCount = count($results);
 
         return back()->with('success', "SMS sent to {$successCount} out of {$totalCount} recipients.");
+    }
+
+    private function extractError($result): string
+    {
+        if (!is_array($result)) return 'Unknown provider error';
+        if (isset($result[0]['status']) && $result[0]['status'] === 'Failed' && isset($result[0]['message'])) {
+            return (string)$result[0]['message'];
+        }
+        if (isset($result[0]['error'])) {
+            return (string)$result[0]['error'];
+        }
+        if (isset($result['error'])) {
+            return is_string($result['error']) ? $result['error'] : json_encode($result['error']);
+        }
+        if (isset($result[0]['status']) && isset($result[0]['status_message'])) {
+            return (string)$result[0]['status_message'];
+        }
+        if (isset($result['number'])) {
+            $err = $result['number'];
+            return is_array($err) ? implode(', ', $err) : (string)$err;
+        }
+        if (isset($result['message'])) {
+            $err = $result['message'];
+            return is_array($err) ? implode(', ', $err) : (string)$err;
+        }
+        if (isset($result['sendername'])) {
+            $err = $result['sendername'];
+            return is_array($err) ? ('Invalid sender name: ' . implode(', ', $err)) : ('Invalid sender name: ' . $err);
+        }
+        return 'Unknown provider error';
     }
 
     public function getBalance()
