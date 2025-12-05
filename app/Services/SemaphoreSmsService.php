@@ -50,72 +50,47 @@ class SemaphoreSmsService
                 $sanitized = null;
             }
 
-            $form = [
-                'apikey' => $this->apiKey,
-                'number' => $normalized,
-                'message' => $message,
-            ];
-            if (!empty($sanitized)) {
-                $form['sendername'] = $sanitized;
+            // Split messages into 160-char parts and send sequentially
+            $segments = [];
+            $len = mb_strlen($message);
+            for ($i = 0; $i < $len; $i += 160) {
+                $segments[] = mb_substr($message, $i, 160);
+            }
+            if (empty($segments)) {
+                $segments = [''];
             }
 
-            $response = $this->client->post('/api/v4/messages', [
-                'form_params' => $form,
-                'http_errors' => false
-            ]);
+            $allResults = [];
+            foreach ($segments as $idx => $seg) {
+                $form = [
+                    'apikey' => $this->apiKey,
+                    'number' => $normalized,
+                    'message' => $seg,
+                ];
+                if (!empty($sanitized)) {
+                    $form['sendername'] = $sanitized;
+                }
 
-            $statusCode = $response->getStatusCode();
-            $result = json_decode($response->getBody(), true);
-            
-            // Treat successful provider acceptance as success
-            $statusField = $result[0]['status'] ?? null;
-            $hasMessageId = isset($result[0]['message_id']);
-            if ($statusCode === 200 && ($statusField === 'Queued' || $statusField === 'Pending' || $statusField === 'Sent' || $hasMessageId)) {
-                Log::info('SMS accepted by provider', ['status' => $statusField, 'response' => $result]);
-                return $result;
-            }
-            
-            // Extract a meaningful error message
-            $errorMessage = 'Failed to send SMS.';
-            if (is_array($result)) {
-                // Common Semaphore validation/error patterns
-                if (isset($result[0]['status']) && $result[0]['status'] === 'Failed' && isset($result[0]['message'])) {
-                    $errorMessage = $result[0]['message'];
-                } elseif (isset($result[0]['error'])) {
-                    $errorMessage = $result[0]['error'];
-                } elseif (isset($result['error'])) {
-                    $errorMessage = is_string($result['error']) ? $result['error'] : json_encode($result['error']);
-                } elseif (isset($result[0]['status']) && isset($result[0]['status_message'])) {
-                    $errorMessage = $result[0]['status_message'];
-                } elseif (isset($result['sendername'])) {
-                    // e.g. {"sendername":["The selected sendername is invalid."]}
-                    $err = $result['sendername'];
-                    if (is_array($err)) {
-                        $errorMessage = 'Invalid sender name: ' . implode(', ', $err);
-                    } else {
-                        $errorMessage = 'Invalid sender name: ' . $err;
-                    }
-                } elseif (isset($result['number'])) {
-                    // e.g. {"number":["The number format is invalid."]}
-                    $err = $result['number'];
-                    if (is_array($err)) {
-                        $errorMessage = 'Invalid number: ' . implode(', ', $err);
-                    } else {
-                        $errorMessage = 'Invalid number: ' . $err;
-                    }
-                } elseif (isset($result['message'])) {
-                    // e.g. {"message":["The message may not be greater than 160 characters."]}
-                    $err = $result['message'];
-                    if (is_array($err)) {
-                        $errorMessage = implode(', ', $err);
-                    } else {
-                        $errorMessage = (string)$err;
-                    }
+                $response = $this->client->post('/api/v4/messages', [
+                    'form_params' => $form,
+                    'http_errors' => false
+                ]);
+
+                $statusCode = $response->getStatusCode();
+                $result = json_decode($response->getBody(), true);
+                $allResults[] = $result;
+
+                $statusField = $result[0]['status'] ?? null;
+                $hasMessageId = isset($result[0]['message_id']);
+                if ($statusCode === 200 && ($statusField === 'Queued' || $statusField === 'Pending' || $statusField === 'Sent' || $hasMessageId)) {
+                    Log::info('SMS segment accepted by provider', ['segment' => $idx + 1, 'status' => $statusField, 'response' => $result]);
+                } else {
+                    $errorMessage = $this->extractErrorMessage($result) ?? 'Failed to send SMS.';
+                    Log::warning('SMS sending issue', ['segment' => $idx + 1, 'status' => $statusCode, 'response' => $result, 'error' => $errorMessage]);
                 }
             }
 
-            Log::warning('SMS sending issue', ['status' => $statusCode, 'response' => $result, 'error' => $errorMessage]);
-            return ['error' => $errorMessage, 'status_code' => $statusCode, 'raw' => $result];
+            return $allResults;
 
         } catch (\Exception $e) {
             Log::error('Semaphore SMS Error: ' . $e->getMessage());
@@ -254,5 +229,35 @@ class SemaphoreSmsService
         }
         
         return $results;
+    }
+
+    private function extractErrorMessage($result): ?string
+    {
+        if (!is_array($result)) return null;
+        if (isset($result[0]['status']) && $result[0]['status'] === 'Failed' && isset($result[0]['message'])) {
+            return $result[0]['message'];
+        }
+        if (isset($result[0]['error'])) {
+            return $result[0]['error'];
+        }
+        if (isset($result['error'])) {
+            return is_string($result['error']) ? $result['error'] : json_encode($result['error']);
+        }
+        if (isset($result[0]['status']) && isset($result[0]['status_message'])) {
+            return $result[0]['status_message'];
+        }
+        if (isset($result['sendername'])) {
+            $err = $result['sendername'];
+            return is_array($err) ? ('Invalid sender name: ' . implode(', ', $err)) : ('Invalid sender name: ' . $err);
+        }
+        if (isset($result['number'])) {
+            $err = $result['number'];
+            return is_array($err) ? ('Invalid number: ' . implode(', ', $err)) : ('Invalid number: ' . $err);
+        }
+        if (isset($result['message'])) {
+            $err = $result['message'];
+            return is_array($err) ? implode(', ', $err) : (string)$err;
+        }
+        return null;
     }
 }
