@@ -399,6 +399,8 @@ class ScoresController extends Controller
     private function sendScoreNotification($studentId, $assessment, $rawScore, $maxScore, $assignment)
     {
         try {
+            $smsEnabled = !empty(config('services.semaphore.api_key'));
+            $smsService = $smsEnabled ? app(\App\Services\SemaphoreSmsService::class) : null;
             // Get student with fresh guardians relationship - ensure we're getting the correct student
             $student = Student::with(['guardians' => function($query) {
                 $query->whereNull('guardian_students.deleted_at');
@@ -460,6 +462,17 @@ class ScoresController extends Controller
                     } else {
                         Log::warning("⚠️ Guardian {$guardian->id} has invalid or missing email for student {$studentId}");
                     }
+
+                    // Send SMS if enabled and guardian has mobile_number
+                    if ($smsEnabled && !empty($guardian->mobile_number)) {
+                        $smsMessage = "SMAC: New score for {$studentName} - {$subjectName} ({$assessmentType} {$assessmentName}) = {$rawScore}/{$maxScore}. AY {$academicYearName}, {$term}.";
+                        $result = $smsService->sendSms($guardian->mobile_number, $smsMessage);
+                        if (is_array($result) && empty($result['error'])) {
+                            Log::info("📱 SMS queued to guardian {$guardian->mobile_number}", ['response' => $result]);
+                        } else {
+                            Log::warning("SMS failed for guardian {$guardian->mobile_number}", ['response' => $result]);
+                        }
+                    }
                 }
             } else {
                 Log::info("No guardians found in guardians relationship for student ID: {$studentId}");
@@ -482,6 +495,17 @@ class ScoresController extends Controller
                         $dateGiven
                     )
                 );
+            }
+
+            // Also send SMS to legacy guardian_contact if present and SMS enabled
+            if ($smsEnabled && !empty($student->guardian_contact)) {
+                $smsMessage = "SMAC: New score for {$studentName} - {$subjectName} ({$assessmentType} {$assessmentName}) = {$rawScore}/{$maxScore}. AY {$academicYearName}, {$term}.";
+                $result = $smsService->sendSms($student->guardian_contact, $smsMessage);
+                if (is_array($result) && empty($result['error'])) {
+                    Log::info("📱 SMS queued to legacy guardian contact {$student->guardian_contact}", ['response' => $result]);
+                } else {
+                    Log::warning("SMS failed for legacy guardian contact {$student->guardian_contact}", ['response' => $result]);
+                }
             }
         } catch (\Exception $e) {
             // Log error but don't fail the score save operation
