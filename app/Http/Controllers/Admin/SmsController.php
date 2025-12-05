@@ -35,7 +35,19 @@ class SmsController extends Controller
             $request->message
         );
 
-        if ($result && !isset($result['error'])) {
+        // Interpret provider response more robustly
+        $isSuccess = false;
+        if (is_array($result)) {
+            // Semaphore returns an array of message objects when successful
+            $first = $result[0] ?? [];
+            $status = $first['status'] ?? null;
+            $hasId = isset($first['message_id']);
+            $isSuccess = ($status === 'Queued' || $status === 'Pending' || $status === 'Sent' || $hasId) && !isset($result['error']);
+        } elseif ($result === true) {
+            $isSuccess = true;
+        }
+
+        if ($isSuccess) {
             return back()->with('success', 'Test SMS sent successfully! Check your phone.');
         }
 
@@ -65,7 +77,18 @@ class SmsController extends Controller
             $request->message
         );
 
-        if ($result && !isset($result['error'])) {
+        // Interpret provider response more robustly
+        $isSuccess = false;
+        if (is_array($result)) {
+            $first = $result[0] ?? [];
+            $status = $first['status'] ?? null;
+            $hasId = isset($first['message_id']);
+            $isSuccess = ($status === 'Queued' || $status === 'Pending' || $status === 'Sent' || $hasId) && !isset($result['error']);
+        } elseif ($result === true) {
+            $isSuccess = true;
+        }
+
+        if ($isSuccess) {
             return back()->with('success', "SMS sent to {$recipient->first_name} {$recipient->last_name}");
         }
 
