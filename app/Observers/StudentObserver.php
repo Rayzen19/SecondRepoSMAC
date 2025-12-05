@@ -31,7 +31,7 @@ class StudentObserver
             return;
         }
 
-        // Try to resolve strand from student's program
+        // Try to resolve strand from student's program (no section assignment)
         $strandId = null;
         if (!empty($student->program)) {
             $strand = Strand::where('code', $student->program)->first();
@@ -55,39 +55,21 @@ class StudentObserver
         }
         $currentNumber++;
         $registrationNumber = $prefix . str_pad($currentNumber, 5, '0', STR_PAD_LEFT);
-        // Resolve a valid section assignment if possible
-        $sectionAssignmentId = null;
-        if ($strandId) {
-            $section = AcademicYearStrandSection::where('academic_year_id', $activeYear->id)
-                ->where('strand_id', $strandId)
-                ->orderBy('id')
-                ->first();
-            if ($section) {
-                $sectionAssignmentId = $section->id;
-            }
-        }
 
-        // If the database enforces NOT NULL on academic_year_strand_section_id,
-        // skip auto-enrollment when no section can be resolved to avoid integrity errors.
-        if ($sectionAssignmentId === null) {
-            // Optionally: queue for manual assignment or log
-            Log::warning('Skipped auto-enrollment: no section found for student', [
-                'student_id' => $student->id,
-                'strand_id' => $strandId,
-                'academic_year_id' => $activeYear->id,
-            ]);
-            return;
-        }
-
-        $enrollment = StudentEnrollment::create([
+        // Create enrollment WITHOUT section; section will be assigned manually
+        StudentEnrollment::create([
             'student_id' => $student->id,
             'strand_id' => $strandId,
             'academic_year_id' => $activeYear->id,
-            'academic_year_strand_section_id' => $sectionAssignmentId,
+            'academic_year_strand_section_id' => null,
             'registration_number' => $registrationNumber,
             'status' => 'enrolled',
         ]);
 
-        // Do not sync subject enrollments until further rules are applied
+        Log::info('Auto-enrolled student without section (manual assignment expected)', [
+            'student_id' => $student->id,
+            'academic_year_id' => $activeYear->id,
+            'strand_id' => $strandId,
+        ]);
     }
 }

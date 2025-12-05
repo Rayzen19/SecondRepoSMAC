@@ -76,23 +76,26 @@ class StudentEnrollmentController extends Controller
             'student_id' => ['required', 'exists:students,id'],
             'strand_id' => ['nullable', 'exists:strands,id'],
             'academic_year_id' => ['required', 'exists:academic_years,id'],
-            'academic_year_strand_section_id' => ['required', 'exists:academic_year_strand_sections,id'],
+            // Make section assignment optional on creation
+            'academic_year_strand_section_id' => ['nullable', 'exists:academic_year_strand_sections,id'],
             'status' => ['required', Rule::in(['enrolled', 'dropped', 'completed'])],
         ]);
 
-        // Check section capacity (maximum 30 students per section)
-        $maxStudentsPerSection = 30;
-        $currentCount = StudentEnrollment::where('academic_year_strand_section_id', $data['academic_year_strand_section_id'])
-            ->where('academic_year_id', $data['academic_year_id'])
-            ->count();
-        
-        if ($currentCount >= $maxStudentsPerSection) {
-            $section = AcademicYearStrandSection::with('section')->find($data['academic_year_strand_section_id']);
-            $sectionName = $section && $section->section ? "{$section->section->grade} {$section->section->name}" : "this section";
-            
-            return redirect()->back()
-                ->withInput()
-                ->with('error', "Cannot enroll student: {$sectionName} is full (maximum {$maxStudentsPerSection} students). Current enrollment: {$currentCount}/{$maxStudentsPerSection}");
+        // If a section is selected, enforce capacity (maximum 30 students per section)
+        if (!empty($data['academic_year_strand_section_id'])) {
+            $maxStudentsPerSection = 30;
+            $currentCount = StudentEnrollment::where('academic_year_strand_section_id', $data['academic_year_strand_section_id'])
+                ->where('academic_year_id', $data['academic_year_id'])
+                ->count();
+
+            if ($currentCount >= $maxStudentsPerSection) {
+                $section = AcademicYearStrandSection::with('section')->find($data['academic_year_strand_section_id']);
+                $sectionName = $section && $section->section ? "{$section->section->grade} {$section->section->name}" : "this section";
+
+                return redirect()->back()
+                    ->withInput()
+                    ->with('error', "Cannot enroll student: {$sectionName} is full (maximum {$maxStudentsPerSection} students). Current enrollment: {$currentCount}/{$maxStudentsPerSection}");
+            }
         }
 
         // Generate registration number: YEAR-XXXX scoped by academic_year_id
@@ -118,16 +121,18 @@ class StudentEnrollmentController extends Controller
                 throw $ex;
             }
         } while ($conflict);
-        // Ensure subject enrollments exist for this student enrollment (creates missing rows)
-        try {
-            $enrollment->syncSubjectEnrollments();
-        } catch (\Throwable $e) {
-            // non-fatal: log and continue
-            Log::warning('Failed to sync subject enrollments for enrollment ID ' . ($enrollment->id ?? 'unknown') . ': ' . $e->getMessage());
+        // Ensure subject enrollments exist only if section is assigned
+        if (!empty($enrollment->academic_year_strand_section_id)) {
+            try {
+                $enrollment->syncSubjectEnrollments();
+            } catch (\Throwable $e) {
+                // non-fatal: log and continue
+                Log::warning('Failed to sync subject enrollments for enrollment ID ' . ($enrollment->id ?? 'unknown') . ': ' . $e->getMessage());
+            }
         }
         return redirect()
             ->route('admin.student-enrollments.show', $enrollment)
-            ->with('success', 'Student enrollment created.');
+            ->with('success', 'Student enrollment created. Section assignment can be done later.');
     }
 
     public function show(StudentEnrollment $studentEnrollment)
