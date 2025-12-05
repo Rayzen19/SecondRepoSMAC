@@ -56,9 +56,18 @@ class StudentObserver
         $currentNumber++;
         $registrationNumber = $prefix . str_pad($currentNumber, 5, '0', STR_PAD_LEFT);
 
-        // Do NOT auto-create enrollment here to avoid forced section assignment.
-        // Admin will create enrollments explicitly via the Enrollments UI.
-        Log::info('Student created; enrollment not auto-generated (manual creation required)', [
+        // Auto-create enrollment WITHOUT section; manual section assignment expected.
+        // Column academic_year_strand_section_id is nullable per migration 2025_12_04_214626.
+        StudentEnrollment::create([
+            'student_id' => $student->id,
+            'strand_id' => $strandId,
+            'academic_year_id' => $activeYear->id,
+            'academic_year_strand_section_id' => null,
+            'registration_number' => $registrationNumber,
+            'status' => 'enrolled',
+        ]);
+
+        Log::info('Auto-enrolled student without section (manual assignment expected)', [
             'student_id' => $student->id,
             'academic_year_id' => $activeYear->id,
             'strand_id' => $strandId,
