@@ -216,6 +216,8 @@
                         $isTeachers = request()->routeIs('admin.teachers.*');
                         $isStudents = request()->routeIs('admin.students.*');
                         $isGuardians = request()->routeIs('admin.guardians.*');
+                        $isCoAdmins = request()->routeIs('admin.co-admins.*');
+                        $isUsers = $isTeachers || $isStudents || $isGuardians || $isCoAdmins;
                         $isEnrollments = request()->routeIs('admin.student-enrollments.*');
                         $isPreEnrollments = request()->routeIs('admin.pre-enrollments.*');
                         $isManagement = request()->routeIs('admin.subjects.*') || request()->routeIs('admin.strands.*') || request()->routeIs('admin.sections.*');
@@ -237,30 +239,19 @@
                                     </a>
                                 </li>
 
-                                <li class="{{ $isTeachers ? 'active' : '' }}">
-                                    <a class="{{ $isTeachers ? 'active' : '' }}" href="{{ route('admin.teachers.index') }}">
-                                        <i class="ti ti-users"></i><span>Teachers</span>
+                                <li class="submenu {{ $isUsers ? 'active' : '' }}">
+                                    <a href="javascript:void(0);" class="{{ $isUsers ? 'subdrop' : '' }}">
+                                        <i class="ti ti-users"></i><span>User</span>
+                                        <span class="menu-arrow"></span>
                                     </a>
-                                </li>
-
-                                @auth('admin')
-                                <li class="{{ request()->routeIs('admin.co-admins.*') ? 'active' : '' }}">
-                                    <a class="{{ request()->routeIs('admin.co-admins.*') ? 'active' : '' }}" href="{{ route('admin.co-admins.index') }}">
-                                        <i class="ti ti-user-star"></i><span>Co-Admins</span>
-                                    </a>
-                                </li>
-                                @endauth
-
-                                <li class="{{ $isStudents ? 'active' : '' }}">
-                                    <a class="{{ $isStudents ? 'active' : '' }}" href="{{ route('admin.students.index') }}">
-                                        <i class="ti ti-layout-board-split"></i><span>Student</span>
-                                    </a>
-                                </li>
-
-                                <li class="{{ $isGuardians ? 'active' : '' }}">
-                                    <a class="{{ $isGuardians ? 'active' : '' }}" href="{{ route('admin.guardians.index') }}">
-                                        <i class="ti ti-user-shield"></i><span>Guardians</span>
-                                    </a>
+                                    <ul class="{{ $isUsers ? 'd-block' : '' }}">
+                                        <li><a style="background-color: white;" class="{{ $isTeachers ? 'active' : '' }}" href="{{ route('admin.teachers.index') }}">Teacher</a></li>
+                                        @auth('admin')
+                                        <li><a style="background-color: white;" class="{{ $isCoAdmins ? 'active' : '' }}" href="{{ route('admin.co-admins.index') }}">Co-Admin</a></li>
+                                        @endauth
+                                        <li><a style="background-color: white;" class="{{ $isStudents ? 'active' : '' }}" href="{{ route('admin.students.index') }}">Student</a></li>
+                                        <li><a style="background-color: white;" class="{{ $isGuardians ? 'active' : '' }}" href="{{ route('admin.guardians.index') }}">Guardian</a></li>
+                                    </ul>
                                 </li>
 
                                 <li class="{{ $isEnrollments ? 'active' : '' }}">
