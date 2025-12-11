@@ -37,6 +37,6 @@ class LoginController extends Controller
         Auth::guard('guardian')->logout();
         $request->session()->invalidate();
         $request->session()->regenerateToken();
-        return redirect('/guardian/login');
+        return redirect()->route('admin.auth.loginForm');
     }
 }

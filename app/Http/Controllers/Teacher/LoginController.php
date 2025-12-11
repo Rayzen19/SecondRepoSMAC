@@ -52,6 +52,6 @@ class LoginController extends Controller
         $request->session()->regenerateToken();
         // Remove cached teacher details
         $request->session()->forget('teacher');
-        return redirect('/teacher/login');
+        return redirect()->route('admin.auth.loginForm');
     }
 }
