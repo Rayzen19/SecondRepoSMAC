@@ -77,16 +77,8 @@
                     <div class="col-md-3">
                         <div class="mb-3">
                             <label class="form-label">Specialization <span class="text-danger">*</span></label>
-                            <!-- Visible Specialization dropdown (requested options) -->
-                            <select name="specialization" id="specializationSelect" class="form-select">
-                                <option value="">Select Specialization</option>
-                                <option value="Math" @selected(old('specialization', $teacher->specialization)=='Math')>Math</option>
-                                <option value="English" @selected(old('specialization', $teacher->specialization)=='English')>English</option>
-                                <option value="Filipino" @selected(old('specialization', $teacher->specialization)=='Filipino')>Filipino</option>
-                                <option value="Science" @selected(old('specialization', $teacher->specialization)=='Science')>Science</option>
-                                <option value="History" @selected(old('specialization', $teacher->specialization)=='History')>History</option>
-                                <option value="Programming" @selected(old('specialization', $teacher->specialization)=='Programming')>Programming</option>
-                            </select>
+                            <!-- Text input for filtering subjects -->
+                            <input type="text" name="specialization" id="specializationInput" class="form-control" placeholder="Type to filter subjects..." value="{{ old('specialization', $teacher->specialization) }}">
 
                             <!-- Hidden Strand field preserved for backend compatibility -->
                             <select name="strand_id" class="form-select d-none" required>
@@ -163,7 +155,7 @@
             checkAssignmentLimit(); // Check on page load
         }
 
-        const specialization = document.getElementById('specializationSelect');
+        const specialization = document.getElementById('specializationInput');
         const subjectSelect = document.getElementById('subjectSelect');
         if (!specialization || !subjectSelect) return;
 
@@ -171,7 +163,7 @@
         const allOptions = Array.from(subjectSelect.options).map(o => o.cloneNode(true));
 
         function filterSubjects() {
-            const spec = (specialization.value || '').toLowerCase();
+            const spec = (specialization.value || '').toLowerCase().trim();
             const currentValue = subjectSelect.value;
 
             // Reset to placeholder + filter
@@ -208,7 +200,7 @@
             }
         }
 
-        specialization.addEventListener('change', filterSubjects);
+        specialization.addEventListener('input', filterSubjects);
         // Auto-filter on load if a specialization is preselected
         if (specialization.value) filterSubjects();
     })();
