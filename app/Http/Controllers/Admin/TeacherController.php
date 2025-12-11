@@ -42,7 +42,12 @@ class TeacherController extends Controller
             ->orderByDesc('created_at')
             ->get();
 
-        return view('admin.teachers.assignments', compact('teacher', 'academicYears', 'strands', 'sections', 'subjects', 'existingAssignments'));
+        // Count assignments per academic year for validation
+        $assignmentCounts = $existingAssignments->groupBy('academic_year_id')->map(function($group) {
+            return $group->count();
+        });
+
+        return view('admin.teachers.assignments', compact('teacher', 'academicYears', 'strands', 'sections', 'subjects', 'existingAssignments', 'assignmentCounts'));
     }
 
     public function storeAssignment(Request $request, Teacher $teacher)
@@ -55,6 +60,15 @@ class TeacherController extends Controller
             'performance_tasks_percentage' => 'nullable|numeric|min:0|max:100',
             'quarterly_assessment_percentage' => 'nullable|numeric|min:0|max:100',
         ]);
+
+        // Check if teacher already has 3 subject assignments for this academic year
+        $assignmentCount = AcademicYearStrandSubject::where('teacher_id', $teacher->id)
+            ->where('academic_year_id', $data['academic_year_id'])
+            ->count();
+
+        if ($assignmentCount >= 3) {
+            return redirect()->back()->with('error', 'This teacher has already reached the maximum limit of 3 subject assignments for this academic year.');
+        }
 
         // Check if assignment already exists
         $exists = AcademicYearStrandSubject::where('teacher_id', $teacher->id)

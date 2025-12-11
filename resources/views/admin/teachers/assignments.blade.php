@@ -52,7 +52,11 @@
             <h5 class="mb-0">Assigning Teacher to Subject</h5>
         </div>
         <div class="card-body">
-            <form action="{{ route('admin.teachers.assignments.store', $teacher) }}" method="POST">
+            <div class="alert alert-info mb-3">
+                <i class="ti ti-info-circle me-2"></i>
+                <strong>Limit:</strong> Each teacher can be assigned to a maximum of <strong>3 subjects</strong> per academic year.
+            </div>
+            <form action="{{ route('admin.teachers.assignments.store', $teacher) }}" method="POST" id="assignmentForm">
                 @csrf
                 <div class="row">
                     <div class="col-md-3">
@@ -130,6 +134,35 @@
 @push('scripts')
 <script>
     (function() {
+        const form = document.getElementById('assignmentForm');
+        const academicYearSelect = document.querySelector('select[name="academic_year_id"]');
+        const submitBtn = form?.querySelector('button[type="submit"]');
+        const assignmentCounts = @json($assignmentCounts ?? []);
+
+        // Check assignment limit on academic year change
+        function checkAssignmentLimit() {
+            if (!academicYearSelect || !submitBtn) return;
+            const selectedYearId = academicYearSelect.value;
+            const count = assignmentCounts[selectedYearId] || 0;
+            
+            if (count >= 3) {
+                submitBtn.disabled = true;
+                submitBtn.innerHTML = '<i class="ti ti-lock me-1"></i>Limit Reached (3/3)';
+                submitBtn.classList.remove('bg-info');
+                submitBtn.classList.add('btn-secondary');
+            } else {
+                submitBtn.disabled = false;
+                submitBtn.innerHTML = '<i class="ti ti-plus me-1"></i>Submit (' + count + '/3)';
+                submitBtn.classList.remove('btn-secondary');
+                submitBtn.classList.add('bg-info');
+            }
+        }
+
+        if (academicYearSelect) {
+            academicYearSelect.addEventListener('change', checkAssignmentLimit);
+            checkAssignmentLimit(); // Check on page load
+        }
+
         const specialization = document.getElementById('specializationSelect');
         const subjectSelect = document.getElementById('subjectSelect');
         if (!specialization || !subjectSelect) return;
