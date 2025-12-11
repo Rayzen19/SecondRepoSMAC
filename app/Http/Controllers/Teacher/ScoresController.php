@@ -315,6 +315,9 @@ class ScoresController extends Controller
             'emails_sent' => 0,
             'sms_sent' => 0,
         ];
+        
+        // Track students who need notifications (one per student)
+        $studentsToNotify = [];
 
         foreach ($validated['scores'] as $scoreData) {
             try {
@@ -368,13 +371,18 @@ class ScoresController extends Controller
                     ]
                 );
 
-                // Send email notification ONLY for quarterly assessment and if this is a new score or the score was changed
+                // Mark student for notification ONLY for quarterly assessment if score is new or changed
                 if (($isNewScore || $isScoreChanged) && $assessment->type === 'quarterly assessment') {
-                    Log::info("Score was " . ($isNewScore ? 'newly added' : 'changed') . " for quarterly assessment - sending notifications");
-                    $result = $this->sendScoreNotification($scoreData['student_id'], $assessment, $scoreData['raw_score'], $scoreData['max_score'], $assignment);
-                    if (is_array($result)) {
-                        $notificationsSummary['emails_sent'] += $result['emails_sent'] ?? 0;
-                        $notificationsSummary['sms_sent'] += $result['sms_sent'] ?? 0;
+                    $studentId = $scoreData['student_id'];
+                    // Only keep the first/latest quarterly assessment info for this student
+                    if (!isset($studentsToNotify[$studentId])) {
+                        $studentsToNotify[$studentId] = [
+                            'assessment' => $assessment,
+                            'raw_score' => $scoreData['raw_score'],
+                            'max_score' => $scoreData['max_score'],
+                            'assignment' => $assignment
+                        ];
+                        Log::info("Student {$studentId} marked for notification (quarterly assessment)");
                     }
                 } else {
                     if ($assessment->type !== 'quarterly assessment') {
@@ -387,6 +395,22 @@ class ScoresController extends Controller
                 $savedCount++;
             } catch (\Exception $e) {
                 $errors[] = "Error saving score: " . $e->getMessage();
+            }
+        }
+        
+        // Send ONE notification per student after all scores are saved
+        foreach ($studentsToNotify as $studentId => $notifData) {
+            Log::info("Sending notification for student {$studentId}");
+            $result = $this->sendScoreNotification(
+                $studentId, 
+                $notifData['assessment'], 
+                $notifData['raw_score'], 
+                $notifData['max_score'], 
+                $notifData['assignment']
+            );
+            if (is_array($result)) {
+                $notificationsSummary['emails_sent'] += $result['emails_sent'] ?? 0;
+                $notificationsSummary['sms_sent'] += $result['sms_sent'] ?? 0;
             }
         }
 
