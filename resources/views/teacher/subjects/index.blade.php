@@ -8,165 +8,242 @@
     </div>
 </div>
 
-@if($subjects->isEmpty())
-    <div class="card shadow-none border-0 bg-transparent">
-        <div class="card-body text-center py-5">
-            <h5 class="mb-2">No subjects assigned yet</h5>
-            <p class="text-muted mb-0">When an administrator assigns you to subjects for the active academic year, they will appear here.</p>
-        </div>
-    </div>
-@else
-    <!-- Subject Assignments Section -->
-    <div>
-        <div class="d-flex align-items-center justify-content-between mb-3">
-            <h5 class="mb-0">
-                <i class="ti ti-clipboard-text me-2"></i>Subject Assignments
-            </h5>
-            <div class="d-flex gap-2">
-                <a href="{{ route('teacher.class-records.index') }}" class="btn btn-sm btn-outline-primary">
-                    <i class="ti ti-list-details me-1"></i>Class Records
-                </a>
-            </div>
-        </div>
+@php
+    $user = Auth::guard('teacher')->user();
+    $teacher = \App\Models\Teacher::with([
+        'advisedSections' => function ($query) use ($activeYear) {
+            $query->where('academic_year_id', $activeYear?->id)
+                ->with(['academicYear', 'strand', 'section']);
+        },
+        'teachingAssignments' => function ($query) use ($activeYear) {
+            $query->where('academic_year_id', $activeYear?->id)
+                ->with([
+                    'academicYear',
+                    'strand',
+                    'subject',
+                    'sectionAssignment.section',
+                    'sectionAssignment.academicYear',
+                    'sectionAssignment.strand',
+                    'subjectEnrollments.studentEnrollment.academicYearStrandSection.section'
+                ]);
+        }
+    ])->findOrFail($user->user_pk_id);
 
-        @php
-            $user = Auth::guard('teacher')->user();
-            // Group assignments by section
-            $groupedBySections = collect();
-            $adviserSections = collect();
-            
-            if ($activeYear && $user) {
-                // Get sections where teacher is adviser
-                $adviserSections = \App\Models\AcademicYearStrandSection::with(['section', 'strand', 'adviserTeacher'])
-                    ->where('academic_year_id', $activeYear->id)
-                    ->where('adviser_teacher_id', $user->user_pk_id)
-                    ->get();
-                
-                // Get all teaching assignments
-                $teachingAssignments = \App\Models\AcademicYearStrandSubject::with(['subject', 'strand'])
-                    ->where('academic_year_id', $activeYear->id)
-                    ->where('teacher_id', $user->user_pk_id)
-                    ->get();
-                
-                // Group by strand
-                $groupedByStrand = $teachingAssignments->groupBy('strand_id');
-                
-                foreach ($groupedByStrand as $strandId => $assignments) {
-                    $strand = $assignments->first()->strand;
-                    
-                    // Find section for this strand (prefer adviser section)
-                    $sectionAssignment = \App\Models\AcademicYearStrandSection::with('section')
-                        ->where('academic_year_id', $activeYear->id)
-                        ->where('strand_id', $strandId)
-                        ->where(function($q) use ($user) {
-                            $q->where('adviser_teacher_id', $user->user_pk_id)
-                              ->orWhere('is_active', true);
-                        })
-                        ->orderByRaw('CASE WHEN adviser_teacher_id = ? THEN 0 ELSE 1 END', [$user->user_pk_id])
-                        ->first();
-                    
-                    $groupedBySections->push([
-                        'section' => $sectionAssignment,
-                        'strand' => $strand,
-                        'assignments' => $assignments,
-                        'is_adviser' => $sectionAssignment && $sectionAssignment->adviser_teacher_id == $user->user_pk_id,
-                    ]);
+    // Build a unified list of all sections handled (as adviser or subject teacher)
+    $advisedSections = $teacher->advisedSections;
+    $teachingAssignments = $teacher->teachingAssignments;
+
+    $sectionsHandled = collect();
+
+    // From advised sections
+    foreach ($advisedSections as $advisedSection) {
+        if ($advisedSection->section) {
+            $key = 'section_' . $advisedSection->id; // AYS section id for uniqueness per AY+Strand+Section
+            $sectionsHandled->put($key, [
+                'section_assignment_id' => $advisedSection->id,
+                'grade' => $advisedSection->section->grade,
+                'section_name' => $advisedSection->section->name,
+                'strand' => $advisedSection->strand->name ?? 'N/A',
+                'strand_code' => $advisedSection->strand->code ?? '',
+                'is_adviser' => true,
+                'subjects' => collect(),
+                'teaching_assignment_ids' => collect(),
+                'student_count' => 0,
+                'academic_year' => $advisedSection->academicYear->name ?? 'N/A',
+                'sort_key' => $advisedSection->section->grade . '-' . $advisedSection->section->name
+            ]);
+        }
+    }
+
+    // From teaching assignments - prefer explicit section assignment; else derive
+    foreach ($teachingAssignments as $assignment) {
+        if ($assignment->strand && $assignment->subject) {
+            // Prefer explicit section chosen during subject-teacher assignment
+            $enrolledSections = collect();
+            if ($assignment->sectionAssignment) {
+                $enrolledSections = collect([$assignment->sectionAssignment]);
+            } else {
+                // Derive unique sections from enrolled students
+                $enrolledSections = $assignment->subjectEnrollments
+                    ->pluck('studentEnrollment.academicYearStrandSection')
+                    ->filter()
+                    ->unique('id');
+
+                // Fallback: include ALL sections for this AY+Strand if still empty
+                if ($enrolledSections->isEmpty()) {
+                    $fallbackSections = \App\Models\AcademicYearStrandSection::with(['section','strand','academicYear'])
+                        ->where('academic_year_id', $assignment->academic_year_id)
+                        ->where('strand_id', $assignment->strand_id)
+                        ->get();
+                    if ($fallbackSections->isNotEmpty()) {
+                        $enrolledSections = $fallbackSections;
+                    }
                 }
             }
-            
-            $totalSections = $groupedBySections->count();
-            $totalAsAdviser = $adviserSections->count();
-            $totalStudents = $subjects->sum('counts.total');
-        @endphp
 
-        <div class="row g-3 mb-4">
-            @forelse($groupedBySections as $group)
-                <div class="col-12 col-md-6">
-                    <div class="card h-100">
-                        <div class="card-body">
-                            <div class="d-flex justify-content-between align-items-start mb-3">
-                                <div>
-                                    <span class="badge bg-warning text-dark mb-2">Grade {{ $group['section']->section->grade_level ?? 'N/A' }}</span>
-                                    <h6 class="mb-1">Section {{ $group['section']->section->name ?? 'N/A' }}</h6>
+            foreach ($enrolledSections as $sectionAssignment) {
+                if ($sectionAssignment && $sectionAssignment->section) {
+                    $key = 'section_' . $sectionAssignment->id; // AYS section id
+
+                    if (!$sectionsHandled->has($key)) {
+                        $sectionsHandled->put($key, [
+                            'section_assignment_id' => $sectionAssignment->id,
+                            'grade' => $sectionAssignment->section->grade,
+                            'section_name' => $sectionAssignment->section->name,
+                            'strand' => $sectionAssignment->strand->name ?? 'N/A',
+                            'strand_code' => $sectionAssignment->strand->code ?? '',
+                            'is_adviser' => (int)($sectionAssignment->adviser_teacher_id ?? 0) === (int)($teacher->id ?? 0),
+                            'subjects' => collect(),
+                            'teaching_assignment_ids' => collect(),
+                            'student_count' => 0,
+                            'academic_year' => ($assignment->academicYear->name ?? ($sectionAssignment->academicYear->name ?? 'N/A')),
+                            'sort_key' => $sectionAssignment->section->grade . '-' . $sectionAssignment->section->name
+                        ]);
+                    }
+
+                    // Add subject and assignment ID to this section
+                    $sectionsHandled->get($key)['subjects']->push($assignment->subject->name);
+                    $sectionsHandled->get($key)['teaching_assignment_ids']->push($assignment->id);
+
+                    // Count students in this section for this subject
+                    $studentCount = $assignment->subjectEnrollments
+                        ->where('studentEnrollment.academic_year_strand_section_id', $sectionAssignment->id)
+                        ->count();
+                    $sectionsHandled->get($key)['student_count'] += $studentCount;
+                }
+            }
+        }
+    }
+
+    // Sort by grade and section name
+    $sectionsHandled = $sectionsHandled->sortBy('sort_key')->values();
+@endphp
+
+<!-- Subject Assignments Section -->
+<div class="card shadow-sm">
+    <div class="card-header bg-white d-flex align-items-center justify-content-between">
+        <h5 class="card-title mb-0">
+            <i class="ti ti-chalkboard me-2"></i>Subject Assignments
+        </h5>
+        <div class="d-flex gap-2">
+            <a href="{{ route('teacher.class-records.index') }}" class="btn btn-sm btn-outline-primary">
+                <i class="ti ti-list-details me-1"></i>Class Records
+            </a>
+        </div>
+    </div>
+    <div class="card-body">
+        @if($sectionsHandled->isEmpty())
+            <div class="alert alert-info mb-0">
+                <i class="ti ti-info-circle me-2"></i>
+                No subject assignments yet. Once an admin assigns you to a subject, it will appear here.
+            </div>
+        @else
+            <div class="row g-3">
+                @foreach($sectionsHandled as $section)
+                    <div class="col-md-6">
+                        <div class="border rounded p-3 h-100 position-relative section-card" style="background-color: #f8f9fa;">
+                            <div class="d-flex align-items-start justify-content-between mb-2">
+                                <div class="flex-grow-1">
+                                    <h6 class="mb-1">
+                                        <span class="badge bg-warning text-dark me-2">Grade {{ $section['grade'] }}</span>
+                                        <strong>Section {{ $section['section_name'] }}</strong>
+                                    </h6>
+                                    <p class="mb-1 text-muted small">
+                                        <i class="ti ti-books me-1"></i>
+                                        {{ $section['strand'] }}
+                                        @if($section['strand_code'])
+                                            <span class="badge bg-secondary ms-1">{{ $section['strand_code'] }}</span>
+                                        @endif
+                                    </p>
                                 </div>
-                                @if($group['is_adviser'])
-                                    <span class="badge bg-success">
-                                        <i class="ti ti-star me-1"></i>Adviser
-                                    </span>
-                                @endif
-                            </div>
-                            
-                            <div class="mb-3">
-                                <div class="text-muted small mb-1">Strand</div>
                                 <div class="d-flex align-items-center gap-2">
-                                    <i class="ti ti-book-2"></i>
-                                    <span class="badge bg-info-subtle text-info">{{ $group['strand']->name ?? 'N/A' }}</span>
-                                </div>
-                            </div>
-                            
-                            <div class="mb-3">
-                                <div class="text-muted small mb-1">Subjects Teaching</div>
-                                @foreach($group['assignments'] as $assignment)
-                                    <div class="d-flex align-items-center gap-2 mb-1">
-                                        <i class="ti ti-point-filled text-primary" style="font-size: 0.75rem;"></i>
-                                        <span class="small">{{ $assignment->subject->name }}</span>
-                                    </div>
-                                @endforeach
-                            </div>
-                            
-                            <div class="border-top pt-3">
-                                <div class="d-flex justify-content-between align-items-center">
-                                    <div class="text-muted small">
-                                        <i class="ti ti-calendar me-1"></i>
-                                        {{ $activeYear->name }}
-                                    </div>
-                                    <a href="{{ route('teacher.class-records.index') }}" class="btn btn-sm btn-primary">
+                                    @if($section['is_adviser'])
+                                        <span class="badge bg-success">
+                                            <i class="ti ti-star me-1"></i>Adviser
+                                        </span>
+                                    @endif
+                                    <a href="{{ route('teacher.class-records.index') }}" class="btn btn-sm btn-primary" title="View class records">
                                         <i class="ti ti-eye me-1"></i>View
                                     </a>
                                 </div>
                             </div>
-                        </div>
-                    </div>
-                </div>
-            @empty
-                <div class="col-12">
-                    <div class="card">
-                        <div class="card-body text-center py-4">
-                            <i class="ti ti-info-circle text-muted mb-2" style="font-size: 2rem;"></i>
-                            <p class="text-muted mb-0">No subject assignments found</p>
-                        </div>
-                    </div>
-                </div>
-            @endforelse
-        </div>
 
-        <!-- Summary Statistics -->
-        <div class="row g-3">
-            <div class="col-md-4">
-                <div class="card text-center">
-                    <div class="card-body">
-                        <h2 class="text-warning mb-2">{{ $totalSections }}</h2>
-                        <p class="text-muted mb-0 small">Total Sections</p>
+                            @if($section['subjects']->isNotEmpty())
+                                <div class="mt-2 pt-2 border-top">
+                                    <small class="text-muted d-block mb-2"><strong>Subjects Teaching:</strong></small>
+                                    <div class="subjects-list" style="max-height: 200px; overflow-y: auto;">
+                                        @foreach($section['subjects']->unique() as $subject)
+                                            <div class="mb-1">
+                                                <span class="badge bg-info text-dark w-100 text-start" style="white-space: normal; padding: 0.5rem;">
+                                                    <i class="ti ti-book me-1"></i>{{ $subject }}
+                                                </span>
+                                            </div>
+                                        @endforeach
+                                    </div>
+                                </div>
+                            @endif
+
+                            @if($section['student_count'] > 0)
+                                <div class="mt-2">
+                                    <small class="text-primary">
+                                        <i class="ti ti-users me-1"></i>{{ $section['student_count'] }} student{{ $section['student_count'] > 1 ? 's' : '' }}
+                                    </small>
+                                </div>
+                            @endif
+
+                            <div class="mt-2">
+                                <small class="text-muted">
+                                    <i class="ti ti-calendar me-1"></i>{{ $section['academic_year'] }}
+                                </small>
+                            </div>
+                        </div>
+                    </div>
+                @endforeach
+            </div>
+
+            <!-- Summary -->
+            <div class="mt-3 pt-3 border-top">
+                <div class="row text-center">
+                    <div class="col-md-4">
+                        <div class="p-2">
+                            <h4 class="mb-0 text-warning">{{ $sectionsHandled->count() }}</h4>
+                            <small class="text-muted">Total Sections</small>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="p-2">
+                            <h4 class="mb-0 text-success">{{ $sectionsHandled->where('is_adviser', true)->count() }}</h4>
+                            <small class="text-muted">As Adviser</small>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="p-2">
+                            <h4 class="mb-0 text-primary">{{ $sectionsHandled->sum('student_count') }}</h4>
+                            <small class="text-muted">Total Students</small>
+                        </div>
                     </div>
                 </div>
             </div>
-            <div class="col-md-4">
-                <div class="card text-center">
-                    <div class="card-body">
-                        <h2 class="text-success mb-2">{{ $totalAsAdviser }}</h2>
-                        <p class="text-muted mb-0 small">As Adviser</p>
-                    </div>
-                </div>
-            </div>
-            <div class="col-md-4">
-                <div class="card text-center">
-                    <div class="card-body">
-                        <h2 class="text-primary mb-2">{{ $totalStudents }}</h2>
-                        <p class="text-muted mb-0 small">Total Students</p>
-                    </div>
-                </div>
-            </div>
-        </div>
+        @endif
     </div>
-@endif
+</div>
+
+<style>
+.section-card {
+    position: relative;
+    transition: all 0.3s ease !important;
+}
+
+.section-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15) !important;
+    background-color: #e9ecef !important;
+    border-color: #0d6efd !important;
+}
+
+.section-card:hover .text-primary {
+    font-weight: 600;
+}
+</style>
+
 @endsection
