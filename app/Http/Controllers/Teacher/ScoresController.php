@@ -481,7 +481,7 @@ class ScoresController extends Controller
 
                     // Send SMS if enabled and guardian has mobile_number
                     if ($smsEnabled && !empty($guardian->mobile_number)) {
-                        $smsMessage = "SMAC: New score for {$studentName} - {$subjectName} ({$assessmentType} {$assessmentName}) = {$rawScore}/{$maxScore}. AY {$academicYearName}, {$term}.";
+                        $smsMessage = "SMAC: New score for {$studentName} - {$subjectName} ({$assessmentType} {$assessmentName}) = {$rawScore}/{$maxScore}. {$academicYearName}";
                         $result = $smsService->sendSms($guardian->mobile_number, $smsMessage);
                         if (is_array($result) && empty($result['error'])) {
                             Log::info("📱 SMS queued to guardian {$guardian->mobile_number}", ['response' => $result]);
@@ -517,7 +517,7 @@ class ScoresController extends Controller
 
             // Also send SMS to legacy guardian_contact if present and SMS enabled
             if ($smsEnabled && !empty($student->guardian_contact)) {
-                $smsMessage = "SMAC: New score for {$studentName} - {$subjectName} ({$assessmentType} {$assessmentName}) = {$rawScore}/{$maxScore}. AY {$academicYearName}, {$term}.";
+                $smsMessage = "SMAC: New score for {$studentName} - {$subjectName} ({$assessmentType} {$assessmentName}) = {$rawScore}/{$maxScore}. {$academicYearName}";
                 $result = $smsService->sendSms($student->guardian_contact, $smsMessage);
                 if (is_array($result) && empty($result['error'])) {
                     Log::info("📱 SMS queued to legacy guardian contact {$student->guardian_contact}", ['response' => $result]);
