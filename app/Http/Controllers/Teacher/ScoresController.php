@@ -368,16 +368,20 @@ class ScoresController extends Controller
                     ]
                 );
 
-                // Send email notification ONLY if this is a new score or the score was changed
-                if ($isNewScore || $isScoreChanged) {
-                    Log::info("Score was " . ($isNewScore ? 'newly added' : 'changed') . " - sending notifications");
+                // Send email notification ONLY for quarterly assessment and if this is a new score or the score was changed
+                if (($isNewScore || $isScoreChanged) && $assessment->type === 'quarterly assessment') {
+                    Log::info("Score was " . ($isNewScore ? 'newly added' : 'changed') . " for quarterly assessment - sending notifications");
                     $result = $this->sendScoreNotification($scoreData['student_id'], $assessment, $scoreData['raw_score'], $scoreData['max_score'], $assignment);
                     if (is_array($result)) {
                         $notificationsSummary['emails_sent'] += $result['emails_sent'] ?? 0;
                         $notificationsSummary['sms_sent'] += $result['sms_sent'] ?? 0;
                     }
                 } else {
-                    Log::info("Score unchanged for student {$scoreData['student_id']} - skipping email notification");
+                    if ($assessment->type !== 'quarterly assessment') {
+                        Log::info("Score for {$assessment->type} - skipping notification (only quarterly assessments send notifications)");
+                    } else {
+                        Log::info("Score unchanged for student {$scoreData['student_id']} - skipping notification");
+                    }
                 }
 
                 $savedCount++;
