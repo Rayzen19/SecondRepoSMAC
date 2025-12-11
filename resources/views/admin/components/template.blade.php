@@ -220,6 +220,7 @@
                         $isUsers = $isTeachers || $isStudents || $isGuardians || $isCoAdmins;
                         $isEnrollments = request()->routeIs('admin.student-enrollments.*');
                         $isPreEnrollments = request()->routeIs('admin.pre-enrollments.*');
+                        $isEnrollmentGroup = $isEnrollments || $isPreEnrollments;
                         $isManagement = request()->routeIs('admin.subjects.*') || request()->routeIs('admin.strands.*') || request()->routeIs('admin.sections.*');
                         $isAcademic = request()->routeIs('admin.academic-years.*') || request()->routeIs('admin.subject-records.*') || request()->routeIs('admin.assessment-types.*') || request()->routeIs('admin.subject-record-results.*');
                     @endphp
@@ -254,22 +255,27 @@
                                     </ul>
                                 </li>
 
-                                <li class="{{ $isEnrollments ? 'active' : '' }}">
-                                    <a class="{{ $isEnrollments ? 'active' : '' }}" href="{{ route('admin.student-enrollments.index') }}">
-                                        <i class="ti ti-users-group"></i><span>Enrollments</span>
+                                <li class="submenu {{ $isEnrollmentGroup ? 'active' : '' }}">
+                                    <a href="javascript:void(0);" class="{{ $isEnrollmentGroup ? 'subdrop' : '' }}">
+                                        <i class="ti ti-users-group"></i><span>Enrollment</span>
+                                        <span class="menu-arrow"></span>
                                     </a>
-                                </li>
-
-                                <li class="{{ $isPreEnrollments ? 'active' : '' }}">
-                                    <a class="{{ $isPreEnrollments ? 'active' : '' }}" href="{{ route('admin.pre-enrollments.index') }}" style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
-                                        <i class="ti ti-file-text"></i><span style="flex: 1; overflow: hidden; text-overflow: ellipsis;">Pre-Enrollment Submissions</span>
-                                        @php
-                                            $pendingPreEnrollments = \App\Models\PreEnrollment::where('status', 'pending')->count();
-                                        @endphp
-                                        @if($pendingPreEnrollments > 0)
-                                            <span class="badge bg-warning rounded-pill ms-2" style="flex-shrink: 0;">{{ $pendingPreEnrollments }}</span>
-                                        @endif
-                                    </a>
+                                    <ul class="{{ $isEnrollmentGroup ? 'd-block' : '' }}">
+                                        <li>
+                                            <a style="background-color: white;" class="{{ $isEnrollments ? 'active' : '' }}" href="{{ route('admin.student-enrollments.index') }}">Enrollees</a>
+                                        </li>
+                                        <li>
+                                            <a style="background-color: white; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;" class="{{ $isPreEnrollments ? 'active' : '' }}" href="{{ route('admin.pre-enrollments.index') }}">
+                                                Pre-Enrollment Submissions
+                                                @php
+                                                    $pendingPreEnrollments = \App\Models\PreEnrollment::where('status', 'pending')->count();
+                                                @endphp
+                                                @if($pendingPreEnrollments > 0)
+                                                    <span class="badge bg-warning rounded-pill ms-2" style="flex-shrink: 0;">{{ $pendingPreEnrollments }}</span>
+                                                @endif
+                                            </a>
+                                        </li>
+                                    </ul>
                                 </li>
 
                                 <!-- <li class="{{ request()->routeIs('admin.attendance.*') ? 'active' : '' }}">

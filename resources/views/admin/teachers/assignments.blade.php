@@ -72,11 +72,24 @@
                     </div>
                     <div class="col-md-3">
                         <div class="mb-3">
-                            <label class="form-label">Strand <span class="text-danger">*</span></label>
-                            <select name="strand_id" class="form-select" required>
+                            <label class="form-label">Specialization <span class="text-danger">*</span></label>
+                            <!-- Visible Specialization dropdown (requested options) -->
+                            <select name="specialization" id="specializationSelect" class="form-select">
+                                <option value="">Select Specialization</option>
+                                <option value="Math" @selected(old('specialization', $teacher->specialization)=='Math')>Math</option>
+                                <option value="English" @selected(old('specialization', $teacher->specialization)=='English')>English</option>
+                                <option value="Filipino" @selected(old('specialization', $teacher->specialization)=='Filipino')>Filipino</option>
+                                <option value="Science" @selected(old('specialization', $teacher->specialization)=='Science')>Science</option>
+                                <option value="History" @selected(old('specialization', $teacher->specialization)=='History')>History</option>
+                                <option value="Programming" @selected(old('specialization', $teacher->specialization)=='Programming')>Programming</option>
+                            </select>
+
+                            <!-- Hidden Strand field preserved for backend compatibility -->
+                            <select name="strand_id" class="form-select d-none" required>
+                                @php($defaultStrandId = old('strand_id') ?? ($strands->first()->id ?? ''))
                                 <option value="">Select Strand</option>
                                 @foreach($strands as $strand)
-                                    <option value="{{ $strand->id }}" @selected(old('strand_id')==$strand->id)>
+                                    <option value="{{ $strand->id }}" {{ (string)$defaultStrandId === (string)$strand->id ? 'selected' : '' }}>
                                         {{ $strand->code }} - {{ $strand->name }}
                                     </option>
                                 @endforeach
@@ -87,10 +100,11 @@
                     <div class="col-md-3">
                         <div class="mb-3">
                             <label class="form-label">Subject <span class="text-danger">*</span></label>
-                            <select name="subject_id" class="form-select" required>
+                            <select name="subject_id" id="subjectSelect" class="form-select" required>
                                 <option value="">Select Subject</option>
+                                @php($qualifiedIds = $teacher->subjects->pluck('id')->toArray())
                                 @foreach($subjects as $subject)
-                                    <option value="{{ $subject->id }}" @selected(old('subject_id')==$subject->id)>
+                                    <option value="{{ $subject->id }}" data-name="{{ strtolower($subject->name) }}" data-code="{{ strtolower($subject->code) }}" data-qualified="{{ in_array($subject->id, $qualifiedIds) ? '1' : '0' }}" @selected(old('subject_id')==$subject->id)>
                                         {{ $subject->code }} - {{ $subject->name }}
                                     </option>
                                 @endforeach
@@ -112,3 +126,58 @@
     </div>
 </div>
 @endsection
+
+@push('scripts')
+<script>
+    (function() {
+        const specialization = document.getElementById('specializationSelect');
+        const subjectSelect = document.getElementById('subjectSelect');
+        if (!specialization || !subjectSelect) return;
+
+        // Preserve a copy of all options for reset/filtering
+        const allOptions = Array.from(subjectSelect.options).map(o => o.cloneNode(true));
+
+        function filterSubjects() {
+            const spec = (specialization.value || '').toLowerCase();
+            const currentValue = subjectSelect.value;
+
+            // Reset to placeholder + filter
+            subjectSelect.innerHTML = '';
+            // Always keep the first placeholder
+            const placeholder = document.createElement('option');
+            placeholder.value = '';
+            placeholder.textContent = 'Select Subject';
+            subjectSelect.appendChild(placeholder);
+
+            let added = 0;
+            allOptions.forEach(opt => {
+                if (!opt.value) return; // skip placeholder copies
+                const name = opt.getAttribute('data-name') || '';
+                const code = opt.getAttribute('data-code') || '';
+                const qualified = opt.getAttribute('data-qualified') === '1';
+                const matchesKeyword = spec && (name.includes(spec) || code.includes(spec));
+                // Show if no specialization chosen; otherwise filter by specialization match
+                const show = !spec ? true : matchesKeyword;
+                if (show) {
+                    subjectSelect.appendChild(opt.cloneNode(true));
+                    added++;
+                }
+            });
+
+            // Try to keep previous selection when possible
+            if (currentValue) {
+                subjectSelect.value = currentValue;
+            }
+
+            // If nothing matched (other than placeholder), fallback to all
+            if (subjectSelect.options.length <= 1) {
+                allOptions.forEach(opt => { if (opt.value) subjectSelect.appendChild(opt.cloneNode(true)); });
+            }
+        }
+
+        specialization.addEventListener('change', filterSubjects);
+        // Auto-filter on load if a specialization is preselected
+        if (specialization.value) filterSubjects();
+    })();
+</script>
+@endpush

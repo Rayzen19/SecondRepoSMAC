@@ -150,7 +150,7 @@
                     <div class="col-md-4">
                         <div class="mb-3">
                             <label class="form-label">Specialization</label>
-                            <input type="text" name="specialization" class="form-control" value="{{ old('specialization') }}">
+                            <input type="text" name="specialization" id="specializationInput" class="form-control" value="{{ old('specialization') }}" placeholder="e.g., Programming, English, Math">
                             @error('specialization')<div class="text-danger small">{{ $message }}</div>@enderror
                         </div>
                     </div>
@@ -177,9 +177,9 @@
                         <div class="mb-3">
                             <label class="form-label">Subjects to Teach</label>
                             <div class="border rounded p-3" style="max-height: 300px; overflow-y: auto; background-color: #f8f9fa;">
-                                <div class="row">
+                                <div class="row" id="subjectsList">
                                     @foreach($subjects as $subject)
-                                    <div class="col-md-6 mb-2">
+                                    <div class="col-md-6 mb-2 subject-item">
                                         <div class="form-check">
                                             <input class="form-check-input" type="checkbox" name="subjects[]" value="{{ $subject->id }}" id="subject_{{ $subject->id }}" @checked(in_array($subject->id, old('subjects', [])))>
                                             <label class="form-check-label" for="subject_{{ $subject->id }}">
@@ -203,6 +203,24 @@
 </div>
 
 <script>
+// Filter Subjects by Specialization (create)
+document.addEventListener('DOMContentLoaded', function() {
+    const specInput = document.getElementById('specializationInput');
+    const list = document.getElementById('subjectsList');
+    if (!specInput || !list) return;
+    const items = Array.from(list.querySelectorAll('.subject-item'));
+    function applyFilter() {
+        const spec = (specInput.value || '').toLowerCase().trim();
+        items.forEach(el => {
+            const text = el.textContent.toLowerCase();
+            const show = !spec || text.includes(spec);
+            el.style.display = show ? '' : 'none';
+        });
+    }
+    specInput.addEventListener('input', applyFilter);
+    applyFilter();
+});
+
 // CALABARZON Address Data
 const addressData = {
     region: "Region IV-A (CALABARZON)",
