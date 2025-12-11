@@ -42,9 +42,11 @@ class TeacherController extends Controller
             ->orderByDesc('created_at')
             ->get();
 
-        // Count assignments per academic year for validation
+        // Count distinct sections per academic year for validation
         $assignmentCounts = $existingAssignments->groupBy('academic_year_id')->map(function($group) {
-            return $group->count();
+            return $group->whereNotNull('academic_year_strand_section_id')
+                         ->unique('academic_year_strand_section_id')
+                         ->count();
         });
 
         return view('admin.teachers.assignments', compact('teacher', 'academicYears', 'strands', 'sections', 'subjects', 'existingAssignments', 'assignmentCounts'));
@@ -61,13 +63,15 @@ class TeacherController extends Controller
             'quarterly_assessment_percentage' => 'nullable|numeric|min:0|max:100',
         ]);
 
-        // Check if teacher already has 3 subject assignments for this academic year
-        $assignmentCount = AcademicYearStrandSubject::where('teacher_id', $teacher->id)
+        // Check if teacher already has 9 distinct section assignments for this academic year
+        $sectionCount = AcademicYearStrandSubject::where('teacher_id', $teacher->id)
             ->where('academic_year_id', $data['academic_year_id'])
-            ->count();
+            ->distinct('academic_year_strand_section_id')
+            ->whereNotNull('academic_year_strand_section_id')
+            ->count('academic_year_strand_section_id');
 
-        if ($assignmentCount >= 3) {
-            return redirect()->back()->with('error', 'This teacher has already reached the maximum limit of 3 subject assignments for this academic year.');
+        if ($sectionCount >= 9) {
+            return redirect()->back()->with('error', 'This teacher has already reached the maximum limit of 9 section assignments for this academic year.');
         }
 
         // Check if assignment already exists

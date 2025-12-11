@@ -54,7 +54,7 @@
         <div class="card-body">
             <div class="alert alert-info mb-3">
                 <i class="ti ti-info-circle me-2"></i>
-                <strong>Limit:</strong> Each teacher can be assigned to a maximum of <strong>3 subjects</strong> per academic year.
+                <strong>Limit:</strong> Each teacher can be assigned to a maximum of <strong>9 sections</strong> per academic year.
             </div>
             <form action="{{ route('admin.teachers.assignments.store', $teacher) }}" method="POST" id="assignmentForm">
                 @csrf
@@ -137,14 +137,14 @@
             const selectedYearId = academicYearSelect.value;
             const count = assignmentCounts[selectedYearId] || 0;
             
-            if (count >= 3) {
+            if (count >= 9) {
                 submitBtn.disabled = true;
-                submitBtn.innerHTML = '<i class="ti ti-lock me-1"></i>Limit Reached (3/3)';
+                submitBtn.innerHTML = '<i class="ti ti-lock me-1"></i>Limit Reached (9/9)';
                 submitBtn.classList.remove('bg-info');
                 submitBtn.classList.add('btn-secondary');
             } else {
                 submitBtn.disabled = false;
-                submitBtn.innerHTML = '<i class="ti ti-plus me-1"></i>Submit (' + count + '/3)';
+                submitBtn.innerHTML = '<i class="ti ti-plus me-1"></i>Submit (' + count + '/9)';
                 submitBtn.classList.remove('btn-secondary');
                 submitBtn.classList.add('bg-info');
             }

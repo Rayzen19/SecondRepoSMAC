@@ -677,6 +677,37 @@ class SectionAdviserController extends Controller
                 return response()->json(['success' => false, 'message' => 'Teacher not profiled for this subject.'], 422);
             }
             Log::info('Teacher is profiled for subject');
+            
+            // Check if teacher has reached the limit of 9 sections for this academic year
+            // Only check when assigning to a specific section
+            if (!empty($validated['section_id'])) {
+                $sectionCount = \App\Models\AcademicYearStrandSubject::where('teacher_id', $validated['teacher_id'])
+                    ->where('academic_year_id', $activeYear->id)
+                    ->whereNotNull('academic_year_strand_section_id')
+                    ->distinct('academic_year_strand_section_id')
+                    ->count('academic_year_strand_section_id');
+                
+                // Check if this is a new section assignment (not already assigned)
+                $aysSection = \App\Models\AcademicYearStrandSection::where('academic_year_id', $activeYear->id)
+                    ->where('strand_id', $strand->id)
+                    ->where('section_id', $validated['section_id'])
+                    ->first();
+                    
+                if ($aysSection) {
+                    $alreadyAssignedToThisSection = \App\Models\AcademicYearStrandSubject::where('teacher_id', $validated['teacher_id'])
+                        ->where('academic_year_id', $activeYear->id)
+                        ->where('academic_year_strand_section_id', $aysSection->id)
+                        ->exists();
+                    
+                    if (!$alreadyAssignedToThisSection && $sectionCount >= 9) {
+                        Log::warning('Teacher has reached section limit', [
+                            'teacher_id' => $validated['teacher_id'],
+                            'section_count' => $sectionCount
+                        ]);
+                        return response()->json(['success' => false, 'message' => 'This teacher has already reached the maximum limit of 9 section assignments for this academic year.'], 422);
+                    }
+                }
+            }
         }
 
         // Optional: Find adviser if exists (not required for subject assignments)
