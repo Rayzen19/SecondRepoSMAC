@@ -678,7 +678,7 @@ class SectionAdviserController extends Controller
             }
             Log::info('Teacher is profiled for subject');
             
-            // Check if teacher has reached the limit of 9 sections for this academic year
+            // Check if teacher has reached the limit of 4 sections for this academic year
             // Only check when assigning to a specific section
             if (!empty($validated['section_id'])) {
                 $sectionCount = \App\Models\AcademicYearStrandSubject::where('teacher_id', $validated['teacher_id'])
@@ -699,12 +699,12 @@ class SectionAdviserController extends Controller
                         ->where('academic_year_strand_section_id', $aysSection->id)
                         ->exists();
                     
-                    if (!$alreadyAssignedToThisSection && $sectionCount >= 9) {
+                    if (!$alreadyAssignedToThisSection && $sectionCount >= 4) {
                         Log::warning('Teacher has reached section limit', [
                             'teacher_id' => $validated['teacher_id'],
                             'section_count' => $sectionCount
                         ]);
-                        return response()->json(['success' => false, 'message' => 'This teacher has already reached the maximum limit of 9 section assignments for this academic year.'], 422);
+                        return response()->json(['success' => false, 'message' => 'This teacher has already reached the maximum limit of 4 section assignments for this academic year.'], 422);
                     }
                 }
             }
