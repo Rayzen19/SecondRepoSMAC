@@ -161,6 +161,27 @@ class PreEnrollmentController extends Controller
             return response()->json(['sections' => []]);
         }
 
+        // Get the authenticated student
+        $authenticatedUser = Auth::guard('student')->user();
+        $student = null;
+        $currentSectionName = null;
+        
+        if ($authenticatedUser) {
+            $student = \App\Models\Student::where('email', $authenticatedUser->email)->first();
+            
+            if ($student) {
+                // Get student's current enrollment to check their current section
+                $currentEnrollment = StudentEnrollment::with(['academicYearStrandSection.section'])
+                    ->where('student_id', $student->id)
+                    ->where('academic_year_id', $currentAcademicYear->id)
+                    ->first();
+                
+                if ($currentEnrollment && $currentEnrollment->academicYearStrandSection) {
+                    $currentSectionName = $currentEnrollment->academicYearStrandSection->section->name ?? null;
+                }
+            }
+        }
+
         // Maximum students per section
         $maxStudentsPerSection = 30;
 
@@ -195,9 +216,19 @@ class PreEnrollmentController extends Controller
                     'is_full' => $totalCount >= $maxStudentsPerSection
                 ];
             })
-            ->filter(function ($section) {
+            ->filter(function ($section) use ($currentSectionName, $validated) {
                 // Only show sections that are not full
-                return !$section['is_full'];
+                if ($section['is_full']) {
+                    return false;
+                }
+                
+                // Filter for students from A-JUDE section going to Grade 12
+                if ($currentSectionName === 'A - JUDE' && $validated['grade_level'] === 'G-12') {
+                    // Only show JOB section
+                    return stripos($section['name'], 'JOB') !== false;
+                }
+                
+                return true;
             })
             ->values();
 
