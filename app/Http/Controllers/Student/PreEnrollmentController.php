@@ -222,10 +222,17 @@ class PreEnrollmentController extends Controller
                     return false;
                 }
                 
-                // Filter for students from A-JUDE section going to Grade 12
-                if ($currentSectionName === 'A - JUDE' && $validated['grade_level'] === 'G-12') {
-                    // Only show JOB section
-                    return stripos($section['name'], 'JOB') !== false;
+                // Filter for students from specific sections going to Grade 12
+                if ($validated['grade_level'] === 'G-12') {
+                    // A-JUDE students can only see JOB section
+                    if ($currentSectionName === 'A - JUDE') {
+                        return stripos($section['name'], 'JOB') !== false;
+                    }
+                    
+                    // B-PETER students can only see B-JOEL section
+                    if ($currentSectionName === 'B - PETER') {
+                        return stripos($section['name'], 'B-JOEL') !== false || stripos($section['name'], 'B - JOEL') !== false;
+                    }
                 }
                 
                 return true;
