@@ -162,7 +162,7 @@
         <!-- Assessment Type Analysis -->
         @if(!empty($dssRecommendations['assessment_type_analysis']))
         <div class="card mb-3 border-info">
-            <div class="card-header bg-info text-white">
+            <div class="card-header border-info text-dark" style="background-color: #e3f2fd;">
                 <h6 class="mb-0">
                     <i class="ti ti-clipboard-list me-2"></i>Assessment Type Analysis
                 </h6>
@@ -197,7 +197,7 @@
         <!-- Subject Analysis -->
         @if(!empty($dssRecommendations['subject_analysis']))
         <div class="card border-secondary">
-            <div class="card-header bg-secondary text-white">
+            <div class="card-header border-secondary text-dark" style="background-color: #e3f2fd;">
                 <h6 class="mb-0">
                     <i class="ti ti-books me-2"></i>Subject-wise Analysis
                 </h6>
