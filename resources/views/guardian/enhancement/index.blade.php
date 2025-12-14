@@ -86,6 +86,26 @@
 </div>
 @endif
 
+<!-- Privacy Notice if Student Disabled Access -->
+@if(isset($accessDenied) && $accessDenied)
+<div class="card border-warning">
+    <div class="card-body text-center py-5">
+        <div class="mb-4">
+            <i class="ti ti-lock" style="font-size: 4rem; color: #ffc107;"></i>
+        </div>
+        <h4 class="mb-3">Privacy Settings Enabled</h4>
+        <p class="text-muted mb-4">
+            {{ $student->first_name }} has chosen to keep their academic performance and enhancement information private.<br>
+            This information is not currently available for viewing.
+        </p>
+        <div class="alert alert-info d-inline-block">
+            <i class="ti ti-info-circle me-2"></i>
+            <strong>Note:</strong> Students have the right to control who can access their academic information. 
+            Please discuss this directly with your child if you have questions.
+        </div>
+    </div>
+</div>
+@else
 <!-- Decision Support System Section -->
 @if($selectedYearId && !empty($dssRecommendations))
 <div class="card mb-4 border-info">

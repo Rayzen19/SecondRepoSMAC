@@ -82,6 +82,11 @@
                                         <i class="ti ti-user"></i><span>My Profile</span>
                                     </a>
                                 </li>
+                                <li class="{{ $routeIs('student.privacy.*') ? 'active' : '' }}">
+                                    <a class="{{ $routeIs('student.privacy.*') ? 'active' : '' }}" href="{{ route('student.privacy.index') }}">
+                                        <i class="ti ti-shield-lock"></i><span>Privacy Settings</span>
+                                    </a>
+                                </li>
                                 <li class="{{ $routeIs('student.messages.*') ? 'active' : '' }}">
                                     <a class="{{ $routeIs('student.messages.*') ? 'active' : '' }}" href="{{ route('student.messages.messenger') }}">
                                         <i class="ti ti-mail"></i><span>Messages</span>

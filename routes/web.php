@@ -480,6 +480,10 @@ Route::group(['prefix' => 'student'], function () {
         Route::get('/profile/password/edit', [App\Http\Controllers\Student\ProfileController::class, 'editPassword'])->name('student.profile.password.edit');
         Route::put('/profile/password', [App\Http\Controllers\Student\ProfileController::class, 'updatePassword'])->name('student.profile.password.update');
         
+        // Privacy Settings
+        Route::get('/privacy', [App\Http\Controllers\Student\PrivacyController::class, 'index'])->name('student.privacy.index');
+        Route::put('/privacy/guardian-access', [App\Http\Controllers\Student\PrivacyController::class, 'updateGuardianAccess'])->name('student.privacy.guardian-access.update');
+        
         // Messaging
         Route::get('/messages', [App\Http\Controllers\Student\MessageController::class, 'inbox'])->name('student.messages.inbox');
         Route::get('/messages/compose', [App\Http\Controllers\Student\MessageController::class, 'compose'])->name('student.messages.compose');

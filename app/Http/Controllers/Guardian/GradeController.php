@@ -57,6 +57,29 @@ class GradeController extends Controller
             abort(403, 'Unauthorized access to student data');
         }
 
+        // Check if student has disabled guardian access
+        if (!$student->allow_guardian_access) {
+            return view('guardian.grades.index', [
+                'students' => $students,
+                'selectedStudentId' => $selectedStudentId,
+                'academicYears' => collect(),
+                'selectedYearId' => null,
+                'selectedTerm' => null,
+                'selectedGradeLevel' => 'all',
+                'gradeLevels' => ['all' => 'All Levels', '11' => 'Grade 11', '12' => 'Grade 12'],
+                'student' => $student,
+                'grades' => collect(),
+                'average' => null,
+                'performanceData' => [],
+                'overallAverage' => 0,
+                'totalSubjects' => 0,
+                'strengths' => collect(),
+                'weaknesses' => collect(),
+                'recommendations' => [],
+                'accessDenied' => true, // Flag to show privacy message
+            ]);
+        }
+
         $studentId = $student->id;
 
         $academicYears = AcademicYear::orderBy('name', 'desc')

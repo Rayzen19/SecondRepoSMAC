@@ -33,6 +33,7 @@ class Student extends Model
         'status',
         'profile_picture',
         'generated_password_encrypted',
+        'allow_guardian_access',
     ];
 
     public function getRouteKeyName(): string
