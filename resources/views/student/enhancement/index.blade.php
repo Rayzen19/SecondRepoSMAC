@@ -72,8 +72,8 @@
         <div class="row">
             <!-- Priority Actions -->
             <div class="col-lg-6 mb-4">
-                <div class="card h-100 border-warning">
-                    <div class="card-header bg-warning text-white">
+                <div class="card h-100 border-info">
+                    <div class="card-header bg-info text-white">
                         <h6 class="mb-0">
                             <i class="ti ti-flag me-2"></i>Priority Actions
                         </h6>
@@ -110,8 +110,8 @@
                 <div class="row h-100">
                     <!-- Strengths -->
                     <div class="col-12 mb-3">
-                        <div class="card border-success h-100">
-                            <div class="card-header bg-success text-white">
+                        <div class="card border-info h-100">
+                            <div class="card-header bg-info text-white">
                                 <h6 class="mb-0">
                                     <i class="ti ti-award me-2"></i>Your Strengths
                                 </h6>
@@ -120,7 +120,7 @@
                                 @if(!empty($dssRecommendations['strengths']))
                                     <div class="d-flex flex-wrap gap-2">
                                         @foreach($dssRecommendations['strengths'] as $strength)
-                                            <span class="badge bg-success-subtle text-success border border-success">
+                                            <span class="badge bg-info-subtle text-info border border-info">
                                                 <i class="ti ti-check me-1"></i>{{ $strength }}
                                             </span>
                                         @endforeach
@@ -134,8 +134,8 @@
 
                     <!-- Areas to Improve -->
                     <div class="col-12">
-                        <div class="card border-danger h-100">
-                            <div class="card-header bg-danger text-white">
+                        <div class="card border-info h-100">
+                            <div class="card-header bg-info text-white">
                                 <h6 class="mb-0">
                                     <i class="ti ti-target me-2"></i>Areas to Improve
                                 </h6>
