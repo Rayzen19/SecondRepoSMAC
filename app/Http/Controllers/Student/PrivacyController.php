@@ -28,15 +28,14 @@ class PrivacyController extends Controller
         $user = Auth::guard('student')->user();
         $student = Student::findOrFail($user->user_pk_id);
 
-        $request->validate([
-            'allow_guardian_access' => 'required|boolean',
-        ]);
+        // If checkbox is checked, it will be "1", otherwise the hidden field sends "0"
+        $allowAccess = $request->input('allow_guardian_access', 0);
 
         $student->update([
-            'allow_guardian_access' => $request->allow_guardian_access,
+            'allow_guardian_access' => (bool)$allowAccess,
         ]);
 
-        $message = $request->allow_guardian_access 
+        $message = $allowAccess 
             ? 'Guardian access to your grades and enhancement has been enabled.'
             : 'Guardian access to your grades and enhancement has been disabled.';
 

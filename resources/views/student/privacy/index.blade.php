@@ -61,6 +61,9 @@
                                 <div class="mb-4">
                                     <label class="form-label fw-bold">Guardian Access Permission</label>
                                     
+                                    <!-- Hidden field to ensure 0 is sent when unchecked -->
+                                    <input type="hidden" name="allow_guardian_access" value="0">
+                                    
                                     <div class="form-check form-switch mb-3">
                                         <input 
                                             class="form-check-input" 
