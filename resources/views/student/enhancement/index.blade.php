@@ -72,7 +72,7 @@
         <div class="row">
             <!-- Priority Actions -->
             <div class="col-lg-6 mb-4">
-                <div class="card h-100 border-warning" style="background-color: #e3f2fd;">
+                <div class="card h-100 border-warning">
                     <div class="card-header border-warning text-dark" style="background-color: #e3f2fd;">
                         <h6 class="mb-0">
                             <i class="ti ti-flag me-2"></i>Priority Actions
@@ -110,7 +110,7 @@
                 <div class="row h-100">
                     <!-- Strengths -->
                     <div class="col-12 mb-3">
-                        <div class="card border-success h-100" style="background-color: #e3f2fd;">
+                        <div class="card border-success h-100">
                             <div class="card-header border-success text-dark" style="background-color: #e3f2fd;">
                                 <h6 class="mb-0">
                                     <i class="ti ti-award me-2"></i>Your Strengths
@@ -134,7 +134,7 @@
 
                     <!-- Areas to Improve -->
                     <div class="col-12">
-                        <div class="card border-danger h-100" style="background-color: #e3f2fd;">
+                        <div class="card border-danger h-100">
                             <div class="card-header border-danger text-dark" style="background-color: #e3f2fd;">
                                 <h6 class="mb-0">
                                     <i class="ti ti-target me-2"></i>Areas to Improve
