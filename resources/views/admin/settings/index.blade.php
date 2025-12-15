@@ -165,6 +165,7 @@
                 <i class="ti ti-info-circle me-2"></i>About These Settings
             </h5>
             <ul class="mb-0">
+                <li><strong>Max Teacher Subjects Per Section:</strong> Controls how many subjects one teacher can be assigned to within a single section. This helps prevent teacher overload.</li>
                 <li><strong>Max Teacher Sections:</strong> Limits the total number of different sections a teacher can handle across all subjects.</li>
                 <li class="text-muted mt-2"><small><i class="ti ti-lock me-1"></i>These limits are enforced when creating new teacher assignments.</small></li>
             </ul>

@@ -24,6 +24,14 @@ return new class extends Migration
         // Insert default settings
         DB::table('system_settings')->insert([
             [
+                'key' => 'max_teacher_subjects_per_section',
+                'value' => '5',
+                'type' => 'integer',
+                'description' => 'Maximum number of subjects a teacher can be assigned per section',
+                'created_at' => now(),
+                'updated_at' => now(),
+            ],
+            [
                 'key' => 'max_teacher_sections',
                 'value' => '10',
                 'type' => 'integer',
