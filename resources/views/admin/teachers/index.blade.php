@@ -17,6 +17,11 @@
     </div>
     <div class="d-flex my-xl-auto right-content align-items-center flex-wrap ">
         <div class="mb-2 me-2">
+            <a href="{{ route('admin.settings.index') }}" class="btn btn-outline-primary d-flex align-items-center" title="System Settings">
+                <i class="ti ti-settings me-2"></i>Settings
+            </a>
+        </div>
+        <div class="mb-2 me-2">
             <button type="button" class="btn btn-outline-success d-flex align-items-center" onclick="exportToExcel()">
                 <i class="ti ti-file-spreadsheet me-2"></i>Export to Excel
             </button>

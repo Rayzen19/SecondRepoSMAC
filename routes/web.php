@@ -185,6 +185,10 @@ Route::group(['prefix' => 'admin'], function () {
             Route::delete('/co-admins/{coAdmin}', [App\Http\Controllers\Admin\CoAdminController::class, 'destroy'])->name('admin.co-admins.destroy');
         });
 
+        // Settings
+        Route::get('/settings', [App\Http\Controllers\Admin\SettingsController::class, 'index'])->name('admin.settings.index');
+        Route::put('/settings', [App\Http\Controllers\Admin\SettingsController::class, 'update'])->name('admin.settings.update');
+
         // Archive
         Route::get('/archive', [App\Http\Controllers\Admin\ArchiveController::class, 'index'])->name('admin.archive.index');
         Route::post('/archive/teachers/{teacher}/restore', [App\Http\Controllers\Admin\ArchiveController::class, 'restoreTeacher'])->name('admin.archive.teachers.restore');
