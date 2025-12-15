@@ -260,10 +260,10 @@
                                 <div class="action-icon d-inline-flex">
                                     <a href="{{ route('admin.students.show', $student) }}" class="me-2"><i class="ti ti-eye"></i></a>
                                     <a href="{{ route('admin.students.edit', $student) }}" class="me-2"><i class="ti ti-edit"></i></a>
-                                    <form action="{{ route('admin.students.destroy', $student) }}" method="POST" onsubmit="return confirm('Delete this student?');">
+                                    <form action="{{ route('admin.students.destroy', $student) }}" method="POST" onsubmit="return confirm('Archive this student? You can restore it later from the Archive page.');">
                                         @csrf
                                         @method('DELETE')
-                                        <button type="submit" class="btn btn-link p-0 m-0 align-baseline text-danger"><i class="ti ti-trash"></i></button>
+                                        <button type="submit" class="btn btn-link p-0 m-0 align-baseline text-danger" title="Archive Student"><i class="ti ti-archive"></i></button>
                                     </form>
                                 </div>
                             </td>

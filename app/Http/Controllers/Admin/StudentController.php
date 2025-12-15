@@ -40,10 +40,15 @@ class StudentController extends Controller
               });
         }]);
         
+        // Exclude inactive (archived) students from the main list
+        $query->where('status', '!=', 'inactive');
+        
         // Apply filters
         if ($request->filled('status')) {
             $status = $request->input('status');
-            $query->where('status', $status);
+            if ($status !== 'inactive') { // Prevent showing inactive students even if filtered
+                $query->where('status', $status);
+            }
         }
         
         if ($request->filled('strand')) {
@@ -569,38 +574,13 @@ class StudentController extends Controller
         return new StreamedResponse($callback, 200, $headers);
     }
 
-    // Remove the specified student from storage
+    // Remove the specified student from storage (Archive instead of permanent deletion)
     public function destroy(Student $student)
     {
-        // Permanently delete the student and linked auth account
-        DB::transaction(function () use ($student) {
-            // Detach guardians from student
-            $student->guardians()->detach();
+        // Archive the student by setting status to 'inactive'
+        $student->update(['status' => 'inactive']);
 
-            // Delete linked auth user (student portal account)
-            $user = SystemUser::where('type', 'student')->where('user_pk_id', $student->id)->first();
-            if ($user) {
-                $user->delete(); // User model does not use SoftDeletes -> hard delete
-            }
-
-            // Optionally remove any profile picture from storage if using a path
-            try {
-                if (!empty($student->profile_picture) && Storage::disk('public')->exists($student->profile_picture)) {
-                    Storage::disk('public')->delete($student->profile_picture);
-                }
-            } catch (\Throwable $e) {
-                // Non-blocking
-            }
-
-            // Force delete student (bypass soft deletes)
-            if (method_exists($student, 'forceDelete')) {
-                $student->forceDelete();
-            } else {
-                $student->delete();
-            }
-        });
-
-        return redirect()->route('admin.students.index')->with('success', 'Student permanently deleted.');
+        return redirect()->route('admin.students.index')->with('success', 'Student has been archived. You can restore it from the archive page.');
     }
 
     /**
