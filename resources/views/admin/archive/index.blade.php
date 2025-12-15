@@ -77,6 +77,12 @@
                                             <span class="badge bg-secondary">Inactive</span>
                                         </div>
                                         <div class="col-md-3 text-end">
+                                            <a href="{{ route('admin.teachers.show', $teacher) }}" 
+                                               class="btn btn-sm me-1"
+                                               style="background-color: #17a2b8; color: white; border-radius: 20px; padding: 5px 15px; border: none;"
+                                               title="View Information">
+                                                <i class="feather-eye me-1"></i> View
+                                            </a>
                                             <form action="{{ route('admin.archive.teachers.restore', $teacher) }}" method="POST" class="d-inline restore-teacher-form" data-teacher-id="{{ $teacher->id }}">
                                                 @csrf
                                                 <button type="submit" 
@@ -141,6 +147,12 @@
                                             <span class="badge bg-secondary">Inactive</span>
                                         </div>
                                         <div class="col-md-3 text-end">
+                                            <a href="{{ route('admin.students.show', $student) }}" 
+                                               class="btn btn-sm me-1"
+                                               style="background-color: #17a2b8; color: white; border-radius: 20px; padding: 5px 15px; border: none;"
+                                               title="View Information">
+                                                <i class="feather-eye me-1"></i> View
+                                            </a>
                                             <form action="{{ route('admin.archive.students.restore', $student) }}" method="POST" class="d-inline restore-student-form" data-student-id="{{ $student->id }}">
                                                 @csrf
                                                 <button type="submit" 
