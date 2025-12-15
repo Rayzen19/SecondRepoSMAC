@@ -121,7 +121,7 @@
     </div>
 </div>
 @else
-<!-- Grades Table -->
+<!-- Grades Table - Hidden for Guardians -->
 <div class="row">
     <div class="col-md-12">
         <div class="card">
@@ -129,6 +129,14 @@
                 <h5 class="mb-0"><i class="ti ti-report-analytics me-2"></i>Grades</h5>
             </div>
             <div class="card-body">
+                <div class="alert alert-info text-center">
+                    <i class="ti ti-lock" style="font-size: 2.5rem; color: #0dcaf0;"></i>
+                    <h5 class="mt-3 mb-2">Grade Information Restricted</h5>
+                    <p class="mb-0">
+                        Grade information is managed by the school administration and is only accessible to students directly.
+                        For official grade inquiries, please contact the school office or speak with your child's adviser.
+                    </p>
+                </div>
                 @if($grades->count() > 0)
                     <div class="table-responsive">
                         <table class="table table-bordered table-hover">
@@ -148,40 +156,16 @@
                                         <td>{{ $grade['subject_code'] }}</td>
                                         <td>{{ $grade['subject_name'] }}</td>
                                         <td class="text-center">
-                                            @if($grade['fq_grade'])
-                                                <span class="badge grade-badge {{ $grade['fq_grade'] >= 90 ? 'bg-success' : ($grade['fq_grade'] >= 80 ? 'bg-primary' : ($grade['fq_grade'] >= 75 ? 'bg-warning' : 'bg-danger')) }}">
-                                                    {{ number_format($grade['fq_grade'], 2) }}
-                                                </span>
-                                            @else
-                                                <span class="text-muted">—</span>
-                                            @endif
+                                            <span class="text-muted">●●●</span>
                                         </td>
                                         <td class="text-center">
-                                            @if($grade['sq_grade'])
-                                                <span class="badge grade-badge {{ $grade['sq_grade'] >= 90 ? 'bg-success' : ($grade['sq_grade'] >= 80 ? 'bg-primary' : ($grade['sq_grade'] >= 75 ? 'bg-warning' : 'bg-danger')) }}">
-                                                    {{ number_format($grade['sq_grade'], 2) }}
-                                                </span>
-                                            @else
-                                                <span class="text-muted">—</span>
-                                            @endif
+                                            <span class="text-muted">●●●</span>
                                         </td>
                                         <td class="text-center">
-                                            @if($grade['a_grade'])
-                                                <span class="badge grade-badge {{ $grade['a_grade'] >= 90 ? 'bg-success' : ($grade['a_grade'] >= 80 ? 'bg-primary' : ($grade['a_grade'] >= 75 ? 'bg-warning' : 'bg-danger')) }}">
-                                                    {{ number_format($grade['a_grade'], 2) }}
-                                                </span>
-                                            @else
-                                                <span class="text-muted">—</span>
-                                            @endif
+                                            <span class="text-muted">●●●</span>
                                         </td>
                                         <td class="text-center">
-                                            @if($grade['f_grade'])
-                                                <span class="badge grade-badge {{ $grade['f_grade'] >= 90 ? 'bg-success' : ($grade['f_grade'] >= 80 ? 'bg-primary' : ($grade['f_grade'] >= 75 ? 'bg-warning' : 'bg-danger')) }}">
-                                                    {{ number_format($grade['f_grade'], 2) }}
-                                                </span>
-                                            @else
-                                                <span class="text-muted">—</span>
-                                            @endif
+                                            <span class="text-muted">●●●</span>
                                         </td>
                                     </tr>
                                 @endforeach
@@ -191,8 +175,8 @@
                     
                     @if($average)
                         <div class="text-end mt-3">
-                            <div class="d-inline-block bg-primary text-white px-4 py-2 rounded">
-                                <strong>Average: {{ $average }}</strong>
+                            <div class="d-inline-block bg-secondary text-white px-4 py-2 rounded">
+                                <strong>Average: ●●●</strong>
                             </div>
                         </div>
                     @endif
@@ -212,83 +196,22 @@
     </div>
 </div>
 
-<!-- Decision Support System Section -->
+<!-- Decision Support System Section - Hidden for Guardians -->
 @if($overallAverage > 0)
 <div class="row mt-4">
     <div class="col-md-12">
-        <div class="card border-info">
-            <div class="card-header bg-info text-white">
+        <div class="card border-secondary">
+            <div class="card-header bg-secondary text-white">
                 <h5 class="mb-0"><i class="ti ti-chart-dots me-2"></i>Performance Analysis</h5>
             </div>
             <div class="card-body">
-                <div class="row mb-3">
-                    <div class="col-md-4">
-                        <div class="text-center p-3 bg-light rounded">
-                            <h6 class="text-muted mb-2">Overall Average</h6>
-                            <h2 class="mb-0 {{ $overallAverage >= 90 ? 'text-success' : ($overallAverage >= 80 ? 'text-primary' : ($overallAverage >= 75 ? 'text-warning' : 'text-danger')) }}">
-                                {{ $overallAverage }}
-                            </h2>
-                        </div>
-                    </div>
-                    <div class="col-md-4">
-                        <div class="text-center p-3 bg-light rounded">
-                            <h6 class="text-muted mb-2">Total Subjects</h6>
-                            <h2 class="mb-0 text-primary">{{ $totalSubjects }}</h2>
-                        </div>
-                    </div>
-                    <div class="col-md-4">
-                        <div class="text-center p-3 bg-light rounded">
-                            <h6 class="text-muted mb-2">Status</h6>
-                            <h5 class="mb-0">
-                                <span class="badge {{ $overallAverage >= 90 ? 'bg-success' : ($overallAverage >= 80 ? 'bg-primary' : ($overallAverage >= 75 ? 'bg-warning' : 'bg-danger')) }}">
-                                    {{ $overallAverage >= 90 ? 'Excellent' : ($overallAverage >= 80 ? 'Good' : ($overallAverage >= 75 ? 'Satisfactory' : 'Needs Improvement')) }}
-                                </span>
-                            </h5>
-                        </div>
-                    </div>
+                <div class="alert alert-info text-center">
+                    <i class="ti ti-info-circle" style="font-size: 2rem;"></i>
+                    <p class="mb-0 mt-2">
+                        <strong>Performance analysis is restricted for guardians.</strong><br>
+                        For detailed academic performance information, please consult with the school or your child directly.
+                    </p>
                 </div>
-
-                @if($strengths->count() > 0)
-                <div class="mb-3">
-                    <h6 class="text-success"><i class="ti ti-thumb-up me-2"></i>Strengths</h6>
-                    <ul class="list-unstyled">
-                        @foreach($strengths as $strength)
-                            <li class="mb-1">
-                                <i class="ti ti-check text-success me-2"></i>
-                                <strong>{{ $strength['subject'] }}</strong>: {{ $strength['grade'] }}
-                            </li>
-                        @endforeach
-                    </ul>
-                </div>
-                @endif
-
-                @if($weaknesses->count() > 0)
-                <div class="mb-3">
-                    <h6 class="text-danger"><i class="ti ti-alert-triangle me-2"></i>Areas Needing Attention</h6>
-                    <ul class="list-unstyled">
-                        @foreach($weaknesses as $weakness)
-                            <li class="mb-1">
-                                <i class="ti ti-alert-circle text-danger me-2"></i>
-                                <strong>{{ $weakness['subject'] }}</strong>: {{ $weakness['grade'] }}
-                            </li>
-                        @endforeach
-                    </ul>
-                </div>
-                @endif
-
-                @if(count($recommendations) > 0)
-                <div>
-                    <h6 class="text-primary"><i class="ti ti-bulb me-2"></i>Recommendations</h6>
-                    <ul class="list-unstyled">
-                        @foreach($recommendations as $recommendation)
-                            <li class="mb-2">
-                                <i class="ti ti-arrow-right text-primary me-2"></i>
-                                {{ $recommendation }}
-                            </li>
-                        @endforeach
-                    </ul>
-                </div>
-                @endif
             </div>
         </div>
     </div>
