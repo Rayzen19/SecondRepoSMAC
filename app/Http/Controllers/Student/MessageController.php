@@ -326,4 +326,14 @@ class MessageController extends Controller
             'unread_counts' => $unreadCounts
         ]);
     }
+
+    // Get partner information by ID
+    public function getPartnerInfo(User $user)
+    {
+        return response()->json([
+            'id' => $user->id,
+            'name' => $user->name,
+            'email' => $user->email,
+        ]);
+    }
 }

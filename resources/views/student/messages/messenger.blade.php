@@ -633,7 +633,7 @@
         // Stop auto-refresh when leaving the page
         window.addEventListener('beforeunload', stopAutoRefresh);
 
-        // Real-time unread count polling
+        // Real-time unread count polling and conversation list updates
         let unreadCountInterval = null;
 
         function updateUnreadCounts() {
@@ -658,9 +658,70 @@
                                 }
                             }
                         });
+                        
+                        // Check for new conversations from unread counts
+                        Object.keys(data.unread_counts).forEach(userId => {
+                            const unreadCount = data.unread_counts[userId];
+                            if (unreadCount > 0) {
+                                const existingConv = document.querySelector('.conversation-item[data-user-id="' + userId + '"]');
+                                if (!existingConv) {
+                                    // New conversation detected, fetch partner details and add to list
+                                    addNewConversationToList(userId, unreadCount);
+                                }
+                            }
+                        });
                     }
                 })
                 .catch(err => console.error('Failed to fetch unread counts:', err));
+        }
+
+        // Add new conversation to the list
+        function addNewConversationToList(userId, unreadCount = 0) {
+            // Fetch partner details
+            fetch("{{ url('/student/messenger/partner-info/') }}/" + userId)
+                .then(r => r.json())
+                .then(partner => {
+                    if (partner && partner.id) {
+                        const conversationList = document.getElementById('conversation-list');
+                        
+                        // Remove "no conversations" message if it exists
+                        const emptyMessage = conversationList.querySelector('.text-center.text-muted');
+                        if (emptyMessage) {
+                            emptyMessage.remove();
+                        }
+                        
+                        const newConv = document.createElement('li');
+                        newConv.className = 'list-group-item conversation-item' + (unreadCount > 0 ? ' has-unread' : '');
+                        newConv.setAttribute('data-user-id', partner.id);
+                        newConv.setAttribute('data-user-name', partner.name);
+                        newConv.setAttribute('data-user-email', partner.email || '');
+                        
+                        newConv.innerHTML = `
+                            <div class="d-flex justify-content-between align-items-center">
+                                <div>
+                                    <strong>${escapeHtml(partner.name)}</strong>
+                                    <div class="small text-muted">${escapeHtml(partner.email || '')}</div>
+                                </div>
+                                <div class="text-end">
+                                    ${unreadCount > 0 ? 
+                                        `<span class="badge bg-danger unread-badge" id="unread-${partner.id}">${unreadCount}</span>` :
+                                        `<span class="badge bg-danger d-none" id="unread-${partner.id}">0</span>`
+                                    }
+                                </div>
+                            </div>
+                        `;
+                        
+                        // Insert at the top of the list
+                        conversationList.insertBefore(newConv, conversationList.firstChild);
+                        
+                        // Add click handler
+                        newConv.addEventListener('click', function() {
+                            const userId = this.dataset.userId;
+                            loadConversation(userId);
+                        });
+                    }
+                })
+                .catch(err => console.error('Failed to fetch partner info:', err));
         }
 
         // Start polling for unread counts every 5 seconds

@@ -86,6 +86,8 @@ Route::group(['prefix' => 'admin'], function () {
         Route::get('/profile', [App\Http\Controllers\Admin\ProfileController::class, 'show'])->name('admin.profile.show');
         Route::get('/profile/edit', [App\Http\Controllers\Admin\ProfileController::class, 'edit'])->name('admin.profile.edit');
         Route::put('/profile', [App\Http\Controllers\Admin\ProfileController::class, 'update'])->name('admin.profile.update');
+        Route::post('/profile/picture', [App\Http\Controllers\Admin\ProfileController::class, 'updateProfilePicture'])->name('admin.profile.picture.update');
+        Route::delete('/profile/picture', [App\Http\Controllers\Admin\ProfileController::class, 'deleteProfilePicture'])->name('admin.profile.picture.delete');
         Route::get('/profile/password/edit', [App\Http\Controllers\Admin\ProfileController::class, 'editPassword'])->name('admin.profile.password.edit');
         Route::put('/profile/password', [App\Http\Controllers\Admin\ProfileController::class, 'updatePassword'])->name('admin.profile.password.update');
 
@@ -493,6 +495,7 @@ Route::group(['prefix' => 'student'], function () {
         Route::delete('/messages/{message}/unsend', [App\Http\Controllers\Student\MessageController::class, 'unsendMessage'])->name('student.messages.unsend');
         Route::get('/messenger', [App\Http\Controllers\Student\MessageController::class, 'messenger'])->name('student.messages.messenger');
         Route::get('/messenger/conversation/{user}', [App\Http\Controllers\Student\MessageController::class, 'conversation'])->name('student.messages.conversation');
+        Route::get('/messenger/partner-info/{user}', [App\Http\Controllers\Student\MessageController::class, 'getPartnerInfo'])->name('student.messages.partnerInfo');
         Route::post('/messenger/send', [App\Http\Controllers\Student\MessageController::class, 'sendConversation'])->name('student.messages.sendConversation');
         Route::post('/messenger/typing', [App\Http\Controllers\Student\MessageController::class, 'broadcastTyping'])->name('student.messages.typing');
         
