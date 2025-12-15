@@ -44,7 +44,7 @@ class SettingsController extends Controller
                         $value = (int) $value;
                         
                         // Additional validation for specific settings
-                        if (in_array($setting['key'], ['max_teacher_subjects_per_section', 'max_teacher_sections'])) {
+                        if (in_array($setting['key'], ['max_teacher_sections'])) {
                             if ($value < 1 || $value > 100) {
                                 return redirect()->back()
                                     ->with('error', 'Value for ' . $setting['key'] . ' must be between 1 and 100')
