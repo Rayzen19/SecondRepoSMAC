@@ -84,7 +84,38 @@ class ArchiveController extends Controller
         }
 
         $teacherName = $teacher->name;
-        $teacher->delete();
+        
+        // Permanently delete the teacher and linked data
+        DB::transaction(function () use ($teacher) {
+            // Delete linked auth user (teacher portal account)
+            $user = \App\Models\User::where('type', 'teacher')->where('user_pk_id', $teacher->id)->first();
+            if ($user) {
+                $user->delete();
+            }
+
+            // Detach subjects pivot to avoid orphaned relations
+            try {
+                $teacher->subjects()->sync([]);
+            } catch (\Throwable $e) {
+                // Non-blocking
+            }
+
+            // Optionally remove any profile picture from storage
+            try {
+                if (!empty($teacher->profile_picture) && Storage::disk('public')->exists($teacher->profile_picture)) {
+                    Storage::disk('public')->delete($teacher->profile_picture);
+                }
+            } catch (\Throwable $e) {
+                // Non-blocking
+            }
+
+            // Force delete teacher (bypass soft deletes)
+            if (method_exists($teacher, 'forceDelete')) {
+                $teacher->forceDelete();
+            } else {
+                $teacher->delete();
+            }
+        });
 
         if (request()->ajax()) {
             return response()->json(['message' => "Teacher {$teacherName} has been permanently deleted."], 200);

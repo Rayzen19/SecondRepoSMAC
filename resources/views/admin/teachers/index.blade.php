@@ -75,7 +75,7 @@
                                     <a href="{{ route('admin.teachers.edit', $teacher) }}" class="me-2" title="Edit"><i class="ti ti-edit"></i></a>
                                     <a href="{{ route('admin.teachers.assignments', $teacher) }}" class="me-2" title="Assignment"><i class="ti ti-clipboard-text"></i></a>
                                     <a href="{{ route('admin.settings.index') }}" class="me-2 text-primary" title="Settings"><i class="ti ti-settings"></i></a>
-                                    <a href="javascript:void(0);" class="text-danger" title="Delete" onclick="openDeleteModal('{{ route('admin.teachers.destroy', $teacher) }}', '{{ $teacher->first_name }} {{ $teacher->last_name }}')"><i class="ti ti-trash"></i></a>
+                                    <a href="javascript:void(0);" class="text-danger" title="Archive" onclick="openDeleteModal('{{ route('admin.teachers.destroy', $teacher) }}', '{{ $teacher->first_name }} {{ $teacher->last_name }}')"><i class="ti ti-archive"></i></a>
                                 </div>
                             </td>
                         </tr>
@@ -95,7 +95,7 @@
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <div class="modal-body text-center pb-4">
-                <h5 class="mb-3" id="deleteModalLabel">Are you sure you want to delete this teacher? This will also remove their login account.</h5>
+                <h5 class="mb-3" id="deleteModalLabel">Archive this teacher? You can restore it later from the Archive page.</h5>
                 <form id="deleteForm" method="POST" action="">
                     @csrf
                     @method('DELETE')

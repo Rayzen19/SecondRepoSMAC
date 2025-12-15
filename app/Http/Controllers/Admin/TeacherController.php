@@ -25,7 +25,11 @@ class TeacherController extends Controller
 {
     public function index()
     {
-        $teachers = Teacher::with('subjects')->orderBy('last_name')->paginate(15);
+        // Exclude inactive (archived) teachers from the main list
+        $teachers = Teacher::with('subjects')
+            ->where('status', '!=', 'inactive')
+            ->orderBy('last_name')
+            ->paginate(15);
         return view('admin.teachers.index', compact('teachers'));
     }
 
@@ -370,26 +374,10 @@ class TeacherController extends Controller
 
     public function destroy(Teacher $teacher)
     {
-        // Hard delete teacher and related auth user
-    DB::transaction(function () use ($teacher) {
-            // Remove linked auth user if present
-            $user = User::where('type', 'teacher')->where('user_pk_id', $teacher->id)->first();
-            if ($user) {
-                $user->delete();
-            }
+        // Archive the teacher by setting status to 'inactive'
+        $teacher->update(['status' => 'inactive']);
 
-            // Detach subjects pivot to avoid orphaned relations
-            try { $teacher->subjects()->sync([]); } catch (\Throwable $e) {}
-
-            // Permanently delete teacher
-            if (method_exists($teacher, 'forceDelete')) {
-                $teacher->forceDelete();
-            } else {
-                $teacher->delete();
-            }
-        });
-
-        return redirect()->route('admin.teachers.index')->with('success', 'Teacher permanently deleted.');
+        return redirect()->route('admin.teachers.index')->with('success', 'Teacher has been archived. You can restore it from the archive page.');
     }
 
     public function subjectStudents(Teacher $teacher, AcademicYear $academicYear, AcademicYearStrandSubject $assignment)
