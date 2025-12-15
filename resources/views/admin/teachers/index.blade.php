@@ -74,6 +74,7 @@
                                     <a href="{{ route('admin.teachers.show', $teacher) }}" class="me-2" title="View"><i class="ti ti-eye"></i></a>
                                     <a href="{{ route('admin.teachers.edit', $teacher) }}" class="me-2" title="Edit"><i class="ti ti-edit"></i></a>
                                     <a href="{{ route('admin.teachers.assignments', $teacher) }}" class="me-2" title="Assignment"><i class="ti ti-clipboard-text"></i></a>
+                                    <a href="{{ route('admin.settings.index') }}" class="me-2 text-primary" title="Settings"><i class="ti ti-settings"></i></a>
                                     <a href="javascript:void(0);" class="text-danger" title="Delete" onclick="openDeleteModal('{{ route('admin.teachers.destroy', $teacher) }}', '{{ $teacher->first_name }} {{ $teacher->last_name }}')"><i class="ti ti-trash"></i></a>
                                 </div>
                             </td>
