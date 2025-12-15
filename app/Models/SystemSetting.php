@@ -83,7 +83,7 @@ class SystemSetting extends Model
      *
      * @return array
      */
-    public static function all()
+    public static function getAllSettings()
     {
         return parent::all()->mapWithKeys(function ($setting) {
             return [$setting->key => self::castValue($setting->value, $setting->type)];
