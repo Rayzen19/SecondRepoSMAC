@@ -56,29 +56,6 @@ class EnhancementController extends Controller
             abort(403, 'Unauthorized access to student data');
         }
 
-        // Check if student has disabled guardian access
-        if (!$student->allow_guardian_access) {
-            return view('guardian.enhancement.index', [
-                'students' => $students,
-                'selectedStudentId' => $selectedStudentId,
-                'academicYears' => collect(),
-                'selectedYearId' => null,
-                'selectedTerm' => null,
-                'student' => $student,
-                'performanceBySubject' => collect(),
-                'performanceSummary' => [
-                    'total_assessments' => 0,
-                    'completed_assessments' => 0,
-                    'average_score' => 0,
-                    'highest_score' => 0,
-                    'lowest_score' => 0,
-                ],
-                'performanceByType' => collect(),
-                'dssRecommendations' => [],
-                'accessDenied' => true, // Flag to show privacy message
-            ]);
-        }
-
         $studentId = $student->id;
 
         // Get all academic years
