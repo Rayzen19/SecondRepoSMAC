@@ -196,22 +196,83 @@
     </div>
 </div>
 
-<!-- Decision Support System Section - Hidden for Guardians -->
+<!-- Decision Support System Section -->
 @if($overallAverage > 0)
 <div class="row mt-4">
     <div class="col-md-12">
-        <div class="card border-secondary">
-            <div class="card-header bg-secondary text-white">
+        <div class="card border-info">
+            <div class="card-header bg-info text-white">
                 <h5 class="mb-0"><i class="ti ti-chart-dots me-2"></i>Performance Analysis</h5>
             </div>
             <div class="card-body">
-                <div class="alert alert-info text-center">
-                    <i class="ti ti-info-circle" style="font-size: 2rem;"></i>
-                    <p class="mb-0 mt-2">
-                        <strong>Performance analysis is restricted for guardians.</strong><br>
-                        For detailed academic performance information, please consult with the school or your child directly.
-                    </p>
+                <div class="row mb-3">
+                    <div class="col-md-4">
+                        <div class="text-center p-3 bg-light rounded">
+                            <h6 class="text-muted mb-2">Overall Average</h6>
+                            <h2 class="mb-0 {{ $overallAverage >= 90 ? 'text-success' : ($overallAverage >= 80 ? 'text-primary' : ($overallAverage >= 75 ? 'text-warning' : 'text-danger')) }}">
+                                {{ $overallAverage }}
+                            </h2>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="text-center p-3 bg-light rounded">
+                            <h6 class="text-muted mb-2">Total Subjects</h6>
+                            <h2 class="mb-0 text-primary">{{ $totalSubjects }}</h2>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="text-center p-3 bg-light rounded">
+                            <h6 class="text-muted mb-2">Status</h6>
+                            <h5 class="mb-0">
+                                <span class="badge {{ $overallAverage >= 90 ? 'bg-success' : ($overallAverage >= 80 ? 'bg-primary' : ($overallAverage >= 75 ? 'bg-warning' : 'bg-danger')) }}">
+                                    {{ $overallAverage >= 90 ? 'Excellent' : ($overallAverage >= 80 ? 'Good' : ($overallAverage >= 75 ? 'Satisfactory' : 'Needs Improvement')) }}
+                                </span>
+                            </h5>
+                        </div>
+                    </div>
                 </div>
+
+                @if($strengths->count() > 0)
+                <div class="mb-3">
+                    <h6 class="text-success"><i class="ti ti-thumb-up me-2"></i>Strengths</h6>
+                    <ul class="list-unstyled">
+                        @foreach($strengths as $strength)
+                            <li class="mb-1">
+                                <i class="ti ti-check text-success me-2"></i>
+                                <strong>{{ $strength['subject'] }}</strong>: {{ $strength['grade'] }}
+                            </li>
+                        @endforeach
+                    </ul>
+                </div>
+                @endif
+
+                @if($weaknesses->count() > 0)
+                <div class="mb-3">
+                    <h6 class="text-danger"><i class="ti ti-alert-triangle me-2"></i>Areas Needing Attention</h6>
+                    <ul class="list-unstyled">
+                        @foreach($weaknesses as $weakness)
+                            <li class="mb-1">
+                                <i class="ti ti-alert-circle text-danger me-2"></i>
+                                <strong>{{ $weakness['subject'] }}</strong>: {{ $weakness['grade'] }}
+                            </li>
+                        @endforeach
+                    </ul>
+                </div>
+                @endif
+
+                @if(count($recommendations) > 0)
+                <div>
+                    <h6 class="text-primary"><i class="ti ti-bulb me-2"></i>Recommendations</h6>
+                    <ul class="list-unstyled">
+                        @foreach($recommendations as $recommendation)
+                            <li class="mb-2">
+                                <i class="ti ti-arrow-right text-primary me-2"></i>
+                                {{ $recommendation }}
+                            </li>
+                        @endforeach
+                    </ul>
+                </div>
+                @endif
             </div>
         </div>
     </div>
