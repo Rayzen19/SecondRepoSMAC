@@ -7,6 +7,7 @@ use App\Models\Strand;
 use App\Models\Subject;
 use App\Models\StrandSubject;
 use App\Models\Section;
+use App\Models\SystemSetting;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\Log;
 use App\Models\Teacher;
@@ -678,7 +679,10 @@ class SectionAdviserController extends Controller
             }
             Log::info('Teacher is profiled for subject');
             
-            // Check if teacher has reached the limit of 4 sections for this academic year
+            // Get max teacher sections limit from settings
+            $maxSections = SystemSetting::where('key', 'max_teacher_sections')->value('value') ?? 10;
+            
+            // Check if teacher has reached the limit of sections for this academic year
             // Only check when assigning to a specific section
             if (!empty($validated['section_id'])) {
                 $sectionCount = \App\Models\AcademicYearStrandSubject::where('teacher_id', $validated['teacher_id'])
@@ -699,12 +703,13 @@ class SectionAdviserController extends Controller
                         ->where('academic_year_strand_section_id', $aysSection->id)
                         ->exists();
                     
-                    if (!$alreadyAssignedToThisSection && $sectionCount >= 4) {
+                    if (!$alreadyAssignedToThisSection && $sectionCount >= $maxSections) {
                         Log::warning('Teacher has reached section limit', [
                             'teacher_id' => $validated['teacher_id'],
-                            'section_count' => $sectionCount
+                            'section_count' => $sectionCount,
+                            'max_sections' => $maxSections
                         ]);
-                        return response()->json(['success' => false, 'message' => 'This teacher has already reached the maximum limit of 4 section assignments for this academic year.'], 422);
+                        return response()->json(['success' => false, 'message' => "This teacher has already reached the maximum limit of {$maxSections} section assignments for this academic year."], 422);
                     }
                 }
             }
