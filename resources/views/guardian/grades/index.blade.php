@@ -121,7 +121,7 @@
     </div>
 </div>
 @else
-<!-- Grades Table - Hidden for Guardians -->
+<!-- Grades Table -->
 <div class="row">
     <div class="col-md-12">
         <div class="card">
@@ -129,14 +129,6 @@
                 <h5 class="mb-0"><i class="ti ti-report-analytics me-2"></i>Grades</h5>
             </div>
             <div class="card-body">
-                <div class="alert alert-info text-center">
-                    <i class="ti ti-lock" style="font-size: 2.5rem; color: #0dcaf0;"></i>
-                    <h5 class="mt-3 mb-2">Grade Information Restricted</h5>
-                    <p class="mb-0">
-                        Grade information is managed by the school administration and is only accessible to students directly.
-                        For official grade inquiries, please contact the school office or speak with your child's adviser.
-                    </p>
-                </div>
                 @if($grades->count() > 0)
                     <div class="table-responsive">
                         <table class="table table-bordered table-hover">
@@ -156,16 +148,60 @@
                                         <td>{{ $grade['subject_code'] }}</td>
                                         <td>{{ $grade['subject_name'] }}</td>
                                         <td class="text-center">
-                                            <span class="text-muted">●●●</span>
+                                            @if($grade['fq_grade'])
+                                                <span class="badge 
+                                                    @if($grade['fq_grade'] >= 90) bg-success
+                                                    @elseif($grade['fq_grade'] >= 80) bg-primary
+                                                    @elseif($grade['fq_grade'] >= 75) bg-warning
+                                                    @else bg-danger
+                                                    @endif">
+                                                    {{ number_format($grade['fq_grade'], 2) }}
+                                                </span>
+                                            @else
+                                                <span class="text-muted">-</span>
+                                            @endif
                                         </td>
                                         <td class="text-center">
-                                            <span class="text-muted">●●●</span>
+                                            @if($grade['sq_grade'])
+                                                <span class="badge 
+                                                    @if($grade['sq_grade'] >= 90) bg-success
+                                                    @elseif($grade['sq_grade'] >= 80) bg-primary
+                                                    @elseif($grade['sq_grade'] >= 75) bg-warning
+                                                    @else bg-danger
+                                                    @endif">
+                                                    {{ number_format($grade['sq_grade'], 2) }}
+                                                </span>
+                                            @else
+                                                <span class="text-muted">-</span>
+                                            @endif
                                         </td>
                                         <td class="text-center">
-                                            <span class="text-muted">●●●</span>
+                                            @if($grade['a_grade'])
+                                                <span class="badge 
+                                                    @if($grade['a_grade'] >= 90) bg-success
+                                                    @elseif($grade['a_grade'] >= 80) bg-primary
+                                                    @elseif($grade['a_grade'] >= 75) bg-warning
+                                                    @else bg-danger
+                                                    @endif">
+                                                    {{ number_format($grade['a_grade'], 2) }}
+                                                </span>
+                                            @else
+                                                <span class="text-muted">-</span>
+                                            @endif
                                         </td>
                                         <td class="text-center">
-                                            <span class="text-muted">●●●</span>
+                                            @if($grade['f_grade'])
+                                                <span class="badge 
+                                                    @if($grade['f_grade'] >= 90) bg-success
+                                                    @elseif($grade['f_grade'] >= 80) bg-primary
+                                                    @elseif($grade['f_grade'] >= 75) bg-warning
+                                                    @else bg-danger
+                                                    @endif">
+                                                    {{ number_format($grade['f_grade'], 2) }}
+                                                </span>
+                                            @else
+                                                <span class="text-muted">-</span>
+                                            @endif
                                         </td>
                                     </tr>
                                 @endforeach
@@ -175,8 +211,8 @@
                     
                     @if($average)
                         <div class="text-end mt-3">
-                            <div class="d-inline-block bg-secondary text-white px-4 py-2 rounded">
-                                <strong>Average: ●●●</strong>
+                            <div class="d-inline-block bg-primary text-white px-4 py-2 rounded">
+                                <strong>Average: {{ number_format($average, 2) }}</strong>
                             </div>
                         </div>
                     @endif
